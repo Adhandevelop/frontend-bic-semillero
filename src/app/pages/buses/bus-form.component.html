@@ -1,0 +1,43 @@
+<section class="form-card panel">
+  <div class="page-header">
+    <h1>{{ editando ? 'Editar bus' : 'Nuevo bus' }}</h1>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="loading" *ngIf="loading">Procesando...</div>
+
+  <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()" *ngIf="!loading || editando">
+    <div class="form-field">
+      <label for="placa">Placa</label>
+      <input id="placa" type="text" formControlName="placa">
+      <span class="field-error" *ngIf="form.controls.placa.touched && form.controls.placa.invalid">La placa es obligatoria.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="capacidad">Capacidad</label>
+      <input id="capacidad" type="number" min="1" formControlName="capacidad">
+      <span class="field-error" *ngIf="form.controls.capacidad.touched && form.controls.capacidad.invalid">La capacidad debe ser mayor que 0.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="modelo">Modelo</label>
+      <input id="modelo" type="text" formControlName="modelo">
+    </div>
+
+    <div class="form-field">
+      <label for="estado">Estado</label>
+      <select id="estado" formControlName="estado">
+        <option value="activo">Activo</option>
+        <option value="inactivo">Inactivo</option>
+        <option value="mantenimiento">Mantenimiento</option>
+      </select>
+      <span class="field-error" *ngIf="form.controls.estado.touched && form.controls.estado.invalid">El estado es obligatorio.</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" [disabled]="loading">Guardar</button>
+      <a class="btn btn-secondary" routerLink="/buses">Cancelar</a>
+    </div>
+  </form>
+</section>

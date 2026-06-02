@@ -1,0 +1,43 @@
+<section class="form-card panel">
+  <div class="page-header">
+    <h1>{{ editando ? 'Editar ruta' : 'Nueva ruta' }}</h1>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="loading" *ngIf="loading">Procesando...</div>
+
+  <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()" *ngIf="!loading || editando">
+    <div class="form-field">
+      <label for="origen">Origen</label>
+      <input id="origen" type="text" formControlName="origen">
+      <span class="field-error" *ngIf="form.controls.origen.touched && form.controls.origen.invalid">El origen es obligatorio.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="destino">Destino</label>
+      <input id="destino" type="text" formControlName="destino">
+      <span class="field-error" *ngIf="form.controls.destino.touched && form.controls.destino.invalid">El destino es obligatorio.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="distancia_km">Distancia km</label>
+      <input id="distancia_km" type="number" min="1" formControlName="distancia_km">
+      <span class="field-error" *ngIf="form.controls.distancia_km.touched && form.controls.distancia_km.invalid">La distancia debe ser mayor que 0.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="estado">Estado</label>
+      <select id="estado" formControlName="estado">
+        <option value="activa">Activa</option>
+        <option value="inactiva">Inactiva</option>
+      </select>
+      <span class="field-error" *ngIf="form.controls.estado.touched && form.controls.estado.invalid">El estado es obligatorio.</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" [disabled]="loading">Guardar</button>
+      <a class="btn btn-secondary" routerLink="/rutas">Cancelar</a>
+    </div>
+  </form>
+</section>

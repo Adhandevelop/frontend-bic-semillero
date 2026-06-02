@@ -1,0 +1,31 @@
+<section class="dashboard">
+  <div class="page-header">
+    <div>
+      <h1>Sistema de Gestión de Transporte</h1>
+      <p>Resumen general de recursos registrados.</p>
+    </div>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="loading" *ngIf="loading">Cargando resumen...</div>
+
+  <div class="summary-grid" *ngIf="!loading">
+    <article class="summary-card">
+      <span>Total de buses</span>
+      <strong>{{ totalBuses }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Total de conductores</span>
+      <strong>{{ totalConductores }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Total de rutas</span>
+      <strong>{{ totalRutas }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Total de viajes</span>
+      <strong>{{ totalViajes }}</strong>
+    </article>
+  </div>
+</section>

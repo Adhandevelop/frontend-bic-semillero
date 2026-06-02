@@ -1,0 +1,49 @@
+<section>
+  <div class="page-header">
+    <h1>Viajes</h1>
+    <a class="btn btn-primary" routerLink="/viajes/nuevo">Nuevo viaje</a>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="panel">
+    <div class="loading" *ngIf="loading">Cargando viajes...</div>
+    <div class="empty-state" *ngIf="!loading && viajes.length === 0">No hay viajes registrados.</div>
+    <div class="table-wrap" *ngIf="!loading && viajes.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Bus</th>
+            <th>Conductor</th>
+            <th>Ruta</th>
+            <th>Fecha inicio</th>
+            <th>Fecha fin</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let viaje of viajes">
+            <td>{{ viaje.id }}</td>
+            <td>{{ nombreBus(viaje) }}</td>
+            <td>{{ nombreConductor(viaje) }}</td>
+            <td>{{ nombreRuta(viaje) }}</td>
+            <td>{{ viaje.fecha_hora_inicio | date:'short' }}</td>
+            <td>{{ viaje.fecha_hora_fin ? (viaje.fecha_hora_fin | date:'short') : 'Sin finalizar' }}</td>
+            <td><span class="badge">{{ viaje.estado }}</span></td>
+            <td>
+              <div class="actions">
+                <a class="btn btn-info" [routerLink]="['/viajes/editar', viaje.id]">Editar</a>
+                <button class="btn btn-danger" type="button" (click)="eliminarViaje(viaje)">Eliminar</button>
+                <button class="btn btn-success" type="button" *ngIf="viaje.estado === 'programado'" (click)="iniciarViaje(viaje)">Iniciar</button>
+                <button class="btn btn-warning" type="button" *ngIf="viaje.estado === 'en_curso'" (click)="finalizarViaje(viaje)">Finalizar</button>
+                <button class="btn btn-secondary" type="button" *ngIf="viaje.estado === 'programado' || viaje.estado === 'en_curso'" (click)="cancelarViaje(viaje)">Cancelar</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

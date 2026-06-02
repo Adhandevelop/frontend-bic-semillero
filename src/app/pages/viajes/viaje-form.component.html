@@ -1,0 +1,65 @@
+<section class="form-card panel">
+  <div class="page-header">
+    <h1>{{ editando ? 'Editar viaje' : 'Nuevo viaje' }}</h1>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="loading" *ngIf="loading">Procesando...</div>
+
+  <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()" *ngIf="!loading || editando">
+    <div class="form-field">
+      <label for="bus">Bus</label>
+      <select id="bus" formControlName="bus">
+        <option [ngValue]="0">Seleccione un bus</option>
+        <option *ngFor="let bus of buses" [ngValue]="bus.id">{{ bus.placa }}</option>
+      </select>
+      <span class="field-error" *ngIf="form.controls.bus.touched && form.controls.bus.invalid">El bus es obligatorio.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="conductor">Conductor</label>
+      <select id="conductor" formControlName="conductor">
+        <option [ngValue]="0">Seleccione un conductor</option>
+        <option *ngFor="let conductor of conductores" [ngValue]="conductor.id">{{ conductor.nombre }}</option>
+      </select>
+      <span class="field-error" *ngIf="form.controls.conductor.touched && form.controls.conductor.invalid">El conductor es obligatorio.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="ruta">Ruta</label>
+      <select id="ruta" formControlName="ruta">
+        <option [ngValue]="0">Seleccione una ruta</option>
+        <option *ngFor="let ruta of rutas" [ngValue]="ruta.id">{{ ruta.origen }} - {{ ruta.destino }}</option>
+      </select>
+      <span class="field-error" *ngIf="form.controls.ruta.touched && form.controls.ruta.invalid">La ruta es obligatoria.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="fecha_hora_inicio">Fecha inicio</label>
+      <input id="fecha_hora_inicio" type="datetime-local" formControlName="fecha_hora_inicio">
+      <span class="field-error" *ngIf="form.controls.fecha_hora_inicio.touched && form.controls.fecha_hora_inicio.invalid">La fecha de inicio es obligatoria.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="fecha_hora_fin">Fecha fin</label>
+      <input id="fecha_hora_fin" type="datetime-local" formControlName="fecha_hora_fin">
+    </div>
+
+    <div class="form-field">
+      <label for="estado">Estado</label>
+      <select id="estado" formControlName="estado">
+        <option value="programado">Programado</option>
+        <option value="en_curso">En curso</option>
+        <option value="finalizado">Finalizado</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+      <span class="field-error" *ngIf="form.controls.estado.touched && form.controls.estado.invalid">El estado es obligatorio.</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" [disabled]="loading">Guardar</button>
+      <a class="btn btn-secondary" routerLink="/viajes">Cancelar</a>
+    </div>
+  </form>
+</section>

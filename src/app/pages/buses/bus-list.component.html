@@ -1,0 +1,42 @@
+<section>
+  <div class="page-header">
+    <h1>Buses</h1>
+    <a class="btn btn-primary" routerLink="/buses/nuevo">Nuevo bus</a>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="panel">
+    <div class="loading" *ngIf="loading">Cargando buses...</div>
+    <div class="empty-state" *ngIf="!loading && buses.length === 0">No hay buses registrados.</div>
+    <div class="table-wrap" *ngIf="!loading && buses.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Placa</th>
+            <th>Capacidad</th>
+            <th>Modelo</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let bus of buses">
+            <td>{{ bus.id }}</td>
+            <td>{{ bus.placa }}</td>
+            <td>{{ bus.capacidad }}</td>
+            <td>{{ bus.modelo || 'No registrado' }}</td>
+            <td><span class="badge">{{ bus.estado }}</span></td>
+            <td>
+              <div class="actions">
+                <a class="btn btn-info" [routerLink]="['/buses/editar', bus.id]">Editar</a>
+                <button class="btn btn-danger" type="button" (click)="eliminarBus(bus)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

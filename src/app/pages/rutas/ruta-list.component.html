@@ -1,0 +1,42 @@
+<section>
+  <div class="page-header">
+    <h1>Rutas</h1>
+    <a class="btn btn-primary" routerLink="/rutas/nueva">Nueva ruta</a>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="panel">
+    <div class="loading" *ngIf="loading">Cargando rutas...</div>
+    <div class="empty-state" *ngIf="!loading && rutas.length === 0">No hay rutas registradas.</div>
+    <div class="table-wrap" *ngIf="!loading && rutas.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Distancia km</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ruta of rutas">
+            <td>{{ ruta.id }}</td>
+            <td>{{ ruta.origen }}</td>
+            <td>{{ ruta.destino }}</td>
+            <td>{{ ruta.distancia_km || 'No registrada' }}</td>
+            <td><span class="badge">{{ ruta.estado }}</span></td>
+            <td>
+              <div class="actions">
+                <a class="btn btn-info" [routerLink]="['/rutas/editar', ruta.id]">Editar</a>
+                <button class="btn btn-danger" type="button" (click)="eliminarRuta(ruta)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

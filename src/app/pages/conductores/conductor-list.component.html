@@ -1,0 +1,42 @@
+<section>
+  <div class="page-header">
+    <h1>Conductores</h1>
+    <a class="btn btn-primary" routerLink="/conductores/nuevo">Nuevo conductor</a>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+  <div class="panel">
+    <div class="loading" *ngIf="loading">Cargando conductores...</div>
+    <div class="empty-state" *ngIf="!loading && conductores.length === 0">No hay conductores registrados.</div>
+    <div class="table-wrap" *ngIf="!loading && conductores.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Licencia</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let conductor of conductores">
+            <td>{{ conductor.id }}</td>
+            <td>{{ conductor.nombre }}</td>
+            <td>{{ conductor.licencia }}</td>
+            <td>{{ conductor.telefono || 'No registrado' }}</td>
+            <td><span class="badge">{{ conductor.estado }}</span></td>
+            <td>
+              <div class="actions">
+                <a class="btn btn-info" [routerLink]="['/conductores/editar', conductor.id]">Editar</a>
+                <button class="btn btn-danger" type="button" (click)="eliminarConductor(conductor)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
