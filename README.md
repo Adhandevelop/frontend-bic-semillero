@@ -30,7 +30,7 @@ Incluye listado, creacion, edicion, eliminacion y cambio de estado para viajes.
 - Backend activo en:
 
 ```text
-http://127.0.0.1:8000/api/
+http://72.60.175.200/api/
 ```
 
 ## Instalacion
@@ -100,7 +100,7 @@ El proyecto consume los siguientes recursos desde Django REST Framework:
 URL base usada por los servicios:
 
 ```text
-http://127.0.0.1:8000/api/
+http://72.60.175.200/api/
 ```
 
 ## Comandos utiles

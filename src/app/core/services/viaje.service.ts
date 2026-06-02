@@ -1,13 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../config/api.config';
 import { Viaje } from '../models/viaje.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ViajeService {
-  private readonly apiUrl = 'http://127.0.0.1:8000/api/viajes/';
+  private readonly apiUrl = `${API_BASE_URL}/viajes/`;
 
   constructor(private http: HttpClient) {}
 
