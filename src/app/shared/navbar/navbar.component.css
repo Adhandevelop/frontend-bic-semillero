@@ -37,17 +37,21 @@
   gap: 8px;
 }
 
-.nav-links a {
+.nav-links a,
+.logout-btn {
   border: 1px solid transparent;
   border-radius: 6px;
+  background: transparent;
   color: #dbeafe;
+  cursor: pointer;
   font-size: 14px;
   font-weight: 800;
   padding: 9px 12px;
 }
 
 .nav-links a.active,
-.nav-links a:hover {
+.nav-links a:hover,
+.logout-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
@@ -65,7 +69,8 @@
     width: 100%;
   }
 
-  .nav-links a {
+  .nav-links a,
+  .logout-btn {
     flex: 1 1 135px;
     text-align: center;
   }

@@ -21,6 +21,7 @@ Incluye listado, creacion, edicion, eliminacion y cambio de estado para viajes.
 - Formularios reactivos
 - HttpClient
 - CSS propio
+- Login con token Bearer
 
 ## Requisitos
 
@@ -102,6 +103,14 @@ URL base usada por los servicios:
 ```text
 http://72.60.175.200/api/
 ```
+
+Endpoint de autenticacion configurado:
+
+```text
+http://72.60.175.200/api/token/
+```
+
+Este endpoint corresponde al formato comun de Django REST Framework Simple JWT y espera `username` y `password`.
 
 ## Comandos utiles
 
