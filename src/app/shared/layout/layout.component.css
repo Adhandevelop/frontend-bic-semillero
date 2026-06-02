@@ -1,5 +1,12 @@
 .main-content {
   margin: 0 auto;
-  max-width: 1180px;
-  padding: 28px 20px 48px;
+  max-width: 1200px;
+  min-height: calc(100vh - 68px);
+  padding: 32px 22px 56px;
+}
+
+@media (max-width: 760px) {
+  .main-content {
+    padding: 22px 14px 40px;
+  }
 }

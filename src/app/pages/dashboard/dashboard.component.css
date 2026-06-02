@@ -1,6 +1,7 @@
 .dashboard p {
   color: var(--muted);
   margin: 8px 0 0;
+  font-weight: 700;
 }
 
 .summary-grid {
@@ -10,24 +11,49 @@
 }
 
 .summary-card {
+  position: relative;
+  overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-left: 5px solid var(--primary);
   border-radius: 8px;
   display: grid;
   gap: 12px;
+  min-height: 132px;
   padding: 22px;
-  box-shadow: 0 8px 22px rgba(31, 41, 55, 0.06);
+  box-shadow: var(--shadow-md);
+}
+
+.summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: #e0b84d;
+}
+
+.summary-card:nth-child(2)::before {
+  background: var(--primary);
+}
+
+.summary-card:nth-child(3)::before {
+  background: var(--success);
+}
+
+.summary-card:nth-child(4)::before {
+  background: var(--info);
 }
 
 .summary-card span {
   color: var(--muted);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .summary-card strong {
-  color: #0f2f4f;
-  font-size: 36px;
+  color: #17324d;
+  font-size: 38px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 @media (max-width: 900px) {
