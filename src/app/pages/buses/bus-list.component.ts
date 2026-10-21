@@ -39,7 +39,7 @@ export class BusListComponent implements OnInit {
   }
 
   eliminarBus(bus: Bus): void {
-    if (!bus.id || !confirm(`¿Eliminar el bus ${bus.placa}?`)) {
+    if (!bus.id || !confirm(`¿Eliminar el bus ${bus.plate}?`)) {
       return;
     }
 

@@ -17,13 +17,28 @@
     <section class="form-panel">
       <div class="login-heading">
         <h2>Bienvenido</h2>
-        <p>Por favor, ingresa tus credenciales para acceder al panel de la flota.</p>
+        <p>Ingresa tus credenciales para acceder al panel de la flota.</p>
       </div>
 
-      <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-      <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+      <div
+        class="alert alert-error"
+        *ngIf="error"
+        role="alert"
+        aria-live="polite"
+      >
+        {{ error }}
+      </div>
 
-      <form class="form-grid" [formGroup]="form" (ngSubmit)="ingresar()">
+      <div
+        class="alert alert-success"
+        *ngIf="success"
+        role="status"
+        aria-live="polite"
+      >
+        {{ success }}
+      </div>
+
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="ingresar()" novalidate>
         <div class="form-field">
           <label for="username">Usuario</label>
           <div class="input-wrap">

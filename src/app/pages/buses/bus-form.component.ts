@@ -22,10 +22,10 @@ export class BusFormComponent implements OnInit {
   busId?: number;
 
   form = this.fb.nonNullable.group({
-    placa: ['', Validators.required],
-    capacidad: [1, [Validators.required, Validators.min(1)]],
-    modelo: [''],
-    estado: ['activo' as Bus['estado'], Validators.required]
+    plate: ['', Validators.required],
+    capacity: [20, [Validators.required, Validators.min(1)]],
+    model: ['', Validators.required],
+    state: ['Active' as Bus['state'], Validators.required]
   });
 
   constructor(

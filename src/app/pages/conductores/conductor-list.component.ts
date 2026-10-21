@@ -39,7 +39,7 @@ export class ConductorListComponent implements OnInit {
   }
 
   eliminarConductor(conductor: Conductor): void {
-    if (!conductor.id || !confirm(`¿Eliminar el conductor ${conductor.nombre}?`)) {
+    if (!conductor.id || !confirm(`¿Eliminar el conductor ${conductor.full_name}?`)) {
       return;
     }
 

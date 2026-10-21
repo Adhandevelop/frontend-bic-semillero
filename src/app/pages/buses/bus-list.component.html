@@ -1,9 +1,9 @@
 <section>
+  
   <div class="page-header">
     <h1>Buses</h1>
     <a class="btn btn-primary" routerLink="/buses/nuevo">Nuevo bus</a>
   </div>
-
   <div class="alert alert-error" *ngIf="error">{{ error }}</div>
   <div class="alert alert-success" *ngIf="success">{{ success }}</div>
   <div class="panel">
@@ -24,10 +24,10 @@
         <tbody>
           <tr *ngFor="let bus of buses">
             <td>{{ bus.id }}</td>
-            <td>{{ bus.placa }}</td>
-            <td>{{ bus.capacidad }}</td>
-            <td>{{ bus.modelo || 'No registrado' }}</td>
-            <td><span class="badge">{{ bus.estado }}</span></td>
+            <td>{{ bus.plate }}</td>
+            <td>{{ bus.capacity }}</td>
+            <td>{{ bus.model || 'No registrado' }}</td>
+            <td><span class="badge">{{ bus.state }}</span></td>
             <td>
               <div class="actions">
                 <a class="btn btn-info" [routerLink]="['/buses/editar', bus.id]">Editar</a>

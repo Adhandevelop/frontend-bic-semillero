@@ -22,10 +22,11 @@ export class ConductorFormComponent implements OnInit {
   conductorId?: number;
 
   form = this.fb.nonNullable.group({
-    nombre: ['', Validators.required],
-    licencia: ['', Validators.required],
-    telefono: [''],
-    estado: ['activo' as Conductor['estado'], Validators.required]
+    full_name: ['', Validators.required],
+    user: [0, Validators.required],
+    license_number: ['', Validators.required,],
+    address: ['', Validators.required],
+    phone_number: ['', Validators.required],
   });
 
   constructor(

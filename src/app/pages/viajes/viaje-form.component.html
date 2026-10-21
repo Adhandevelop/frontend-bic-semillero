@@ -12,7 +12,7 @@
       <label for="bus">Bus</label>
       <select id="bus" formControlName="bus">
         <option [ngValue]="0">Seleccione un bus</option>
-        <option *ngFor="let bus of buses" [ngValue]="bus.id">{{ bus.placa }}</option>
+        <option *ngFor="let bus of buses" [ngValue]="bus.id">{{ bus.plate }}</option>
       </select>
       <span class="field-error" *ngIf="form.controls.bus.touched && form.controls.bus.invalid">El bus es obligatorio.</span>
     </div>
@@ -21,7 +21,7 @@
       <label for="conductor">Conductor</label>
       <select id="conductor" formControlName="conductor">
         <option [ngValue]="0">Seleccione un conductor</option>
-        <option *ngFor="let conductor of conductores" [ngValue]="conductor.id">{{ conductor.nombre }}</option>
+        <option *ngFor="let conductor of conductores" [ngValue]="conductor.id">{{ conductor.full_name }}</option>
       </select>
       <span class="field-error" *ngIf="form.controls.conductor.touched && form.controls.conductor.invalid">El conductor es obligatorio.</span>
     </div>

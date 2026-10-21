@@ -1,19 +1,33 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { Bus } from '../models/bus.model';
+
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class BusService {
-  private readonly apiUrl = `${API_BASE_URL}/buses/`;
+  private readonly apiUrl = `${API_BASE_URL}/fleet/buses/`;
 
   constructor(private http: HttpClient) {}
 
   listar(): Observable<Bus[]> {
-    return this.http.get<Bus[]>(this.apiUrl);
+    return this.http
+      .get<Bus[] | PaginatedResponse<Bus>>(this.apiUrl)
+      .pipe(
+        map((response) =>
+          Array.isArray(response) ? response : response.results
+        ),
+      );
   }
 
   obtenerPorId(id: number): Observable<Bus> {
