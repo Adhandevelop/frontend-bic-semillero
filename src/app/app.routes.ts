@@ -3,6 +3,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { LayoutComponent } from './shared/layout/layout.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { LoginComponent } from './pages/login/login.component';
+import { HomeComponent } from './pages/home/home.component';
 import { BusListComponent } from './pages/buses/bus-list.component';
 import { BusFormComponent } from './pages/buses/bus-form.component';
 import { ConductorListComponent } from './pages/conductores/conductor-list.component';
@@ -13,13 +14,13 @@ import { ViajeListComponent } from './pages/viajes/viaje-list.component';
 import { ViajeFormComponent } from './pages/viajes/viaje-form.component';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', component: HomeComponent },
   { path: 'login', component: LoginComponent },
   {
     path: '',
     component: LayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'buses', component: BusListComponent },
       { path: 'buses/nuevo', component: BusFormComponent },
@@ -35,5 +36,5 @@ export const routes: Routes = [
       { path: 'viajes/editar/:id', component: ViajeFormComponent }
     ]
   },
-  { path: '**', redirectTo: 'dashboard' }
+  { path: '**', redirectTo: '' }
 ];

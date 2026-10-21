@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { BusService } from '../../core/services/bus.service';
 import { ConductorService } from '../../core/services/conductor.service';
@@ -9,7 +11,7 @@ import { ViajeService } from '../../core/services/viaje.service';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
@@ -22,6 +24,9 @@ export class DashboardComponent implements OnInit {
   totalConductores = 0;
   totalRutas = 0;
   totalViajes = 0;
+  searchMode = 'Número de viaje';
+  searchValue = '';
+  searchMessage = '';
 
   constructor(
     private busService: BusService,
@@ -56,5 +61,21 @@ export class DashboardComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  seleccionarBusqueda(mode: string): void {
+    this.searchMode = mode;
+    this.searchValue = '';
+    this.searchMessage = '';
+  }
+
+  buscarTrayecto(): void {
+    const value = this.searchValue.trim();
+    if (!value) {
+      this.searchMessage = 'Ingresa un código para consultar tu trayecto.';
+      return;
+    }
+
+    this.searchMessage = `Consulta recibida para ${this.searchMode.toLowerCase()}: ${value}.`;
   }
 }

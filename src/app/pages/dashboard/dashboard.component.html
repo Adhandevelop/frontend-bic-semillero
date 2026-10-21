@@ -1,31 +1,89 @@
-<section class="dashboard">
-  <div class="page-header">
-    <div>
-      <h1>Sistema de Gestión de Transporte</h1>
-      <p>Resumen general de recursos registrados.</p>
+<main class="home-page">
+  <section class="hero">
+    <div class="route-pattern"></div>
+    <div class="hero-content">
+      <span class="eyebrow">● Monitoreo satelital activo</span>
+      <h1>Consulta y monitorea tu viaje en tiempo real</h1>
+      <p>Ingresa tu código de boleto, número de viaje o placa para verificar el estado de tu bus y ubicación al instante.</p>
+
+      <div class="search-card">
+        <div class="search-tabs">
+          <button type="button" [class.active]="searchMode === 'Número de viaje'"
+            (click)="seleccionarBusqueda('Número de viaje')">Número de viaje</button>
+          <button type="button" [class.active]="searchMode === 'Código de puesto'"
+            (click)="seleccionarBusqueda('Código de puesto')">Código de puesto</button>
+          <button type="button" [class.active]="searchMode === 'Placa de bus'"
+            (click)="seleccionarBusqueda('Placa de bus')">Placa de bus</button>
+        </div>
+        <div class="search-row">
+          <input [(ngModel)]="searchValue" (keyup.enter)="buscarTrayecto()"
+            [placeholder]="searchMode === 'Número de viaje' ? 'Ej. VJ-8492' : searchMode === 'Código de puesto' ? 'Ej. 14B o #0981' : 'Ej. ABC-123'" />
+          <button class="search-button" type="button" (click)="buscarTrayecto()">⌕ <span>Buscar trayecto</span></button>
+        </div>
+        <p class="search-message" *ngIf="searchMessage">{{ searchMessage }}</p>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-  <div class="loading" *ngIf="loading">Cargando resumen...</div>
+  <section class="home-section">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">Actualidad y beneficios</span>
+        <h2>Todo lo que necesitas para viajar mejor</h2>
+      </div>
+      <a routerLink="/viajes">Ver todos los viajes →</a>
+    </div>
 
-  <div class="summary-grid" *ngIf="!loading">
-    <article class="summary-card">
-      <span>Total de buses</span>
-      <strong>{{ totalBuses }}</strong>
-    </article>
-    <article class="summary-card">
-      <span>Total de conductores</span>
-      <strong>{{ totalConductores }}</strong>
-    </article>
-    <article class="summary-card">
-      <span>Total de rutas</span>
-      <strong>{{ totalRutas }}</strong>
-    </article>
-    <article class="summary-card">
-      <span>Total de viajes</span>
-      <strong>{{ totalViajes }}</strong>
-    </article>
-  </div>
-</section>
+    <div class="feature-grid">
+      <article class="feature-card offer-card">
+        <span class="card-icon">♨</span>
+        <span class="offer-label">Oferta limitada</span>
+        <h3>Descuento del 20% en rutas nocturnas</h3>
+        <p>Viaja con total confort mientras duermes y despierta en tu destino ahorrando un 20% en salidas después de las 20:00 hrs.</p>
+        <div class="promo-code"><span>Código promocional</span><strong>NOCHE2024</strong></div>
+        <a routerLink="/viajes">Aprovechar oferta →</a>
+      </article>
+      <article class="feature-card">
+        <span class="card-icon blue">✦</span>
+        <h3>Tecnología a bordo</h3>
+        <p>Nueva flota con asientos reclinables ejecutivos y Wi-Fi 5G. Incorporamos unidades con suspensión neumática y conexión satelital.</p>
+        <a routerLink="/buses">Conocer la flota →</a>
+      </article>
+      <article class="feature-card">
+        <span class="card-icon green">▣</span>
+        <h3>Itinerarios actualizados</h3>
+        <p>Revisa las nuevas salidas programadas hacia los destinos turísticos e interurbanos principales.</p>
+        <a routerLink="/rutas">Consultar rutas →</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="stats-section">
+    <div class="stats-intro">
+      <span class="section-kicker">Nuestra operación</span>
+      <h2>Conectamos tus destinos</h2>
+      <p>Gestionamos cada trayecto con precisión, seguridad y tecnología para que llegues siempre a tiempo.</p>
+    </div>
+    <div class="stats-grid" *ngIf="!loading">
+      <div><strong>{{ totalBuses }}</strong><span>Buses en flota</span></div>
+      <div><strong>{{ totalRutas }}</strong><span>Rutas activas</span></div>
+      <div><strong>{{ totalViajes }}</strong><span>Viajes registrados</span></div>
+      <div><strong>{{ totalConductores }}</strong><span>Conductores</span></div>
+    </div>
+    <div class="loading" *ngIf="loading">Cargando información de la operación...</div>
+    <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+  </section>
+
+  <section class="contact-banner">
+    <div><span class="card-icon">◌</span><h2>¿Necesitas ayuda con tu viaje?</h2><p>Estamos disponibles para acompañarte antes, durante y después de cada trayecto.</p></div>
+    <a routerLink="/viajes">Gestionar mis viajes →</a>
+  </section>
+
+  <footer class="home-footer">
+    <div class="footer-brand"><strong>● Buses Universal</strong><p>Líderes en conectividad interurbana nacional. Precisión en cada trayecto y tecnología en tiempo real.</p></div>
+    <div><h3>Servicios y flota</h3><a routerLink="/buses">Nuestra flota</a><a routerLink="/rutas">Mapa de rutas</a><a routerLink="/viajes">Viajes programados</a></div>
+    <div><h3>Atención al pasajero</h3><a routerLink="/dashboard">Preguntas frecuentes</a><a routerLink="/dashboard">Equipaje y cambios</a><a routerLink="/dashboard">Seguridad vial</a></div>
+    <div><h3>Gestión</h3><a routerLink="/conductores">Conductores</a><a routerLink="/buses">Administrar buses</a><a routerLink="/rutas">Administrar rutas</a></div>
+    <p class="copyright">© 2026 Buses Universal. Todos los derechos reservados.</p>
+  </footer>
+</main>

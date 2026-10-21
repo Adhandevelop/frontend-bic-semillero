@@ -1,30 +1,59 @@
 <main class="login-page">
+  <div class="glow glow-primary"></div>
+  <div class="glow glow-secondary"></div>
   <section class="login-card">
-    <div class="login-heading">
-      <span>Sistema académico</span>
-      <h1>Gestión de Transporte</h1>
-      <p>Ingresa con tu usuario para administrar buses, conductores, rutas y viajes.</p>
-    </div>
+    <aside class="brand-panel">
+      <div>
+        <h1>Buses Universal</h1>
+        <p>The Kinetic Architect of modern fleet management.</p>
+      </div>
+      <div class="efficiency-card">
+        <span class="feature-icon">↯</span>
+        <h2>Efficiency Redefined</h2>
+        <p>Real-time tracking and seat management at your fingertips.</p>
+      </div>
+    </aside>
 
-    <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-    <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-
-    <form class="form-grid" [formGroup]="form" (ngSubmit)="ingresar()">
-      <div class="form-field">
-        <label for="username">Usuario</label>
-        <input id="username" type="text" autocomplete="username" formControlName="username">
-        <span class="field-error" *ngIf="form.controls.username.touched && form.controls.username.invalid">El usuario es obligatorio.</span>
+    <section class="form-panel">
+      <div class="login-heading">
+        <h2>Bienvenido</h2>
+        <p>Por favor, ingresa tus credenciales para acceder al panel de la flota.</p>
       </div>
 
-      <div class="form-field">
-        <label for="password">Contraseña</label>
-        <input id="password" type="password" autocomplete="current-password" formControlName="password">
-        <span class="field-error" *ngIf="form.controls.password.touched && form.controls.password.invalid">La contraseña es obligatoria.</span>
-      </div>
+      <div class="alert alert-error" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-success" *ngIf="success">{{ success }}</div>
 
-      <button class="btn btn-primary" type="submit" [disabled]="loading">
-        {{ loading ? 'Ingresando...' : 'Ingresar' }}
-      </button>
-    </form>
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="ingresar()">
+        <div class="form-field">
+          <label for="username">Usuario</label>
+          <div class="input-wrap">
+            <span class="input-icon">♙</span>
+            <input id="username" type="text" autocomplete="username" placeholder="Ingresa tu usuario" formControlName="username">
+          </div>
+          <span class="field-error" *ngIf="form.controls.username.touched && form.controls.username.invalid">El usuario es obligatorio.</span>
+        </div>
+
+        <div class="form-field">
+          <div class="password-label">
+            <label for="password">Contraseña</label>
+            <a href="#" (click)="$event.preventDefault()">¿Olvidaste tu contraseña?</a>
+          </div>
+          <div class="input-wrap">
+            <span class="input-icon">▣</span>
+            <input id="password" type="password" autocomplete="current-password" placeholder="Ingresa tu contraseña" formControlName="password">
+          </div>
+          <span class="field-error" *ngIf="form.controls.password.touched && form.controls.password.invalid">La contraseña es obligatoria.</span>
+        </div>
+
+        <label class="remember"><input type="checkbox"> <span>Recuérdame</span></label>
+        <button class="submit-button" type="submit" [disabled]="loading">
+          {{ loading ? 'INGRESANDO...' : 'ENVIAR' }}
+        </button>
+      </form>
+
+      <p class="account-help">¿No tienes una cuenta? <a href="#" (click)="$event.preventDefault()">¿Olvidaste tu contraseña?</a></p>
+      <div class="trust-row"><span>✓</span> Acceso seguro <span>◉</span> Plataforma protegida</div>
+    </section>
   </section>
+  <footer class="privacy">◈ &nbsp; Política de Privacidad</footer>
 </main>

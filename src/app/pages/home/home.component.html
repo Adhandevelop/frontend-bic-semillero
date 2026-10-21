@@ -1,0 +1,75 @@
+<main class="public-home">
+  <header class="home-header">
+    <a class="brand" routerLink="/">
+      <span class="brand-icon">●</span>
+      <span>Buses Universal</span>
+    </a>
+    <div class="header-actions">
+      <a class="login-link" routerLink="/login">Iniciar sesión</a>
+      <a class="register-link" routerLink="/login">Registrarse</a>
+    </div>
+  </header>
+
+  <section class="hero" id="consultar">
+    <div class="route-pattern"></div>
+    <div class="hero-content">
+      <span class="eyebrow">● Monitoreo satelital activo</span>
+      <h1>Consulta y monitorea tu viaje en tiempo real</h1>
+      <p>Ingresa tu código de boleto, número de viaje o puesto asignado para verificar el estado de tu bus y ubicación al instante.</p>
+
+      <div class="search-card">
+        <div class="search-tabs">
+          <button type="button" [class.active]="searchMode === 'Número de viaje'" (click)="seleccionarBusqueda('Número de viaje')">Número de viaje</button>
+          <button type="button" [class.active]="searchMode === 'Código de puesto'" (click)="seleccionarBusqueda('Código de puesto')">Código de puesto</button>
+          <button type="button" [class.active]="searchMode === 'Placa de bus'" (click)="seleccionarBusqueda('Placa de bus')">Placa de bus</button>
+        </div>
+        <div class="search-row">
+          <input [(ngModel)]="searchValue" (keyup.enter)="buscarTrayecto()" [placeholder]="searchMode === 'Número de viaje' ? 'Ej. VJ-8492' : searchMode === 'Código de puesto' ? 'Ej. 14B o #0981' : 'Ej. ABC-123'" />
+          <button class="search-button" type="button" (click)="buscarTrayecto()">⌕ <span>Buscar trayecto</span></button>
+        </div>
+        <p class="search-message" *ngIf="searchMessage">{{ searchMessage }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="section-heading">
+      <div><span class="section-kicker">Actualidad y beneficios</span><h2>Todo lo que necesitas para viajar mejor</h2></div>
+      <a routerLink="/login">Ver todos los viajes →</a>
+    </div>
+    <div class="feature-grid">
+      <article class="feature-card offer-card">
+        <span class="card-icon">♨</span><span class="offer-label">Oferta limitada</span>
+        <h3>Descuento del 20% en rutas nocturnas</h3>
+        <p>Viaja con total confort mientras duermes y despierta en tu destino ahorrando un 20% en salidas después de las 20:00 hrs.</p>
+        <div class="promo-code"><span>Código promocional</span><strong>NOCHE2024</strong></div>
+        <a routerLink="/login">Aprovechar oferta →</a>
+      </article>
+      <article class="feature-card">
+        <span class="card-icon blue">✦</span><h3>Tecnología a bordo</h3>
+        <p>Nueva flota con asientos reclinables ejecutivos y Wi-Fi 5G. Incorporamos unidades con suspensión neumática y conexión satelital.</p>
+        <a routerLink="/login">Conocer la flota →</a>
+      </article>
+      <article class="feature-card">
+        <span class="card-icon green">▣</span><h3>Itinerarios actualizados</h3>
+        <p>Revisa las nuevas salidas programadas hacia los destinos turísticos e interurbanos principales.</p>
+        <a routerLink="/login">Consultar rutas →</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="stats-section">
+    <div><span class="section-kicker">Nuestra operación</span><h2>Conectamos tus destinos</h2><p>Gestionamos cada trayecto con precisión, seguridad y tecnología para que llegues siempre a tiempo.</p></div>
+    <div class="stats-grid"><div><strong>24/7</strong><span>Monitoreo activo</span></div><div><strong>100%</strong><span>Viajes seguros</span></div><div><strong>5G</strong><span>Conectividad a bordo</span></div><div><strong>1</strong><span>Comunidad viajera</span></div></div>
+  </section>
+
+  <section class="contact-banner"><div><span class="card-icon">◌</span><h2>¿Necesitas ayuda con tu viaje?</h2><p>Estamos disponibles para acompañarte antes, durante y después de cada trayecto.</p></div><a routerLink="/login">Acceder a la plataforma →</a></section>
+
+  <footer class="home-footer">
+    <div class="footer-brand"><strong>● Buses Universal</strong><p>Líderes en conectividad interurbana nacional. Precisión en cada trayecto y tecnología en tiempo real.</p></div>
+    <div><h3>Servicios y flota</h3><a routerLink="/login">Servicio ejecutivo</a><a routerLink="/login">Mapa de cobertura</a><a routerLink="/login">Viajes programados</a></div>
+    <div><h3>Atención al pasajero</h3><a routerLink="/login">Preguntas frecuentes</a><a routerLink="/login">Equipaje y cambios</a><a routerLink="/login">Seguridad vial</a></div>
+    <div><h3>Plataforma</h3><a routerLink="/login">Iniciar sesión</a><a routerLink="/login">Gestión de buses</a><a routerLink="/login">Gestión de rutas</a></div>
+    <p class="copyright">© 2026 Buses Universal. Todos los derechos reservados.</p>
+  </footer>
+</main>
