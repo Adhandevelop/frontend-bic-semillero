@@ -10,29 +10,39 @@
   <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()" *ngIf="!loading || editando">
     <div class="form-field">
       <label for="nombre">Nombre</label>
-      <input id="nombre" type="text" formControlName="nombre">
-      <span class="field-error" *ngIf="form.controls.nombre.touched && form.controls.nombre.invalid">El nombre es obligatorio.</span>
+      <input id="nombre" type="text" formControlName="full_name">
+      <span class="field-error" *ngIf="form.controls.full_name.touched && form.controls.full_name.invalid">El nombre es obligatorio.</span>
+    </div>
+
+    <div class="form-field">
+      <label for="user">Usuario</label>
+      <input id="user" type="text" formControlName="user">
     </div>
 
     <div class="form-field">
       <label for="licencia">Licencia</label>
-      <input id="licencia" type="text" formControlName="licencia">
-      <span class="field-error" *ngIf="form.controls.licencia.touched && form.controls.licencia.invalid">La licencia es obligatoria.</span>
+      <input id="licencia" type="text" formControlName="license_number">
+      <span class="field-error" *ngIf="form.controls.license_number.touched && form.controls.license_number.invalid">La licencia es obligatoria.</span>
     </div>
 
+    <div class="form-field">
+      <label for="address">Dirección</label>
+      <input id="address" type="text" formControlName="address">
+    </div>
+    
     <div class="form-field">
       <label for="telefono">Teléfono</label>
-      <input id="telefono" type="text" formControlName="telefono">
+      <input id="telefono" type="text" formControlName="phone_number">
     </div>
 
-    <div class="form-field">
+    <!--<div class="form-field">
       <label for="estado">Estado</label>
-      <select id="estado" formControlName="estado">
+      <select id="estado" formControlName="state">
         <option value="activo">Activo</option>
         <option value="inactivo">Inactivo</option>
       </select>
-      <span class="field-error" *ngIf="form.controls.estado.touched && form.controls.estado.invalid">El estado es obligatorio.</span>
-    </div>
+      <span class="field-error" *ngIf="form.controls.state.touched && form.controls.state.invalid">El estado es obligatorio.</span>
+    </div>-->
 
     <div class="actions">
       <button class="btn btn-primary" type="submit" [disabled]="loading">Guardar</button>

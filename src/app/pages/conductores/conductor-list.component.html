@@ -16,18 +16,18 @@
             <th>ID</th>
             <th>Nombre</th>
             <th>Licencia</th>
+            <th>Dirección</th>
             <th>Teléfono</th>
-            <th>Estado</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let conductor of conductores">
             <td>{{ conductor.id }}</td>
-            <td>{{ conductor.nombre }}</td>
-            <td>{{ conductor.licencia }}</td>
-            <td>{{ conductor.telefono || 'No registrado' }}</td>
-            <td><span class="badge">{{ conductor.estado }}</span></td>
+            <td>{{ conductor.full_name }}</td>
+            <td>{{ conductor.license_number }}</td>
+            <td>{{ conductor.address || 'No registrado' }}</td>
+            <td>{{ conductor.phone_number || 'No registrado' }}</td>
             <td>
               <div class="actions">
                 <a class="btn btn-info" [routerLink]="['/conductores/editar', conductor.id]">Editar</a>
