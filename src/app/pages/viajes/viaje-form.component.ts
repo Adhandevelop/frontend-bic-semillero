@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { Observable, catchError, forkJoin, of } from 'rxjs';
 import { Bus } from '../../core/models/bus.model';
 import { Conductor } from '../../core/models/conductor.model';
 import { Ruta } from '../../core/models/ruta.model';
@@ -49,11 +49,21 @@ export class ViajeFormComponent implements OnInit {
   ngOnInit():void{const id=Number(this.route.snapshot.paramMap.get('id'));if(Number.isInteger(id)&&id>0){this.editando=true;this.viajeId=id;}this.cargarDatosIniciales();}
   cargarDatosIniciales():void{
     if(this.loading)return;this.loading=true;this.loadFailed=false;this.error='';
-    forkJoin({buses:this.busService.listarTodos(),conductores:this.conductorService.listarTodos(),rutas:this.rutaService.listar(),viaje:this.editando&&this.viajeId?this.viajeService.obtenerPorId(this.viajeId):of(null)}).subscribe({
+    const failures:string[]=[];
+    const load=<T>(label:string,request:Observable<T>,fallback:T):Observable<T>=>request.pipe(catchError((error:{status?:number})=>{
+      const reason=error.status===401?'sesión vencida':error.status===403?'sin permisos':error.status===404?'endpoint o registro no encontrado':error.status===0?'sin conexión con la API':'respuesta no disponible';
+      failures.push(label+' ('+(error.status?'HTTP '+error.status+': ':'')+reason+')');return of(fallback);
+    }));
+    forkJoin({
+      buses:load('Unidades',this.busService.listarTodos(),[] as Bus[]),
+      conductores:load('Conductores',this.conductorService.listarTodos(),[] as Conductor[]),
+      rutas:load('Rutas',this.rutaService.listar(),[] as Ruta[]),
+      viaje:this.editando&&this.viajeId?load('Viaje #'+this.viajeId,this.viajeService.obtenerPorId(this.viajeId),null as Viaje|null):of(null)
+    }).subscribe({
       next:data=>{
         this.buses=data.buses;this.conductores=data.conductores;this.rutas=data.rutas;
         if(data.viaje){this.originalBus=data.viaje.bus;this.originalRoute=data.viaje.ruta;this.form.patchValue({...data.viaje,fecha_hora_inicio:this.localDate(data.viaje.fecha_hora_inicio),fecha_hora_fin:data.viaje.fecha_hora_fin?this.localDate(data.viaje.fecha_hora_fin):''});}
-        this.loading=false;
+        this.loading=false;this.loadFailed=failures.length>0;if(this.loadFailed)this.error='No se pudo cargar: '+failures.join('; ')+'. Reintenta la carga.';
       },error:()=>{this.loading=false;this.loadFailed=true;this.error='No se pudieron cargar las rutas, unidades, conductores o datos del viaje.';}
     });
   }

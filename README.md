@@ -184,6 +184,20 @@ La ruta `/` usa la version actualizada de Stitch (22 de octubre de 2026): consul
 
 Archivos: `src/app/pages/home/home.component.ts`, `home.component.html`, `home.component.css` (cabecera, consulta y formulario) y `home-content.component.css` (tarjetas, novedades, comunidad y estilos adaptables).
 
+## Integracion de catalogos de rutas y viajes
+
+Correccion del 22 de octubre de 2026: el error generico de carga del formulario ocultaba que los servicios conservaban endpoints y campos de una API anterior. Se contrastaron las URLs, modelos y serializadores con el backend local en `backend/Proyecto_Semillero_Backend/DjangoProject1`.
+
+- Rutas: `/api/routes/routes/`, con `origin`, `destination` (IDs de Place) y `distance_km`. Se adaptan a origen/destino/distancia de las vistas y se conservan los IDs.
+- Lugares: `/api/geography/places/`, con `place_name`. Si no se pueden cargar etiquetas, se muestra Ubicacion #ID sin perder la ruta.
+- Viajes: `/api/trips/trips/`, con `bus`, `driver`, `route`, `date_time_start`, `date_time_end` y `trip_state`.
+- Estados: scheduled/programado, in_progress/en_curso, completed/finalizado y cancelled/cancelado. Iniciar/finalizar/cancelar usa PATCH del registro; el backend no define las acciones antiguas `iniciar/`, `finalizar/` o `cancelar/`.
+- Lecturas de rutas, lugares y viajes admiten arrays o paginas DRF; `api-pagination.ts` agrega todas las paginas.
+- Guardar rutas resuelve origen/destino contra ubicaciones registradas por nombre exacto no ambiguo o etiqueta de ID. No crea lugares nuevos. Estado de ruta no existe en el backend: el valor activa es solo compatibilidad de la interfaz, no un campo persistido ni una comprobacion de disponibilidad.
+- El formulario captura fallos por recurso y muestra codigo HTTP y motivo (sesion, permisos, endpoint o conexion), conserva los catalogos que si llegaron y bloquea guardar hasta completar una carga correcta.
+
+La comprobacion se realizo contra el codigo del backend y pruebas HTTP simuladas, sin autenticar ni modificar datos de produccion. Si el despliegue usa otro contrato debe contrastarse con esa version. Los errores 401/403 o de conexion siguen requiriendo una sesion con permisos y una API accesible.
+
 ## Programar y editar viajes
 
 El HTML recibido como vista de viajes corresponde al formulario de programacion. Se integra en `/viajes/nuevo` y `/viajes/editar/:id`, manteniendo el listado en `/viajes`.
@@ -194,7 +208,7 @@ El HTML recibido como vista de viajes corresponde al formulario de programacion.
 - Salida obligatoria y fin opcional, con fechas reales y fin posterior a salida. Entrada y visualizacion en America/Bogota (UTC-05:00); envio ISO UTC independiente de la zona del navegador.
 - Resumen de capacidad y estado registrado del bus, licencia/contacto del conductor y distancia de la ruta cuando existe. No se inventan tiempos de transito, GPS, disponibilidad horaria ni ausencia de conflictos.
 - Guardado mediante los metodos existentes de `ViajeService`, conservando bus, conductor, ruta, fechas y estado. Validacion de referencias contra los catalogos cargados, bloqueo de envios duplicados y de guardado tras error de carga, y reintento.
-- No se envian SMS ni notificaciones. Conflictos y disponibilidad deben validarse en el backend. Se conserva el contrato actual de endpoints; este cambio no migra la API de viajes o rutas.
+- No se envian SMS ni notificaciones. Conflictos y disponibilidad deben validarse en el backend. Los servicios de rutas y viajes adaptan sus campos de vista al contrato Django documentado abajo.
 
 Archivos: `src/app/pages/viajes/viaje-form.component.ts`, `viaje-form.component.html` y `viaje-form.component.css` (separado de los estilos del listado).
 
@@ -314,6 +328,8 @@ La vista publica `/registro` adapta el HTML de Stitch a un componente Angular st
 Archivos: `src/app/pages/registro/registro.component.ts`, `registro.component.html` y `registro.component.css`.
 
 ## Estado de verificacion
+
+La correccion de catalogos paso `npm run build` el 22 de octubre de 2026. Las pruebas con HTTP simulado verificaron URLs, paginacion, IDs/etiquetas de lugares y alternativa sin etiquetas, campos y estados de viajes, payload de rutas y PATCH de estado. Tambien paso la regresion del formulario (hora de Colombia, fechas, recursos, creacion/edicion y errores). Se mantienen advertencias de paquete inicial, estilos y Leaflet.
 
 El formulario de viajes paso la compilacion completa el 22 de octubre de 2026. Se verificaron con servicios simulados conversion horaria de Colombia a UTC y viceversa, fechas invalidas y fin anterior a salida, ruta inversa registrada, referencias existentes, recursos activos y asignaciones actuales al editar, payloads de creacion/edicion, bloqueo de duplicados y errores de carga/guardado. No se crearon viajes reales. Quedan advertencias de paquete inicial, estilos y Leaflet.
 
