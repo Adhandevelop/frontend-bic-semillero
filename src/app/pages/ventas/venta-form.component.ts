@@ -18,10 +18,11 @@ export class VentaFormComponent implements OnInit {
     this.invoiceLoading=true;this.invoiceError='';
     this.sales.consultar(this.result.id).subscribe({next:sale=>{this.result=sale;this.invoiceLoading=false;},error:()=>{this.invoiceLoading=false;this.invoiceError='No se pudo consultar la factura. La venta registrada se conserva; no vuelvas a emitir el tiquete.';}});
   }
-  addingClient=false;creatingClient=false;clientError='';clientNotice='';
+  draftPassenger:Omit<Cliente,'id'|'role'>|null=null;
+  addingClient=false;clientError='';clientNotice='';
   newClient={name:'',telephone:'',email:'',documentType:'CC',documentNumber:''};
   openClient():void{if(this.locked)return;this.addingClient=true;this.clientError='';this.clientNotice='';this.paid=false;}
-  cancelClient():void{if(this.creatingClient)return;this.addingClient=false;this.clientError='';}
+  cancelClient():void{if(this.locked)return;this.addingClient=false;this.clientError='';}
   createClient():void{
     if(this.locked)return;
     this.clientError='';
@@ -33,29 +34,24 @@ export class VentaFormComponent implements OnInit {
     const existing=this.clients.find(c=>c.identification_number.toLocaleLowerCase()===document.toLocaleLowerCase());
     if(existing){this.clientError='Ya existe un cliente con ese documento. Selecciónalo en el directorio de pasajeros.';return;}
     if(this.clients.some(c=>c.email?.toLocaleLowerCase()===email)){this.clientError='Ya existe un cliente con ese correo. Búscalo en el directorio de pasajeros.';return;}
-    // The existing account API requires credentials. Use an unpredictable initial
-    // password rather than the document; never persist it in browser storage.
-    const random=crypto.getRandomValues(new Uint32Array(8));
-    const password='Aa!'+Array.from(random,n=>n.toString(36)).join('');
-    this.creatingClient=true;
-    this.clientsApi.crear({username:document,first_name:names.slice(0,-1).join(' '),last_name:names[names.length-1],email,telephone,identification_number:document,password}).subscribe({
-      next:client=>{this.clients=[...this.clients.filter(c=>c.id!==client.id),client];this.clientId=client.id;this.search='';this.addingClient=false;this.creatingClient=false;this.paid=false;this.newClient={name:'',telephone:'',email:'',documentType:'CC',documentNumber:''};this.clientNotice='Cliente creado y seleccionado para la venta. El tipo de documento aún no se almacena en el sistema.';},
-      error:(err)=>{this.creatingClient=false;this.clientError=err.status===400?'No se pudo crear el cliente. Revisa si el documento o el correo ya están registrados.':err.status===403?'Tu cuenta no tiene permisos para crear clientes.':err.status===401?'La sesión venció. Inicia sesión nuevamente.':'No se pudo confirmar el registro. Verifica el directorio antes de reintentar; el servicio de cuentas puede requerir corrección.';}
-    });
+    this.draftPassenger={username:'',first_name:name,last_name:'',email,telephone,identification_number:document};
+    this.clientId=null;this.search='';this.addingClient=false;this.paid=false;
+    this.clientNotice='Datos preparados. El cliente se buscará o creará al confirmar la venta; todavía no se ha registrado.';
   }
+  selectRegisteredClient():void{this.draftPassenger=null;this.clientNotice='';this.paid=false;}
   loading=false;saving=false;error='';uncertain=false;result:SaleResult|null=null;
   clients:Cliente[]=[];trips:SaleTrip[]=[];seats:SaleSeat[]=[];fares:SaleFare[]=[];tickets:SaleTicket[]=[];routes:Ruta[]=[];
   tripId:number|null=null;clientId:number|null=null;seatId:number|null=null;search='';payment:AdminSalePayload['payment_method']='cash';paid=false;
   constructor(private sales:VentaService,private clientsApi:ClienteService,private routesApi:RutaService,private route:ActivatedRoute){}
   ngOnInit():void{this.cargar();}
-  get locked():boolean{return this.creatingClient||this.loading||this.saving||this.uncertain||!!this.result;}
+  get locked():boolean{return this.loading||this.saving||this.uncertain||!!this.result;}
   get trip():SaleTrip|undefined{return this.trips.find(t=>t.id===this.tripId);}
-  get client():Cliente|undefined{return this.clients.find(c=>c.id===this.clientId);}
+  get client():Omit<Cliente,'id'|'role'>|undefined{return this.draftPassenger??this.clients.find(c=>c.id===this.clientId);}
   get seat():SaleSeat|undefined{return this.availableSeats.find(s=>s.id===this.seatId);}
   get amount():number|null{const fare=this.fares.find(f=>f.trip===this.tripId);return fare&&Number.isInteger(fare.amount_cents)&&fare.amount_cents>0?fare.amount_cents/100:null;}
   get availableSeats():SaleSeat[]{return this.seats.filter(s=>s.bus===this.trip?.bus).sort((a,b)=>a.row.localeCompare(b.row,undefined,{numeric:true})||a.col.localeCompare(b.col,undefined,{numeric:true}));}
   get filteredClients():Cliente[]{const q=this.search.trim().toLocaleLowerCase();return this.clients.filter(c=>!q||[this.nombre(c),c.identification_number,c.email].join(' ').toLocaleLowerCase().includes(q)).slice(0,20);}
-  nombre(c:Cliente):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
+  nombre(c:Pick<Cliente,'first_name'|'last_name'|'username'>):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
   tripLabel(t:SaleTrip):string{const r=this.routes.find(r=>r.id===t.route);return '#'+t.id+' · '+(r?r.origen+' → '+r.destino:'Ruta #'+t.route);}
   sold(id:number):boolean{return this.tickets.some(t=>t.trip===this.tripId&&t.seat===id&&t.status==='issued');}
   get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!!this.trip&&!!this.seat&&!this.sold(this.seatId!)&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
@@ -86,5 +82,6 @@ export class VentaFormComponent implements OnInit {
     },error:()=>{this.saving=false;this.error='No se pudo verificar la disponibilidad de la silla. No se envió la venta.';}});
   }
 }
+
 
 

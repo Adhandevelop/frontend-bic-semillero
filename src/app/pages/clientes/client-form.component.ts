@@ -25,12 +25,14 @@ export class ClientFormComponent {
     const payload={...raw,first_name:raw.first_name.trim(),last_name:raw.last_name.trim(),username:raw.username.trim(),email:raw.email.trim().toLowerCase(),telephone:raw.telephone.trim()};
     this.service.crear(payload).subscribe({next:(client)=>{this.created=true;this.saving=false;this.form.controls.password.reset();this.form.controls.confirmation.reset();void this.router.navigateByUrl(continueToPurchase?'/ventas/nueva?cliente='+client.id:'/clientes');},error:(err:{status?:number;error?:unknown})=>{
       this.saving=false;
-      this.error=err.status===401?'La sesión venció. Inicia sesión nuevamente.':err.status===403?'Tu cuenta no tiene permisos para registrar clientes.':err.status===400?'Revisa los datos indicados por el servidor.':'No se pudo registrar el cliente. Revisa la conexión y el servicio de cuentas antes de reintentar.';
-      if(err.status===400&&err.error&&typeof err.error==='object'){
-        const labels:Record<string,string>={username:'Usuario',password:'Contraseña',email:'Correo',identification_number:'Documento',first_name:'Nombres',last_name:'Apellidos',telephone:'Teléfono',non_field_errors:'Registro'};
+      const status=err.status;
+      this.error=status===0?'No se pudo conectar con la API. Revisa la conexión y la configuración de acceso al servidor.':status===401?'La sesión venció. Inicia sesión nuevamente.':status===403?'Tu cuenta no tiene permisos para registrar clientes.':status===400||status===422?'Revisa los datos indicados por el servidor.':status===404?'No se encontró el servicio de registro de clientes (HTTP 404).':status===409?'El registro entra en conflicto con una cuenta existente. Revisa documento, correo y usuario.':status!==undefined&&status>=500?'El servicio de cuentas presentó un error interno (HTTP '+status+'). Verifica si el cliente se creó antes de reintentar; este fallo requiere revisar el backend.':'No se pudo confirmar el registro del cliente. Verifica el directorio antes de reintentar.';
+      if((status===400||status===422||status===409)&&err.error&&typeof err.error==='object'){
+        const labels:Record<string,string>={username:'Usuario',password:'Contraseña',email:'Correo',identification_number:'Documento',first_name:'Nombres',last_name:'Apellidos',telephone:'Teléfono',non_field_errors:'Registro',detail:'Detalle'};
         this.fieldErrors=Object.entries(err.error).filter(([key])=>key in labels).map(([key,value])=>labels[key]+': '+(Array.isArray(value)?value.filter(v=>typeof v==='string').join(' '):typeof value==='string'?value:'Revisa este campo.'));
       }
     }});
   }
 }
+
 

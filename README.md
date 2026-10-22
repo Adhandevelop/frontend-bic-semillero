@@ -148,15 +148,17 @@ Queda pendiente almacenar y mapear el tipo de documento: el backend actual fija 
 
 ### Registro rápido desde ventas
 
-**Añadir cliente** sustituye el selector de pasajero por un formulario dentro de la venta: nombre completo, celular, correo, tipo y número de documento. Crear y seleccionar realiza el POST de cuenta, agrega el cliente al catálogo y lo selecciona sin perder viaje ni silla. Cancelar conserva el pasajero anterior. No permite emitir mientras el formulario está abierto ni crear cuentas simultáneas; valida campos y duplicados en el catálogo y mantiene los datos ante errores.
+**Añadir cliente** abre los cinco campos dentro de la venta. **Usar estos datos en la venta** valida y prepara al pasajero en memoria, conservando viaje y silla; no crea una cuenta todavía. Al confirmar la venta, un único POST a `/api/sales/admin-sales/` envía `identification_number`, `name`, `email`, `telephone`, `trip`, `seat` y `payment_method`. El backend busca o crea al cliente y emite el tiquete. Este flujo no utiliza el POST separado de cuentas ni genera credenciales desde Angular.
 
-Para adaptar el contrato existente, el número de documento se usa como usuario, el último término del nombre como apellido y el resto como nombres. Se genera una contraseña inicial aleatoria con Web Crypto, sin mostrarla ni almacenarla localmente. El acceso del pasajero requiere implementar activación/recuperación; no se usa el documento como contraseña. El tipo de documento se selecciona pero todavía no se persiste porque no existe en la API. Los errores de validadores del backend descritos abajo siguen siendo un impedimento para crear cuentas reales.
+El precio es de solo lectura y `amount_cents` no se envía. El tipo de documento sigue sin formar parte del contrato de venta y no se persiste. Cancelar conserva el pasajero previo; elegir un cliente registrado descarta el pasajero preparado. Mientras se edita el formulario no se permite emitir. La creación del cliente no se anuncia como exitosa antes de recibir la venta.
 
 ### Registrar cliente
 
 `/clientes/nuevo` es una ruta administrativa protegida, accesible desde el dashboard de clientes. El formulario basado en Stitch envía documento, nombres, apellidos, teléfono, correo, usuario y contraseña mediante POST a `/api/accounts/users/`; el backend fija el rol `client`. Valida campos obligatorios, longitudes, formatos y confirmación de contraseña, bloquea envíos duplicados y muestra errores de validación del servidor. No guarda contraseñas en almacenamiento local.
 
 Tipo de documento, nacimiento, género, residencia, preferencias, emergencia y consentimiento persistido aún requieren soporte de API. Se identifican como pendientes. Guardar vuelve al directorio; la acción alternativa abre la venta administrativa con el cliente preseleccionado únicamente después de una creación exitosa.
+
+El registro administrativo distingue errores de conexión, sesión, permisos, validación, conflicto, servicio inexistente y errores internos HTTP 5xx. Los fallos conservan el formulario y no muestran una creación exitosa. Para diagnosticar un caso real, revisar el código HTTP y la respuesta de `POST /api/accounts/users/` en la pestaña Red del navegador, sin copiar contraseñas ni tokens.
 
 **Impedimento detectado en el backend local:** `UserSerializer.validate_username` llama `value.get("username")` cuando `value` es un string; `validate_password` también trata su argumento como diccionario. Estos validadores necesitan corrección en el backend para que el POST funcione. Esta modificación del frontend no cambia esos archivos. La creación real debe verificarse después de corregirlos.
 
@@ -240,6 +242,8 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
 
 
 
