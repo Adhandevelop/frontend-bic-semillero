@@ -344,6 +344,12 @@ La vista publica `/registro` adapta el HTML de Stitch a un componente Angular st
 
 Archivos: `src/app/pages/registro/registro.component.ts`, `registro.component.html` y `registro.component.css`.
 
+## Despliegue: hoja de estilos de viajes
+
+Si Docker muestra `Could not find stylesheet file './viaje-list.component.css'`, comprobar que el checkout del servidor contiene `src/app/pages/viajes/viaje-list.component.css`. El commit `7430836` incorpora este archivo junto con la plantilla del dashboard.
+
+Actualizar el repositorio del servidor con `git pull --ff-only`, confirmar la presencia del archivo y reconstruir el servicio `frontend`. Reconstruir una copia antigua sin actualizar Git no incorpora archivos pendientes. Si el archivo existe en el servidor pero no en la imagen, revisar el contexto de build, `COPY` y `.dockerignore`.
+
 ## Estado de verificacion
 
 El dashboard de viajes paso `npm run build` el 22 de octubre de 2026. Se comprobaron con servicios simulados nombres de catalogos, fechas y zona horaria, filtros, conteos, paginacion, proximas salidas, transiciones permitidas y solicitudes duplicadas, errores de eliminacion, CSV y fallos parciales de catalogos. No se modificaron viajes reales. Quedan advertencias de paquete inicial, estilos y Leaflet.
