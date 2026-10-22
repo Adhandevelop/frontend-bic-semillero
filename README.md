@@ -1,408 +1,195 @@
-# Sistema de Gestion de Transporte
+﻿# Buses Universal — Frontend
 
-Frontend academico desarrollado en Angular para consumir una API REST creada con Django REST Framework.
+Aplicación académica de gestión de transporte desarrollada con Angular 18 y TypeScript. Consume una API de Django REST Framework y reúne un panel administrativo y un portal de pasajeros basado en diseños de Stitch.
 
-## Descripcion
+## Estado del proyecto
 
-La aplicacion permite gestionar:
+| Área | Disponible | Pendiente |
+| --- | --- | --- |
+| Administración | Acceso con JWT y verificación de rol administrador; dashboards de flota y viajes | Integraciones operativas adicionales |
+| Buses | Consulta, búsqueda, filtros, creación, edición y eliminación | Guardar fotos y equipamiento; telemetría real |
+| Conductores | Consulta, ficha, búsqueda, paginación, exportación CSV y gestión de registros | Guardar fotos, certificaciones y datos complementarios; verificaciones oficiales |
+| Rutas y viajes | Gestión con la API; asignación de recursos, horarios y cambios de estado de viajes | Validación de conflictos y disponibilidad horaria en el backend |
+| Clientes | Listado administrativo de cuentas con rol `client`, búsqueda y paginación | Gestión adicional de clientes |
+| Portal de pasajeros | Inicio, formularios de acceso y registro, perfil y compra de demostración | Autenticación y registro reales de pasajeros, reservas, ventas y pagos |
+| Ubicación | Mapa Leaflet/OpenStreetMap con tres buses estáticos en GeoJSON | Recepción de lecturas del dispositivo GPS y actualización en vivo |
 
-- Buses
-- Conductores
-- Rutas
-- Viajes
-- Consulta publica de ubicacion de buses (actualmente con posiciones estaticas de ejemplo).
+**Generar venta** abre la simulación de compra existente: no registra ventas, reserva puestos ni realiza cobros. Los datos del perfil de pasajero, las promociones y el monedero son de ejemplo.
 
-Incluye listado, creacion, edicion, eliminacion y cambio de estado para viajes.
+## Requisitos e instalación
 
-## Tecnologias
+- Node.js 20 y npm.
+- Backend accesible para utilizar los módulos administrativos.
+- Cuenta de administrador existente en el backend.
 
-- Angular
-- TypeScript
-- Componentes standalone
-- Formularios reactivos
-- HttpClient
-- CSS propio
-- Login con token Bearer
-- Leaflet 1.9 para el mapa interactivo, con cartografia de OpenStreetMap.
-- GeoJSON para representar las ubicaciones de los buses.
-
-## Requisitos
-
-- Node.js 20 o superior
-- npm
-- Angular CLI
-- Backend activo en:
-
-```text
-http://127.0.0.1:8000/api/
-```
-
-## Instalacion
+Desde la carpeta que contiene `package.json`:
 
 ```bash
-npm install
+npm ci
+npm start
 ```
 
-## Ejecutar el proyecto
+Abrir [http://localhost:4200](http://localhost:4200). Angular CLI se instala con las dependencias; no se necesita una instalación global.
+
+## Configuración de la API
+
+La configuración está en [api.config.ts](src/app/core/config/api.config.ts):
+
+```ts
+export const API_BASE_URL = '/api';
+```
+
+Las peticiones usan el mismo origen que el frontend. En producción, el servidor web debe dirigir `/api/` a Django y servir las rutas de Angular mediante su `index.html`.
+
+En desarrollo, este repositorio no incluye un proxy configurado para `ng serve`. Para conectar un Django local se debe configurar un proxy de Angular o cambiar la URL base, por ejemplo a `http://127.0.0.1:8000/api`, y permitir el origen del frontend en la configuración CORS del backend. Sin ese ajuste, las peticiones relativas a `/api` llegarán al servidor de Angular.
+
+### Recursos utilizados
+
+| Recurso | Endpoint |
+| --- | --- |
+| Inicio de sesión | `/api/token/` |
+| Renovación de token configurada | `/api/token/refresh/` |
+| Usuarios y perfil del administrador | `/api/accounts/users/` y `/api/accounts/users/:id/` |
+| Buses | `/api/fleet/buses/` |
+| Conductores | `/api/fleet/drivers/` |
+| Rutas | `/api/routes/routes/` |
+| Lugares de origen y destino | `/api/geography/places/` |
+| Viajes | `/api/trips/trips/` |
+
+El login administrativo envía `username` y `password`, verifica el perfil y almacena los tokens cuando el rol es `admin`. El guard protege el layout y sus rutas hijas; los permisos definitivos corresponden al backend. La existencia de una URL de renovación no implica renovación automática de sesión.
+
+### Contratos de rutas y viajes
+
+Los servicios adaptan los nombres del backend a los usados por las vistas:
+
+- Rutas: `origin`, `destination` y `distance_km`. Origen y destino son IDs de lugares registrados; los nombres se consultan en el catálogo de lugares. Si las etiquetas no cargan, se muestra `Ubicación #ID`.
+- Viajes: `bus`, `driver`, `route`, `date_time_start`, `date_time_end` y `trip_state`.
+- Estados de viaje: `scheduled` → programado, `in_progress` → en curso, `completed` → finalizado y `cancelled` → cancelado. Los cambios de estado usan `PATCH` sobre el viaje.
+- Las consultas de catálogos admiten arrays o paginación DRF. [api-pagination.ts](src/app/core/services/api-pagination.ts) reúne las páginas mediante el parámetro `page`.
+
+Al guardar una ruta, origen y destino deben corresponder a lugares existentes y no ambiguos. El backend actual no tiene estado de ruta: `activa` es un valor de compatibilidad de la interfaz, no una validación operativa persistida.
+
+## Navegación
+
+### Portal público
+
+| Ruta | Vista |
+| --- | --- |
+| `/` | Inicio, consulta de viajes y búsqueda de rutas de demostración |
+| `/clientes/login` | Formulario de acceso de pasajeros; autenticación pendiente |
+| `/registro` | Formulario de registro; creación de cuentas pendiente |
+| `/clientes/panel` | Vista previa del perfil de pasajero con datos ficticios |
+| `/clientes/comprar` | Simulación de compra y selección de asiento |
+| `/ubicacion` | Mapa de buses estáticos de ejemplo |
+| `/login` | Acceso administrativo |
+
+### Panel administrativo
+
+| Ruta | Función |
+| --- | --- |
+| `/dashboard` | Resumen de operación |
+| `/clientes` | Consulta de clientes reales, filtrados por rol `client` |
+| `/buses` | Gestión de buses |
+| `/conductores` | Gestión de conductores |
+| `/rutas` | Gestión de rutas |
+| `/viajes` | Dashboard, filtros, próximas salidas y gestión de viajes |
+
+Formularios de creación: `/buses/nuevo`, `/conductores/nuevo`, `/rutas/nueva` y `/viajes/nuevo`. La edición usa `/<módulo>/editar/:id`.
+
+La navegación está definida en [app.routes.ts](src/app/app.routes.ts). El acceso **Generar venta** del menú administrativo lleva a `/clientes/comprar`; programar servicios sigue disponible en Viajes.
+
+## Comportamientos importantes
+
+### Gestión administrativa
+
+- Los formularios de buses guardan placa, modelo, capacidad y estado. Los de conductores guardan nombre completo, usuario asociado, licencia, dirección y teléfono. El usuario asociado debe existir previamente.
+- Fotos PNG, JPG y WEBP de hasta 5 MB se previsualizan localmente. Fotos, equipamiento y datos complementarios de conductor no se envían a la API.
+- El formulario de viajes selecciona una ruta existente, bus y conductor. Intercambiar origen y destino requiere una ruta inversa registrada. La salida es obligatoria y el fin, opcional, debe ser posterior.
+- Horarios y filtros de fecha de viajes usan `America/Bogota` (UTC−05:00); los formularios envían fechas ISO UTC.
+- Las exportaciones CSV incluyen los resultados filtrados, no solo la página visible. No generan manifiestos oficiales ni PDF.
+- Los catálogos secundarios que fallen se identifican en pantalla; el listado de viajes puede conservar los registros mostrando sus referencias por ID.
+
+### Dashboard de rutas
+
+`/rutas` muestra el catalogo real con busqueda por ID/origen/destino, filtros de origen y distancia, nueve registros por pagina, exportacion CSV, actualizacion, edicion y eliminacion confirmada. PDF permanece pendiente.
+
+Los indicadores cuentan rutas, suman distancias validas y deduplican terminales por ID. La suma de tramos no equivale a longitud vial unica. Estado operativo, regiones, duraciones y reportes de Invias/DITRA no estan conectados; la tabla indica **Registrada**, sin presentar el estado de compatibilidad como disponibilidad real.
+
+**Ver mapa** usa los GeoJSON `place_point` de las terminales de la ruta seleccionada. Muestra los puntos validos y una conexion recta entre ambos, no un trazado de carretera ni GPS en vivo. Si faltan coordenadas o el mapa base no carga, muestra un aviso. Leaflet se carga al iniciar el visor.
+
+Archivos: `src/app/pages/rutas/ruta-list.component.*` y `ruta-map.component.ts`. El servicio conserva las coordenadas en `origen_punto` y `destino_punto`.
+
+### Demostraciones y servicios pendientes
+
+- La búsqueda de reservas del inicio solo abre la combinación de ejemplo Bogotá Salitre → Medellín, 24 de octubre de 2026, un adulto y solo ida. Otras selecciones muestran un aviso. Esta fecha está fijada en el código y debe revisarse al actualizar la demostración.
+- La compra permite cambiar horario, piso y asiento y recalcula el total. El inventario es local, no bloquea puestos en el servidor. Los datos están en [booking.data.ts](src/app/pages/booking/booking.data.ts).
+- El perfil público de pasajero usa [client-panel.data.ts](src/app/pages/client-panel/client-panel.data.ts). Antes de mostrar datos personales reales debe conectarse y protegerse con autenticación de pasajeros.
+- Los formularios de login y registro de pasajeros validan entradas, pero no envían credenciales ni crean cuentas. Google, Apple y recuperación de contraseña están pendientes.
+- Boletín, redes sociales, WhatsApp, documentos legales y otras acciones sin integración muestran avisos; no simulan suscripciones ni envían mensajes.
+
+### Mapa y GPS
+
+El mapa utiliza Leaflet 1.9 y teselas de OpenStreetMap, que requieren internet. Las tres posiciones estáticas están en [bus-locations.mock.ts](src/app/core/data/bus-locations.mock.ts).
+
+Cada ubicación usa GeoJSON `Point` con coordenadas **[longitud, latitud]**, en WGS84/SRID 4326. El flujo previsto es dispositivo GPS → `PointField` en el backend → API GeoJSON → mapa. El frontend todavía no consume lecturas reales.
+
+Capacidad no equivale a puestos libres. Ocupación, velocidad, andenes, alertas y datos de telemetría ilustrativos no deben interpretarse como información operativa en vivo.
+
+## Compilación y despliegue
 
 ```bash
-ng serve
+npm run build
 ```
 
-Abrir en el navegador:
+Los archivos para servir con Nginx se generan en:
 
 ```text
-http://localhost:4200/
+dist/sistema-gestion-transporte-frontend/browser/
 ```
 
-## Rutas del frontend
+En el servidor con Docker Compose, ejecutar desde el directorio del despliegue:
 
-- `/`: pagina publica de inicio.
-- `/login`: inicio de sesion administrativo.
-- `/clientes/comprar`: simulacion de seleccion de horario, asiento, pasajero y resumen de compra.
-- `/clientes/panel`: vista previa publica del panel de informacion del pasajero con datos de ejemplo.
-- `/clientes/login`: inicio de sesion de pasajeros por correo o documento (autenticacion pendiente).
-- `/registro`: registro publico de clientes, accesible desde el inicio y el login.
-- `/ubicacion`: mapa publico con buses estaticos de ejemplo, accesible desde el inicio.
+```bash
+git pull --ff-only
+docker compose up -d --build --no-deps frontend
+```
 
-Las siguientes rutas requieren autenticacion:
+Los archivos de Docker Compose, Dockerfile y configuración Nginx pertenecen al despliegue; no están incluidos en esta carpeta del frontend. Antes de desplegar, confirmar que las plantillas y hojas de estilos nuevas estén versionadas.
 
-- `/clientes`: listado administrativo de clientes con busqueda y paginacion.
-- `/dashboard`
-- `/buses`
-- `/buses/nuevo`
-- `/buses/editar/:id`
-- `/conductores`
-- `/conductores/nuevo`
-- `/conductores/editar/:id`
-- `/rutas`
-- `/rutas/nueva`
-- `/rutas/editar/:id`
-- `/viajes`
-- `/viajes/nuevo`
-- `/viajes/editar/:id`
+### Diagnóstico rápido
 
-## Estructura principal
+| Problema | Qué revisar |
+| --- | --- |
+| `Could not find stylesheet file` | Archivo presente en Git y en el checkout del servidor; contexto de build, `COPY` y `.dockerignore` |
+| HTTP 401 | Sesión o token vencido; volver a iniciar sesión |
+| HTTP 403 | Rol y permisos de la cuenta en Django |
+| HTTP 404 en catálogos | Endpoint, versión del backend y configuración de `/api/` en el servidor |
+| Fallo de conexión o respuesta HTML en vez de JSON | Backend, proxy de desarrollo, CORS o reglas de Nginx |
+| Mapa base sin cargar | Acceso a internet para las teselas de OpenStreetMap |
+
+## Verificación y pendientes técnicos
+
+Última compilación registrada: **22 de octubre de 2026**, correcta. Hay advertencias por tamaño del paquete inicial, estilos de componentes y Leaflet en formato CommonJS. Los límites se definen en `angular.json`.
+
+Se realizaron comprobaciones con servicios simulados sobre filtros, paginación, contratos de API, fechas, formularios, cambios de estado, conteos de rutas, puntos GeoJSON y exportaciones CSV; no sustituyen una prueba de integración con el backend desplegado. `package.json` no configura un comando `npm test`.
+
+Pendientes prioritarios:
+
+- Conectar autenticación, registro y perfil reales de pasajeros.
+- Implementar ventas, reservas, pagos y emisión de tiquetes.
+- Integrar el dispositivo y las lecturas GPS/IoT.
+- Ampliar el backend para fotos, equipamiento y certificaciones.
+- Resolver la diferencia del estado de mantenimiento: el frontend usa `mantenimiento` y el modelo del backend local define `Maintenance`; actualmente no hay adaptación entre ambos.
+- Optimizar la carga inicial y los estilos para reducir las advertencias de compilación.
+
+## Organización y mantenimiento
 
 ```text
 src/app/
-├── core/
-│   ├── models/
-│   ├── data/          # Posiciones GeoJSON de ejemplo
-│   └── services/
-├── pages/
-│   ├── dashboard/
-│   ├── home/
-│   ├── login/
-│   ├── registro/
-│   ├── ubicacion/
-│   ├── buses/
-│   ├── conductores/
-│   ├── rutas/
-│   └── viajes/
-├── shared/
-│   ├── navbar/
-│   └── layout/
-├── app.config.ts
-├── app.routes.ts
-└── app.component.ts
+├── core/       # Configuración, modelos, servicios, guards y datos de ejemplo
+├── pages/      # Módulos administrativos y vistas del portal de pasajeros
+├── shared/     # Layout administrativo y barra de navegación
+└── app.routes.ts
 ```
 
-## Backend
-
-El proyecto consume los siguientes recursos desde Django REST Framework:
-
-- `buses`
-- `conductores`
-- `rutas`
-- `viajes`
-
-URL base usada por los servicios:
-
-```text
-http://127.0.0.1:8000/api/
-```
-
-Endpoint de autenticacion configurado:
-
-```text
-http://127.0.0.1:8000/api/token/
-```
-
-Este endpoint corresponde al formato comun de Django REST Framework Simple JWT y espera `username` y `password`.
-
-La configuracion se encuentra en `src/app/core/config/api.config.ts`. Modificar ese archivo para apuntar a otro entorno.
-
-## Mapa y ubicaciones de buses
-
-La vista `/ubicacion` adapta el diseno de Stitch a un componente Angular. El mapa SVG inicial fue reemplazado por Leaflet y OpenStreetMap.
-
-- Muestra tres buses con posiciones fijas de ejemplo en Bogota.
-- Permite seleccionar un bus desde la lista o su marcador, consultar su placa, conductor y coordenadas, acercar o alejar el mapa y ver todos los buses.
-- Permite copiar el enlace de la vista. El contacto del operador muestra un aviso hasta disponer de datos reales.
-- Los horarios, el itinerario y la telemetria del diseno son de ejemplo.
-- Las posiciones no se actualizan automaticamente ni se consultan en la base de datos: el dispositivo GPS sigue en desarrollo.
-- El mapa base requiere conexion a internet para cargar las teselas de OpenStreetMap; si falla, se muestra un aviso.
-
-Archivos principales:
-
-- `src/app/core/data/bus-locations.mock.ts`: coleccion de posiciones estaticas.
-- `src/app/core/models/bus-location.model.ts`: tipos para la coleccion GeoJSON y las propiedades de cada bus.
-- `src/app/pages/ubicacion/`: componente, plantilla y estilos de la vista.
-- `angular.json`: incluye los estilos de Leaflet.
-
-Cada bus se representa como una `Feature` con geometria `Point`. Las coordenadas GeoJSON usan el orden **[longitud, latitud]**, en WGS84 (SRID 4326):
-
-```json
-{
-  "type": "Feature",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [-74.0841, 4.6982]
-  },
-  "properties": {
-    "id": 1042,
-    "unit": "1042",
-    "plate": "WTL-402",
-    "driver": "Carlos Restrepo"
-  }
-}
-```
-
-La integracion futura prevista es: dispositivo GPS -> base de datos con `PointField` -> API que serializa a GeoJSON -> mapa. `PointField` pertenece al backend; este frontend consume la geometria. El endpoint de ubicaciones y las actualizaciones automaticas aun no estan implementados.
-
-## Pagina principal publica
-
-La ruta `/` usa la version actualizada de Stitch (22 de octubre de 2026): consulta de trayecto, formulario de reservas, rutas populares, novedades con fotografias, soporte, comunidad, boletin y pie de pagina. Se conservan los accesos al mapa de ejemplo, login de clientes, registro y acceso administrativo.
-
-- Reservas con origen, destino, ida, regreso opcional y cantidad de pasajeros. Se valida que las ciudades sean distintas, la fecha sea real y no pasada (zona America/Bogota), y el regreso no preceda a la ida.
-- Solo la combinacion disponible en el simulador (Bogota Salitre - Medellin, 24 de octubre de 2026, 1 adulto, solo ida) abre `/clientes/comprar`. Otras solicitudes muestran el catalogo pendiente, sin cambiar el destino o fecha en silencio.
-- Rutas populares Bogota - Medellin, Cali y Bucaramanga con tarifas de ejemplo, sin inventar salidas disponibles hoy. Reservar Medellin abre el simulador; las otras rutas muestran un aviso.
-- Se mantienen las pestanas de consulta por viaje, puesto y placa; la consulta real sigue pendiente y se ofrece el mapa de buses estaticos.
-- Tres imagenes de novedades reutilizadas del HTML de referencia mediante URLs externas; requieren internet. Promociones y codigos son de ejemplo, sin aplicar descuentos reales.
-- WhatsApp, redes, textos legales y funciones sin servicio muestran avisos de disponibilidad futura. No hay enlaces oficiales configurados ni se envian mensajes.
-- Boletin con validacion de correo y aviso de servicio pendiente. No guarda correos ni simula suscripciones exitosas.
-
-Archivos: `src/app/pages/home/home.component.ts`, `home.component.html`, `home.component.css` (cabecera, consulta y formulario) y `home-content.component.css` (tarjetas, novedades, comunidad y estilos adaptables).
-
-## Integracion de catalogos de rutas y viajes
-
-Correccion del 22 de octubre de 2026: el error generico de carga del formulario ocultaba que los servicios conservaban endpoints y campos de una API anterior. Se contrastaron las URLs, modelos y serializadores con el backend local en `backend/Proyecto_Semillero_Backend/DjangoProject1`.
-
-- Rutas: `/api/routes/routes/`, con `origin`, `destination` (IDs de Place) y `distance_km`. Se adaptan a origen/destino/distancia de las vistas y se conservan los IDs.
-- Lugares: `/api/geography/places/`, con `place_name`. Si no se pueden cargar etiquetas, se muestra Ubicacion #ID sin perder la ruta.
-- Viajes: `/api/trips/trips/`, con `bus`, `driver`, `route`, `date_time_start`, `date_time_end` y `trip_state`.
-- Estados: scheduled/programado, in_progress/en_curso, completed/finalizado y cancelled/cancelado. Iniciar/finalizar/cancelar usa PATCH del registro; el backend no define las acciones antiguas `iniciar/`, `finalizar/` o `cancelar/`.
-- Lecturas de rutas, lugares y viajes admiten arrays o paginas DRF; `api-pagination.ts` agrega todas las paginas.
-- Guardar rutas resuelve origen/destino contra ubicaciones registradas por nombre exacto no ambiguo o etiqueta de ID. No crea lugares nuevos. Estado de ruta no existe en el backend: el valor activa es solo compatibilidad de la interfaz, no un campo persistido ni una comprobacion de disponibilidad.
-- El formulario captura fallos por recurso y muestra codigo HTTP y motivo (sesion, permisos, endpoint o conexion), conserva los catalogos que si llegaron y bloquea guardar hasta completar una carga correcta.
-
-La comprobacion se realizo contra el codigo del backend y pruebas HTTP simuladas, sin autenticar ni modificar datos de produccion. Si el despliegue usa otro contrato debe contrastarse con esa version. Los errores 401/403 o de conexion siguen requiriendo una sesion con permisos y una API accesible.
-
-## Navegacion administrativa: ventas y clientes
-
-El acceso principal del menu lateral cambia de **Crear viaje** a **Generar venta** y abre `/clientes/comprar`, el flujo de compra existente. Este flujo sigue siendo una simulacion sin reserva ni cobro; no crea ventas reales. Programar viajes continua disponible en el modulo Viajes.
-
-Se incorpora **Clientes** en el menu lateral y en la barra superior (tambien visible en movil), enlazado a la ruta protegida `/clientes` dentro del layout administrativo. El listado consulta todas las paginas de `/api/accounts/users/` y muestra exclusivamente cuentas con `role: client`, excluyendo conductores y administradores. La API exige permisos de administrador.
-
-Incluye nombre/usuario, documento, correo, telefono, busqueda, diez registros por pagina, actualizacion y mensajes de error de sesion/permisos/conexion. Es una consulta de clientes reales, separada de la vista previa del perfil de pasajero en `/clientes/panel`. No crea, edita ni elimina usuarios.
-
-Archivos: `src/app/core/services/cliente.service.ts`, `src/app/pages/clientes/`, `app.routes.ts` y plantillas de layout/navbar.
-
-## Dashboard de viajes
-
-La ruta protegida `/viajes` incorpora el dashboard de Stitch al layout administrativo existente. El formulario de programacion continua en `/viajes/nuevo` y la edicion en `/viajes/editar/:id`.
-
-- Carga viajes y catalogos reales de buses, conductores y rutas. Muestra placa, modelo, capacidad, nombre y licencia del conductor y origen/destino; si falla un catalogo secundario conserva los viajes y muestra IDs como alternativa, con aviso del recurso y codigo HTTP.
-- Indicadores de en curso, programados, finalizados y cancelados. Se calculan sobre todos los viajes de la fecha seleccionada, sin depender del resto de filtros. Sin fecha seleccionada muestran el total de todas las fechas.
-- Pestanas por estado, busqueda por ID/ruta/placa/conductor, filtros de origen, conductor y modelo, fecha de salida en Colombia y opcion de limpiar. Tabla de cinco viajes por pagina con anterior/siguiente.
-- Proximas tres salidas programadas futuras ordenadas por salida, respetando la fecha si se elige. No se simulan andenes ni cuentas regresivas.
-- Sincronizar recarga datos y muestra hora de actualizacion. Exportar viajes CSV descarga todos los resultados filtrados, con fechas ISO UTC y proteccion frente a formulas; no es un manifiesto oficial de pasajeros.
-- Se mantienen editar, eliminar, iniciar, finalizar y cancelar. Guardas de estado y bloqueo de solicitudes simultaneas; eliminar y cancelar requieren confirmacion. Tras exito se actualizan filas e indicadores; tras error se conserva el listado.
-- Ocupacion IoT, alertas viales/meteorologicas, andenes y velocidad permanecen sin datos. Capacidad no significa puestos disponibles. El enlace de mapa lleva a buses estaticos de ejemplo y no a seguimiento real del viaje.
-- Usa el termino viaje en toda la vista, incluidos los accesos a viaje extra.
-
-Archivos: `src/app/pages/viajes/viaje-list.component.ts`, `viaje-list.component.html` y `viaje-list.component.css`. No se duplican cabeceras ni se modifica el formulario al renovar el listado.
-
-## Programar y editar viajes
-
-La interfaz usa el termino viaje en los titulos de creacion y edicion, el aviso de carga y la descripcion del formulario (actualizacion del 22 de octubre de 2026).
-
-El HTML recibido como vista de viajes corresponde al formulario de programacion. Se integra en `/viajes/nuevo` y `/viajes/editar/:id`, manteniendo el listado en `/viajes`.
-
-- Diseno de configuracion de ruta y horario a la izquierda; asignacion de bus/conductor, resumen y confirmacion a la derecha.
-- Origen y destino proceden de una ruta registrada. Intercambiar solo selecciona una ruta inversa existente; no crea ni modifica rutas.
-- Buses y conductores cargados mediante sus catalogos completos; rutas desde el servicio existente. Para nuevas asignaciones se ofrecen buses activos y rutas activas. En edicion se conservan como opciones el bus y la ruta actuales aunque hayan quedado inactivos.
-- Salida obligatoria y fin opcional, con fechas reales y fin posterior a salida. Entrada y visualizacion en America/Bogota (UTC-05:00); envio ISO UTC independiente de la zona del navegador.
-- Resumen de capacidad y estado registrado del bus, licencia/contacto del conductor y distancia de la ruta cuando existe. No se inventan tiempos de transito, GPS, disponibilidad horaria ni ausencia de conflictos.
-- Guardado mediante los metodos existentes de `ViajeService`, conservando bus, conductor, ruta, fechas y estado. Validacion de referencias contra los catalogos cargados, bloqueo de envios duplicados y de guardado tras error de carga, y reintento.
-- No se envian SMS ni notificaciones. Conflictos y disponibilidad deben validarse en el backend. Los servicios de rutas y viajes adaptan sus campos de vista al contrato Django documentado abajo.
-
-Archivos: `src/app/pages/viajes/viaje-form.component.ts`, `viaje-form.component.html` y `viaje-form.component.css` (separado de los estilos del listado).
-
-## Registrar y editar conductores
-
-Las rutas protegidas `/conductores/nuevo` y `/conductores/editar/:id` usan el nuevo diseno de Stitch: informacion personal, licencia y certificaciones a la izquierda; perfil y progreso a la derecha.
-
-- Guarda en la API unicamente `full_name`, `user`, `license_number`, `address` y `phone_number`. Se conserva el nombre completo en un unico campo para no dividir de forma ambigua los registros existentes.
-- Campos obligatorios sin valores en blanco; ID de usuario asociado entero mayor que cero y telefono con 7 a 15 digitos (admite prefijo + y separadores). El ID debe pertenecer a un usuario existente; este formulario no crea cuentas.
-- Previsualizacion reactiva de nombre, licencia y progreso de los cinco campos obligatorios; guardado real mediante crear/actualizar y regreso al panel cuando responde correctamente.
-- Foto PNG, JPG o WEBP de hasta 5 MB con vista previa local, opcion de quitar y liberacion de la URL temporal al salir o reemplazarla. La imagen inicial es ilustrativa y proviene del HTML de referencia.
-- Documento, nacimiento, correo, categoria/vencimiento de licencia, experiencia, RH y estado sugerido son opcionales y exclusivamente locales. Se indica en pantalla que no se guardan ni se cargan desde el registro real.
-- Certificaciones inicialmente desmarcadas y solo para previsualizar. No se realizan verificaciones de licencia, antecedentes ni consultas a organismos oficiales.
-- Bloqueo de envios duplicados, error de carga con reintento, impedimento de sobrescritura tras fallar la carga y manejo de errores al guardar. Descartar vuelve al panel sin enviar datos.
-
-Archivos: `src/app/pages/conductores/conductor-form.component.ts`, `conductor-form.component.html` y `conductor.component.css`. Pendiente: ampliar el contrato del backend para fotografia, datos complementarios y verificaciones.
-
-## Dashboard: panel de conductores
-
-La ruta protegida `/conductores` adapta el diseno de Stitch al layout administrativo. Usa los registros reales de `/fleet/drivers/` y conserva registro, edicion y eliminacion.
-
-- `ConductorService.listarTodos()` carga todas las paginas para conteos, busqueda, paginacion local y exportacion coherentes.
-- Indicadores globales de total de conductores y registros con licencia, telefono y direccion. La existencia de licencia no certifica su vigencia.
-- Busqueda por nombre, ID, usuario asociado, licencia y telefono; filtro con/sin telefono y opcion de limpiar.
-- Tabla y tarjetas con cinco registros por pagina, navegacion anterior/siguiente y ficha de datos en la misma pantalla.
-- Contacto telefonico mediante enlace `tel:` solo cuando el numero tiene un formato compatible; no envia mensajes ni inicia llamadas automaticamente.
-- Exportacion CSV de todos los resultados filtrados, incluyendo los que no estan en la pagina visible; escapa comillas y neutraliza valores que pudieran interpretarse como formulas. PDF no implementado.
-- Estados de carga, error y reintento, sin registros y sin coincidencias; eliminacion confirmada, bloqueo de solicitudes duplicadas y recarga tras exito.
-- El contrato actual no contiene estado operativo, documento de identidad, turnos, rutas asignadas, categoria/vencimiento de licencia, RH, fotos ni evaluaciones. No se inventan esos campos ni se ofrecen filtros sin datos.
-
-Archivos: `src/app/pages/conductores/conductor-list.component.ts`, `conductor-list.component.html`, `conductor-list.component.css` y `src/app/core/services/conductor.service.ts`. Los estilos del formulario de conductor siguen separados.
-
-## Agregar y editar buses
-
-Las rutas protegidas `/buses/nuevo` y `/buses/editar/:id` usan el diseno de registro de unidad de Stitch: formulario de informacion general a la izquierda y previsualizacion a la derecha, dentro del layout administrativo compartido.
-
-- Placa y modelo obligatorios, con rechazo de valores en blanco y eliminacion de espacios externos antes de enviar.
-- Capacidad obligatoria, entera y mayor que cero. Estados compatibles con la API: `Active`, `Inactive` y `mantenimiento` (corregido el valor anterior `Maintenance` del selector).
-- Guarda los cuatro campos soportados mediante `BusService.crear` o `actualizar` y vuelve a `/buses` al recibir respuesta correcta. No simula registros exitosos.
-- Previsualizacion reactiva de placa, modelo, capacidad, estado y progreso de los cuatro campos obligatorios; imagen ilustrativa inicial tomada del HTML de referencia.
-- Seleccion de PNG, JPG o WEBP de hasta 5 MB con previsualizacion local, opcion de quitarla y liberacion de la URL temporal al reemplazarla o salir.
-- Wi-Fi, aire acondicionado, GPS, camaras y bano pueden seleccionarse para la previsualizacion. La pantalla indica que foto y equipamiento no se guardan: el contrato actual de la API no incluye esos campos y no se envian como datos adicionales.
-- Bloqueo de envios duplicados, errores de carga con reintento y errores de guardado. No permite sobrescribir un bus si fallo la carga de sus datos.
-
-Archivos: `src/app/pages/buses/bus-form.component.ts`, `bus-form.component.html` y `bus.component.css`. Pendiente: ampliar el backend para almacenar imagen y equipamiento; no se presupone una auditoria tecnica automatica.
-
-## Dashboard: apartado de buses
-
-La ruta protegida `/buses` adapta el diseno de tarjetas de Stitch dentro del layout administrativo existente, conservando la navegacion compartida y las acciones de crear, editar y eliminar.
-
-- Carga todos los registros mediante `BusService.listarTodos()`, incluyendo las paginas de la API `/fleet/buses/`.
-- Busqueda local por ID, placa o modelo, filtro de activos y opcion de limpiar filtros. Los indicadores se calculan sobre toda la flota cargada, sin cambiar al filtrar tarjetas.
-- Indicadores de activos, inactivos y mantenimiento; porcentaje de registros activos y total registrado. Activo no significa que un bus este en movimiento.
-- Tarjetas con ID, placa, modelo, capacidad y estado. La ocupacion se muestra sin datos; el backend aun no entrega telemetria para esta vista.
-- El enlace de mapa abre la demostracion GeoJSON existente y se etiqueta como ejemplo, sin asociar una ubicacion ficticia al registro real.
-- Se conservan los formularios `/buses/nuevo` y `/buses/editar/:id`. Eliminar requiere confirmacion, bloquea solicitudes duplicadas y recarga la flota tras el exito.
-- Estados de carga, error con reintento, flota vacia y busqueda sin resultados. Un error de eliminacion conserva las tarjetas visibles.
-- Reporte tecnico y contacto con central muestran avisos pendientes. No se inventan ocupaciones, rutas, tendencias ni valoraciones del conductor.
-
-Archivos: `src/app/pages/buses/bus-list.component.ts`, `bus-list.component.html` y `bus-list.component.css`. Los estilos del formulario de buses permanecen separados.
-
-## Compra de tiquetes (simulacion)
-
-La ruta publica `/clientes/comprar` adapta la vista de Stitch a Angular y CSS propio, sin integrar una pasarela de pago. Se accede desde **Comprar tiquetes** en el panel y **Ver todos los viajes** en el inicio.
-
-- Tres horarios de ejemplo Bogota - Medellin para el 24 de octubre de 2026, con servicios, tarifas y cupos calculados desde el inventario local de asientos.
-- Selector de piso cuando el vehiculo tiene dos pisos; puestos disponibles, ocupados y seleccionados. Solo se admite un asiento para un adulto.
-- Cambiar de horario borra el asiento anterior; los puestos ocupados estan deshabilitados y se validan tambien en el componente.
-- Resumen sincronizado con bus, horario y asiento. Total calculado como tarifa base + 6.500 COP de tasas - 15% de descuento de ejemplo UNIVERSAL15. El horario Premier inicial suma 78.750 COP.
-- Formulario sin datos personales prellenados: nombre, tipo y numero de documento, celular colombiano, correo y aceptacion de terminos inicialmente desmarcada.
-- Confirmar valida datos y asiento, y muestra un aviso de simulacion. No reserva puestos, envia datos, guarda informacion ni cobra. Los medios de pago son ilustrativos.
-- Modificar busqueda muestra un aviso pendiente; origen, destino y fecha son fijos en esta vista previa.
-- Pendiente: busqueda real, disponibilidad y bloqueo de puestos en servidor, reglas de tarifas y cupones, textos legales, creacion de reservas, pagos y expedicion de tiquetes.
-
-Archivos: `src/app/pages/booking/booking.data.ts` (horarios e inventario), `booking.component.ts`, `booking.component.html` y `booking.component.css`.
-
-## Panel de informacion del pasajero
-
-La ruta `/clientes/panel` integra el diseno de Mi Cuenta de Stitch en Angular y CSS propio. Se accede desde el enlace **Ver vista previa del portal de pasajeros** del login de clientes, sin simular una autenticacion correcta.
-
-- Perfil y contacto del pasajero, categoria Oro, puntos, viajes realizados, ahorro y proximo viaje.
-- Tiquete de ejemplo Bogota - Medellin, reserva, horarios, vehiculo y asiento; tabla adaptable con tres viajes recientes.
-- Informacion personal, contacto de emergencia, preferencias, beneficios y monedero con metodos de pago enmascarados de ejemplo.
-- Navegacion a secciones del panel y al mapa de buses estaticos. El mapa no representa el seguimiento real del tiquete de muestra.
-- Editar perfil, notificaciones, carne, QR, PDF, facturas, repetir viajes, extracto, terminos del club y pagos muestran avisos de funcionalidad pendiente. No generan documentos, cargos ni cambios de datos.
-- Todos los datos provienen de `src/app/pages/client-panel/client-panel.data.ts`; no se leen datos privados ni se guardan cambios o tarjetas.
-- Pendiente: servicios de perfil, tiquetes, puntos y pagos; autenticacion y autorizacion de pasajeros. Por ahora la ruta es publica exclusivamente para revisar datos ficticios. Antes de usar datos reales debe protegerse con la sesion y permisos del cliente.
-
-Archivos: `src/app/pages/client-panel/`. El acceso administrativo continua en `/login`.
-
-## Inicio de sesion de clientes
-
-La ruta publica `/clientes/login` adapta el diseno de Stitch al portal de pasajeros con CSS propio: formulario a la izquierda, fotografia de bus, testimonio de ejemplo y beneficios a la derecha. La fotografia usa la URL incluida en el HTML original y requiere internet. El login administrativo y su servicio JWT permanecen en `/login`.
-
-- Selector de acceso por correo o documento (CC, CE y pasaporte). Solo se validan los campos del metodo activo.
-- Validacion de correo, documento alfanumerico de 5 a 20 caracteres y contrasena obligatoria; permite mostrar u ocultar la clave.
-- La opcion de recordar sesion es parte del formulario; no persiste credenciales ni activa sesiones.
-- El formulario muestra un aviso al enviar: falta integrar la autenticacion de pasajeros. No hace peticiones ni almacena datos. No se reutiliza el endpoint administrativo, cuyo contrato actual requiere `username` y `password`.
-- Recuperar contrasena muestra un aviso de disponibilidad futura; Google y Apple estan deshabilitados.
-- Enlaces al registro y al mapa estatico; el acceso por codigo de reserva sigue pendiente. Beneficios y testimonios son contenido de muestra, sin servicios asociados.
-- El enlace principal de inicio de sesion en la pagina de inicio y los enlaces del registro llevan al login de pasajeros. El acceso administrativo sigue disponible en el pie del portal de pasajeros.
-
-Archivos: `src/app/pages/client-login/` y ruta en `src/app/app.routes.ts`.
-
-## Registro de clientes
-
-La vista publica `/registro` adapta el HTML de Stitch a un componente Angular standalone con CSS propio, sin scripts ni Tailwind desde CDN. Incluye formulario de pasajero, tarjeta de bienvenida, beneficios y testimonio de ejemplo. El inicio y el login enlazan a esta vista.
-
-- Campos: nombres, apellidos, tipo y numero de documento, celular colombiano (+57), correo, contrasena y confirmacion.
-- Validaciones: nombres no vacios, documento de 5 a 20 caracteres alfanumericos o guiones, celular de 10 digitos comenzando por 3, correo valido y contrasena de al menos 8 caracteres con mayuscula, minuscula y numero.
-- Confirmacion de contrasena, visibilidad independiente de ambas claves, indicador de seguridad y errores por campo.
-- Aceptacion obligatoria de terminos y consentimiento opcional para promociones, inicialmente desmarcados.
-- Google y Apple estan deshabilitados y marcados como proximamente; no hay integracion OAuth.
-- Al enviar se validan los datos y se avisa que la creacion de cuentas sigue pendiente. No se hacen peticiones ni se guardan datos personales o contrasenas en almacenamiento local.
-- Pendiente: acordar e integrar el endpoint de registro, publicar los textos legales y conectar los beneficios reales. El cupon y el testimonio son de ejemplo.
-
-Archivos: `src/app/pages/registro/registro.component.ts`, `registro.component.html` y `registro.component.css`.
-
-## Despliegue: hoja de estilos de viajes
-
-Si Docker muestra `Could not find stylesheet file './viaje-list.component.css'`, comprobar que el checkout del servidor contiene `src/app/pages/viajes/viaje-list.component.css`. El commit `7430836` incorpora este archivo junto con la plantilla del dashboard.
-
-Actualizar el repositorio del servidor con `git pull --ff-only`, confirmar la presencia del archivo y reconstruir el servicio `frontend`. Reconstruir una copia antigua sin actualizar Git no incorpora archivos pendientes. Si el archivo existe en el servidor pero no en la imagen, revisar el contexto de build, `COPY` y `.dockerignore`.
-
-## Estado de verificacion
-
-Los accesos Generar venta/Clientes y el listado administrativo compilaron con `npm run build` el 22 de octubre de 2026. Se verificaron con HTTP simulado el filtrado por rol entre paginas de usuarios, busqueda, paginacion, nombre alternativo y errores de permisos. No se consultaron ni modificaron cuentas reales en estas pruebas. Permanecen las advertencias de tamano y Leaflet.
-
-El dashboard de viajes paso `npm run build` el 22 de octubre de 2026. Se comprobaron con servicios simulados nombres de catalogos, fechas y zona horaria, filtros, conteos, paginacion, proximas salidas, transiciones permitidas y solicitudes duplicadas, errores de eliminacion, CSV y fallos parciales de catalogos. No se modificaron viajes reales. Quedan advertencias de paquete inicial, estilos y Leaflet.
-
-La correccion de catalogos paso `npm run build` el 22 de octubre de 2026. Las pruebas con HTTP simulado verificaron URLs, paginacion, IDs/etiquetas de lugares y alternativa sin etiquetas, campos y estados de viajes, payload de rutas y PATCH de estado. Tambien paso la regresion del formulario (hora de Colombia, fechas, recursos, creacion/edicion y errores). Se mantienen advertencias de paquete inicial, estilos y Leaflet.
-
-El formulario de viajes paso la compilacion completa el 22 de octubre de 2026. Se verificaron con servicios simulados conversion horaria de Colombia a UTC y viceversa, fechas invalidas y fin anterior a salida, ruta inversa registrada, referencias existentes, recursos activos y asignaciones actuales al editar, payloads de creacion/edicion, bloqueo de duplicados y errores de carga/guardado. No se crearon viajes reales. Quedan advertencias de paquete inicial, estilos y Leaflet.
-
-El formulario de registro y edicion de conductores paso la compilacion completa el 22 de octubre de 2026. Se verificaron con servicios simulados campos obligatorios, ID numerico, telefono, payload de creacion/edicion sin datos locales, formato/tamano de imagen, liberacion de URL, bloqueo de duplicados y errores de carga/guardado. No se modificaron conductores reales. Permanecen advertencias de tamano del paquete inicial, estilos y Leaflet.
-
-La pagina principal actualizada compilo con `npm run build` el 22 de octubre de 2026. Se comprobaron navegacion a compra, origen/destino distintos, fechas reales y orden del regreso, solicitudes no soportadas, rutas populares, pestanas de consulta y boletin. No se enviaron datos a servicios externos. Quedan advertencias de tamano del paquete inicial y estilos, ademas de Leaflet en CommonJS.
-
-La compilacion completa del panel de conductores paso el 21 de octubre de 2026, con advertencias de estilos y Leaflet. Se verificaron con servicios simulados los conteos, filtros, paginacion de pantalla y carga de todas las paginas de la API, enlaces telefonicos, bloqueo de eliminaciones duplicadas, conservacion de datos tras un error y exportacion CSV con escape de comillas y neutralizacion de formulas. No se eliminaron conductores reales durante las pruebas.
-
-La compilacion completa paso el 21 de octubre de 2026 con el nuevo formulario de unidades, con advertencias de estilos y Leaflet. Se comprobaron con servicios simulados creacion y edicion, datos enviados, limpieza de espacios, capacidad entera, estado de mantenimiento, validacion de tipo y tamano de imagen, liberacion de su URL, bloqueo de duplicados y errores de carga y guardado. No se crearon ni modificaron buses reales durante estas pruebas.
-
-La compilacion completa con `npm run build` finalizo correctamente el 21 de octubre de 2026 tras integrar el apartado de buses. Quedan advertencias por estilos de componentes mayores que el umbral de aviso de 4 kB (sin superar el limite de error de 8 kB) y por el formato CommonJS de Leaflet. Tambien compilo la vista de buses por separado; se comprobaron carga y reintento con servicio simulado, conteos globales, filtros, confirmacion de eliminacion, bloqueo de solicitudes duplicadas y manejo de errores. Estas comprobaciones no ejecutaron eliminaciones contra el backend.
-
-La vista de compra y el panel con su enlace compilaron por separado con comprobacion estricta de plantillas el 21 de octubre de 2026. Se verificaron el total inicial de 78.750 COP, los cupos por bus, el bloqueo de asientos ocupados o inexistentes, el reinicio de seleccion al cambiar de horario y las validaciones del pasajero y del envio simulado.
-
-El panel de informacion del pasajero y el login con su enlace de vista previa compilaron por separado con comprobacion estricta de plantillas el 21 de octubre de 2026. En esa verificacion anterior la compilacion general estaba afectada por errores de conductores; la verificacion completa mas reciente ya finaliza correctamente.
-
-El login de pasajeros y el registro compilaron por separado con comprobacion estricta de plantillas el 21 de octubre de 2026. Se verifico el cambio entre correo y documento, la validacion exclusiva del metodo activo, los identificadores invalidos y los avisos de autenticacion y recuperacion pendientes.
-
-La vista de registro y el login actualizado compilaron por separado con el compilador Angular y comprobacion estricta de plantillas el 21 de octubre de 2026.
-
-Se comprobaron las validaciones de campos obligatorios, nombres en blanco, correo, celular, reglas y confirmacion de contrasena, aceptacion de terminos y el aviso de envio pendiente.
-
-En la verificacion del 21 de octubre de 2026, la vista de ubicacion compilo por separado con el compilador Angular y se validaron los tres puntos GeoJSON, sus identificadores y el orden de coordenadas.
-
-En verificaciones anteriores hubo inconsistencias del modelo `Conductor` con sus formularios y plantillas. El modelo actual incluye los campos correspondientes y ese bloqueo no aparece en la compilacion completa mas reciente.
-
-## Mantenimiento de la documentacion
-
-Actualizar este README con cada modificacion del proyecto para reflejar los cambios de funcionalidad, rutas, dependencias, configuracion, datos de ejemplo y estado de verificacion que correspondan.
-
-## Comandos utiles
-
-```bash
-npm install
-ng serve
-npm run build
-```
+Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.

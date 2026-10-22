@@ -1,3 +1,4 @@
+import type { Point } from 'geojson';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
@@ -5,14 +6,14 @@ import { API_BASE_URL } from '../config/api.config';
 import { Ruta } from '../models/ruta.model';
 import { allApiPages } from './api-pagination';
 interface RouteDto {id:number;origin:number;destination:number;distance_km:string|number;}
-interface PlaceDto {id:number;place_name:string;}
+interface PlaceDto {id:number;place_name:string;place_point?:Point;}
 @Injectable({providedIn:'root'})
 export class RutaService {
   private readonly apiUrl=API_BASE_URL+'/routes/routes/';
   private readonly placesUrl=API_BASE_URL+'/geography/places/';
   constructor(private http:HttpClient){}
   private toView(route:RouteDto,places:PlaceDto[]):Ruta {
-    return {id:route.id,origen:places.find(p=>p.id===route.origin)?.place_name||'Ubicación #'+route.origin,destino:places.find(p=>p.id===route.destination)?.place_name||'Ubicación #'+route.destination,origen_id:route.origin,destino_id:route.destination,distancia_km:Number(route.distance_km),estado:'activa'};
+    return {id:route.id,origen:places.find(p=>p.id===route.origin)?.place_name||'Ubicación #'+route.origin,destino:places.find(p=>p.id===route.destination)?.place_name||'Ubicación #'+route.destination,origen_id:route.origin,destino_id:route.destination,origen_punto:places.find(p=>p.id===route.origin)?.place_point,destino_punto:places.find(p=>p.id===route.destination)?.place_point,distancia_km:Number(route.distance_km),estado:'activa'};
   }
   // The backend has no route-state field; 'activa' is only a legacy UI default.
   listar():Observable<Ruta[]> {

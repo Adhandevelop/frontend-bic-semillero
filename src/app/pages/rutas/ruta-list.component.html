@@ -1,42 +1,7 @@
-<section>
-  <div class="page-header">
-    <h1>Rutas</h1>
-    <a class="btn btn-primary" routerLink="/rutas/nueva">Nueva ruta</a>
-  </div>
-
-  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-  <div class="panel">
-    <div class="loading" *ngIf="loading">Cargando rutas...</div>
-    <div class="empty-state" *ngIf="!loading && rutas.length === 0">No hay rutas registradas.</div>
-    <div class="table-wrap" *ngIf="!loading && rutas.length > 0">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Origen</th>
-            <th>Destino</th>
-            <th>Distancia km</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let ruta of rutas">
-            <td>{{ ruta.id }}</td>
-            <td>{{ ruta.origen }}</td>
-            <td>{{ ruta.destino }}</td>
-            <td>{{ ruta.distancia_km || 'No registrada' }}</td>
-            <td><span class="badge">{{ ruta.estado }}</span></td>
-            <td>
-              <div class="actions">
-                <a class="btn btn-info" [routerLink]="['/rutas/editar', ruta.id]">Editar</a>
-                <button class="btn btn-danger" type="button" (click)="eliminarRuta(ruta)">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
+<section class="routes-dashboard" aria-labelledby="routes-title"><div class="routes-heading"><div><span class="eyebrow">Operaciones › Red de transporte</span><h1 id="routes-title">Dashboard de gestión de rutas</h1><p>Consulta conexiones entre terminales y las distancias registradas.</p></div><div class="heading-actions"><button type="button" (click)="exportCsv()" [disabled]="loading || loadFailed || !filteredRoutes.length">↓ Exportar CSV</button><button type="button" disabled title="Exportación PDF pendiente">PDF pendiente</button><button type="button" (click)="cargarRutas()" [disabled]="loading || deletingId !== null" aria-label="Actualizar rutas">↻ Actualizar</button></div></div>
+<div class="feedback error" *ngIf="error" role="alert">{{ error }} <button type="button" (click)="cargarRutas()" [disabled]="loading || deletingId !== null">Reintentar</button></div><p class="feedback success" *ngIf="success" role="status">{{ success }}</p><p class="loading-note" *ngIf="loading" role="status">Cargando rutas...</p>
+<ng-container *ngIf="!loading && !loadFailed"><section class="metrics" aria-label="Resumen del catálogo"><article><span class="metric-icon" aria-hidden="true">↪</span><span>Rutas registradas</span><strong>{{ rutas.length }}</strong><p>Catálogo completo de la API</p></article><article><span class="metric-icon" aria-hidden="true">↔</span><span>Distancias acumuladas</span><strong>{{ totalKm | number:'1.0-1' }} <small>km</small></strong><p>Suma de tramos, no longitud vial única</p></article><article><span class="metric-icon" aria-hidden="true">⌖</span><span>Terminales conectadas</span><strong>{{ connectedCount }}</strong><p>Ubicaciones de origen y destino distintas</p></article><article><span class="metric-icon" aria-hidden="true">◷</span><span>Tiempo de tránsito</span><strong class="no-time">Sin datos</strong><p>El backend no informa duraciones</p></article></section>
+<div class="toolbar"><div class="search"><label class="sr-only" for="route-search">Buscar por ID, origen o destino</label><input id="route-search" type="search" [(ngModel)]="searchValue" (ngModelChange)="page = 1" placeholder="Buscar por código, terminal, origen o destino..."></div><select aria-label="Filtrar por origen" [(ngModel)]="originFilter" (ngModelChange)="page = 1"><option value="">Todos los orígenes</option><option *ngFor="let origin of origins" [value]="origin">{{ origin }}</option></select><select aria-label="Filtrar por distancia" [(ngModel)]="distanceFilter" (ngModelChange)="page = 1"><option value="">Todas las distancias</option><option value="short">Menos de 200 km</option><option value="medium">200 a menos de 500 km</option><option value="long">500 km o más</option><option value="unknown">Sin distancia</option></select><button class="text-button" type="button" (click)="clearFilters()">Limpiar</button><a class="primary" routerLink="/rutas/nueva">+ Nueva ruta</a></div><p class="catalog-note">El estado operativo y las regiones no están disponibles en el contrato actual de la API.</p>
+<div class="routes-layout"><section class="results-card" aria-label="Rutas registradas"><div class="table-heading"><h2>Itinerarios registrados</h2><span>{{ filteredRoutes.length }} de {{ rutas.length }}</span></div><div class="empty" *ngIf="!filteredRoutes.length"><h2>{{ rutas.length ? 'No se encontraron coincidencias' : 'No hay rutas registradas' }}</h2><p>{{ rutas.length ? 'Revisa los filtros de búsqueda.' : 'Crea una ruta utilizando ubicaciones registradas.' }}</p></div><div class="table-scroll" *ngIf="filteredRoutes.length"><table><caption class="sr-only">Catálogo de rutas de la API</caption><thead><tr><th scope="col">Código</th><th scope="col">Terminal de origen</th><th scope="col">Terminal de destino</th><th scope="col">Distancia</th><th scope="col">Registro</th><th scope="col">Acciones</th></tr></thead><tbody><tr *ngFor="let route of visibleRoutes" [class.map-selected]="selectedRoute?.id === route.id"><td><strong class="route-code">#{{ route.id }}</strong></td><td><span class="point-icon" aria-hidden="true">◉</span>{{ route.origen }}</td><td><span class="point-icon" aria-hidden="true">⌖</span>{{ route.destino }}</td><td class="distance">{{ hasDistance(route) ? (route.distancia_km | number:'1.0-2') + ' km' : 'Sin datos' }}</td><td><span class="badge">Registrada</span></td><td><div class="row-actions"><a [routerLink]="['/rutas/editar',route.id]">Editar</a><button type="button" (click)="selectedRoute = route" [attr.aria-pressed]="selectedRoute?.id === route.id">Ver mapa</button><button type="button" class="delete" [disabled]="deletingId !== null" (click)="eliminarRuta(route)">{{ deletingId === route.id ? 'Eliminando...' : 'Eliminar' }}</button></div></td></tr></tbody></table></div><div class="pagination" *ngIf="filteredRoutes.length"><span aria-live="polite">Mostrando {{ firstResult }} a {{ lastResult }} de {{ filteredRoutes.length }} rutas</span><div><button type="button" [disabled]="currentPage === 1" (click)="changePage(-1)">Anterior</button><span>{{ currentPage }} / {{ pageCount }}</span><button type="button" [disabled]="currentPage === pageCount" (click)="changePage(1)">Siguiente</button></div></div></section>
+<aside class="routes-sidebar" aria-label="Mapa y estado vial"><section class="widget"><div class="widget-heading"><h2>⌖ Terminales georreferenciadas</h2><span class="badge">GeoJSON</span></div><p class="selected-route" aria-live="polite">{{ selectedRoute ? selectedRoute.origen + ' → ' + selectedRoute.destino : 'Selecciona una ruta' }}</p><app-ruta-map [route]="selectedRoute"></app-ruta-map><a class="map-link" routerLink="/ubicacion">Ver buses de demostración ↗</a></section><section class="widget"><h2>◈ Estado de corredores viales</h2><div class="pending-panel"><strong>Servicio pendiente de conexión</strong><p>No se consultan reportes de Invías ni DITRA. El registro de una ruta no confirma que la vía esté despejada o habilitada.</p></div><button class="text-button" type="button" (click)="notice = 'El canal de reporte de novedades aún no está configurado.'">Reportar novedad →</button></section><section class="network-summary"><strong>Datos de la red</strong><p>{{ measuredCount }} de {{ rutas.length }} rutas tienen distancia registrada.</p><small *ngIf="updatedAt">Actualizado: {{ updatedAt | date:'dd/MM/yyyy HH:mm':'-0500' }} (Colombia)</small></section></aside></div></ng-container>
+<div class="notice" *ngIf="notice" role="status" aria-live="polite"><p>{{ notice }}</p><button type="button" (click)="notice = ''" aria-label="Cerrar aviso">×</button></div></section>
