@@ -1,4 +1,4 @@
-<div class="registration-page">
+﻿<div class="registration-page">
   <header class="registration-header">
     <a class="brand" routerLink="/"><span aria-hidden="true">▣</span> Buses Universal</a>
     <nav aria-label="Navegación de pasajeros"><a routerLink="/">Inicio</a><a routerLink="/ubicacion">Ubicación del bus</a></nav>
@@ -31,7 +31,7 @@
           <span id="terms-error" class="error" *ngIf="invalid('terms')">Debes aceptar los términos para continuar.</span>
           <label class="check"><input type="checkbox" formControlName="promotions"><span>Deseo recibir promociones exclusivas, cupones de descuento y novedades de rutas por WhatsApp o correo electrónico.</span></label>
           <p class="form-message" role="status" aria-live="polite">{{ message }}</p>
-          <button class="submit" type="submit">Crear cuenta de pasajero <span aria-hidden="true">→</span></button>
+          <button class="submit" type="submit" [disabled]="loading || registered">{{ loading ? 'Registrando…' : registered ? 'Cuenta creada' : 'Crear cuenta de pasajero' }} <span aria-hidden="true">→</span></button>
           <p class="sign-in">¿Ya eres miembro? <a routerLink="/clientes/login">Inicia sesión aquí →</a></p>
         </form>
       </section>
@@ -44,3 +44,4 @@
   </main>
   <footer><div><strong>Buses Universal</strong><p>© 2026 Buses Universal. Todos los derechos reservados.</p></div><a routerLink="/">Portal de pasajeros</a><a routerLink="/clientes/login">Iniciar sesión</a></footer>
 </div>
+

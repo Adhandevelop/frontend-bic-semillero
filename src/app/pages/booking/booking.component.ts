@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -7,7 +7,7 @@ import { BOOKING_TRIPS, DemoSeat, DemoTrip } from './booking.data';
 @Component({
   selector: 'app-booking', standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  templateUrl: './booking.component.html', styleUrl: './booking.component.css'
+  templateUrl: './booking.component.html', styleUrls: ['./booking.component.css', './booking-payment.component.css']
 })
 export class BookingComponent {
   private readonly fb = inject(FormBuilder);
@@ -62,6 +62,8 @@ export class BookingComponent {
     this.form.markAllAsTouched();
     if (!this.selectedSeat) { this.message = 'Selecciona un asiento disponible para continuar.'; return; }
     if (this.form.invalid) { this.message = 'Revisa los datos del pasajero y acepta los términos para continuar.'; return; }
-    this.message = 'Simulación completada. El pago y la reserva aún no están disponibles. No se ha reservado el puesto ni realizado ningún cobro; tus datos no se han enviado ni guardado.';
+    this.message = 'La integración de Wompi está pendiente. Esta es una compra de demostración: no se abrió una pasarela, no se reservó el asiento ni se realizó un cobro. Tus datos no se enviaron ni guardaron.';
   }
 }
+
+

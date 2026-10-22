@@ -11,10 +11,10 @@ Aplicación académica de gestión de transporte desarrollada con Angular 18 y T
 | Conductores | Consulta, ficha, búsqueda, paginación, exportación CSV y gestión de registros | Guardar fotos, certificaciones y datos complementarios; verificaciones oficiales |
 | Rutas y viajes | Gestión con la API; asignación de recursos, horarios y cambios de estado de viajes | Validación de conflictos y disponibilidad horaria en el backend |
 | Clientes | Directorio, filtros, ficha, CSV y formulario administrativo de registro | Corregir validadores de registro en el backend; historial y fidelización |
-| Portal de pasajeros | Inicio, formularios de acceso y registro, perfil y compra de demostración | Autenticación y registro reales de pasajeros, reservas, ventas y pagos |
+| Portal de pasajeros | Registro público, login, perfil editable e historial conectados a API; compra de demostración protegida | Compra real con Wompi, reservas y varios pasajeros |
 | Ubicación | Mapa Leaflet/OpenStreetMap con tres buses estáticos en GeoJSON | Recepción de lecturas del dispositivo GPS y actualización en vivo |
 
-**Generar venta** abre la venta administrativa conectada a la API. Registra un recaudo ya realizado; no procesa cobros electrónicos. La compra pública permanece como demostración. Los datos del perfil de pasajero, las promociones y el monedero son de ejemplo.
+**Generar venta** abre la venta administrativa conectada a la API. Registra un recaudo ya realizado; no procesa cobros electrónicos. La compra pública permanece como demostración. El perfil y su historial consultan la API; la compra pública conserva datos de demostración.
 
 ## Requisitos e instalación
 
@@ -81,10 +81,10 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 | Ruta | Vista |
 | --- | --- |
 | `/` | Inicio, consulta de viajes y búsqueda de rutas de demostración |
-| `/clientes/login` | Formulario de acceso de pasajeros; autenticación pendiente |
-| `/registro` | Formulario de registro; creación de cuentas pendiente |
-| `/clientes/panel` | Vista previa del perfil de pasajero con datos ficticios |
-| `/clientes/comprar` | Simulación de compra y selección de asiento |
+| `/clientes/login` | Login por correo o documento con sesión propia de cliente |
+| `/registro` | Registro público por API |
+| `/clientes/panel` | Perfil propio editable e historial de compras; requiere cliente |
+| `/clientes/comprar` | Simulación de compra y selección de asiento; requiere cliente |
 | `/ubicacion` | Mapa de buses estáticos de ejemplo |
 | `/login` | Acceso administrativo |
 
@@ -209,12 +209,34 @@ El formulario de rutas sigue el diseño de Stitch y selecciona terminales del ca
 
 Solo envía a la API los IDs de origen y destino y la distancia. Duración, tarifa, puntos intermedios, borradores y activación operativa se identifican como pendientes; no se simula su guardado. Los errores de carga permiten reintentar y los envíos duplicados se bloquean durante el guardado.
 
+### Acceso y perfil del cliente online
+
+El portal de pasajeros está separado del layout administrativo. Registro `/registro` envía a `POST /api/accounts/register/` los datos básicos, tipo de documento numérico y contraseña; no envía confirmación, promociones ni un rol elegido en el navegador. Valida los campos, bloquea envíos repetidos, muestra errores JSON y limpia las contraseñas tras el éxito. Después permite iniciar sesión; no anuncia autenticación automática.
+
+Login `/clientes/login` envía correo o documento como `username` a `/api/token/`, consulta `/api/accounts/me/` con el token recibido y exige `role: client` antes de almacenarlo. Esta comprobación requiere que la respuesta de perfil incluya `role`; si no lo devuelve, la entrada se deniega hasta aclarar el contrato. La sesión usa claves `bic_passenger_access` y `bic_passenger_refresh`, distintas de las administrativas. **Recordar sesión** elige localStorage; sin marcarlo usa sessionStorage. El cierre de sesión de cliente no borra la sesión administrativa. La renovación automática no está implementada.
+
+`passengerGuard` protege perfil y compra mediante consulta del perfil, sin aceptar una sesión administrativa. Las peticiones de cliente envían explícitamente su token; token y registro públicos no reciben el token administrativo del interceptor. El perfil carga `/accounts/me/`, permite PATCH únicamente de nombre/correo/celular y muestra documentos de solo lectura. El historial reúne todas las páginas de `/sales/sales/`, con importes históricos, estados, tiquetes y factura cuando se devuelven. No presenta puntos, membresías ni viajes ficticios. El backend debe aplicar permisos por propietario.
+
+La compra protegida sigue siendo una demostración: aún no abre Wompi, no reserva sillas ni genera cobros. Cambiar/recuperar contraseña y acceso social siguen pendientes de API. En particular, el acceso de cuentas creadas por administrativos depende del mecanismo de contraseña/activación que implemente el backend; no se asignan contraseñas desde Angular.
+
+### Diseño del perfil de pasajero
+
+`/clientes/panel` adapta el diseño de Stitch con cabecera de cuenta e iniciales reales, tiquete destacado, historial tabular de siete compras por página y datos personales en la columna lateral. **Editar perfil / Actualizar datos** habilita la edición; cancelar recupera los valores cargados y guardar usa el PATCH de perfil existente. El detalle de compra permite consultar los tiquetes y la factura, sin enlaces administrativos.
+
+El tiquete destacado se toma de compras `paid` con tiquetes `issued`; no se presenta como próximo viaje ni como permiso de abordaje, porque el historial no proporciona aquí la agenda detallada del viaje. Las fechas de la tabla son de compra, en hora Colombia. QR digital, notificaciones, categoría Oro, beneficios, monedero, tarjetas y recargas están pendientes; no se muestran puntos, saldos o datos personales ficticios. Los botones pendientes muestran avisos o permanecen deshabilitados. No hay seguimiento GPS en vivo.
+
+### Diseño de compra y Wompi
+
+`/clientes/comprar` conserva el diseño de horarios, asientos, formulario de pasajero y resumen lateral de Stitch. El encabezado navega solo por el portal del cliente y el botón principal dice **Pagar por Wompi**, acompañado del total de demostración y un bloque del proveedor. Se retiraron los medios de pago locales ilustrativos para no presentarlos como opciones integradas.
+
+La pantalla sigue identificada como demostración: el botón valida los campos y explica que Wompi todavía no está conectado; no abre el widget ni hace checkout con viajes, sillas o importes ficticios. La integración real requerirá reemplazar esos ejemplos por el catálogo y los IDs reales antes de enviar el checkout y confirmar el resultado mediante la API.
+
 ### Demostraciones y servicios pendientes
 
 - La búsqueda de reservas del inicio solo abre la combinación de ejemplo Bogotá Salitre → Medellín, 24 de octubre de 2026, un adulto y solo ida. Otras selecciones muestran un aviso. Esta fecha está fijada en el código y debe revisarse al actualizar la demostración.
 - La compra permite cambiar horario, piso y asiento y recalcula el total. El inventario es local, no bloquea puestos en el servidor. Los datos están en [booking.data.ts](src/app/pages/booking/booking.data.ts).
-- El perfil público de pasajero usa [client-panel.data.ts](src/app/pages/client-panel/client-panel.data.ts). Antes de mostrar datos personales reales debe conectarse y protegerse con autenticación de pasajeros.
-- Los formularios de login y registro de pasajeros validan entradas, pero no envían credenciales ni crean cuentas. Google, Apple y recuperación de contraseña están pendientes.
+- El perfil usa `PassengerService` y `passengerGuard`; `client-panel.data.ts` conserva ejemplos antiguos sin utilizarse en la vista.
+- Login y registro de pasajeros están conectados a API. Google, Apple y recuperación de contraseña permanecen pendientes.
 - Boletín, redes sociales, WhatsApp, documentos legales y otras acciones sin integración muestran avisos; no simulan suscripciones ni envían mensajes.
 
 ### Mapa y GPS
@@ -265,7 +287,7 @@ Se realizaron comprobaciones con servicios simulados sobre filtros, paginación,
 
 Pendientes prioritarios:
 
-- Conectar autenticación, registro y perfil reales de pasajeros.
+- Verificar registro, acceso, edición de perfil e historial contra el backend desplegado y añadir renovación de sesión del pasajero.
 - Completar reservas y pagos en línea; verificar ventas administrativas y facturación contra el backend desplegado.
 - Integrar el dispositivo y las lecturas GPS/IoT.
 - Ampliar el backend para fotos, equipamiento y certificaciones.
@@ -283,6 +305,9 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
+
 
 
 

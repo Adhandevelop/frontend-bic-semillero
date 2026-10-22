@@ -1,4 +1,4 @@
-<div class="passenger-login">
+﻿<div class="passenger-login">
   <header>
     <a class="brand" routerLink="/"><span class="brand-icon" aria-hidden="true">▣</span><span>Buses Universal<small>PORTAL PASAJEROS</small></span></a>
     <nav aria-label="Navegación de pasajeros"><a routerLink="/">Inicio</a><a routerLink="/ubicacion">Ubicación del bus</a></nav>
@@ -16,13 +16,13 @@
         <div class="field"><div class="password-label"><label for="passenger-password">Contraseña</label><button class="text-button" type="button" (click)="recoverPassword()">¿Olvidaste tu contraseña?</button></div><div class="input-wrap"><span class="input-icon" aria-hidden="true">▣</span><input id="passenger-password" [type]="showPassword ? 'text' : 'password'" formControlName="password" autocomplete="current-password" placeholder="Tu contraseña" required [attr.aria-invalid]="invalid('password')" aria-describedby="password-error"><button class="peek" type="button" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="showPassword">{{ showPassword ? 'Ocultar' : 'Ver' }}</button></div><p id="password-error" class="error" *ngIf="invalid('password')">Ingresa tu contraseña.</p></div>
         <label class="remember"><input type="checkbox" formControlName="remember"><span>Recordar sesión en este equipo</span></label>
         <p class="message" role="status" aria-live="polite">{{ message }}</p>
-        <button class="submit" type="submit">Iniciar sesión <span aria-hidden="true">→</span></button>
+        <button class="submit" type="submit" [disabled]="loading">{{ loading ? 'Ingresando…' : 'Iniciar sesión' }} <span aria-hidden="true">→</span></button>
       </form>
       <div class="divider"><span>O continúa con</span></div>
       <div class="social"><button type="button" disabled>G &nbsp; Google</button><button type="button" disabled>◈ &nbsp; Apple</button></div>
       <p class="coming-soon">Google y Apple estarán disponibles próximamente.</p>
       <div class="quick-trip"><span class="ticket" aria-hidden="true">▦</span><div><strong>¿Solo quieres consultar tu viaje actual?</strong><p>Consulta la ubicación de nuestros buses.</p></div><a routerLink="/ubicacion">Ver buses →</a></div>
-      <p class="register-prompt"><a routerLink="/clientes/panel">Ver vista previa del portal de pasajeros →</a></p>
+      <p class="register-prompt"><a routerLink="/clientes/panel">Ir a mi perfil →</a></p>
       <p class="register-prompt">¿No tienes cuenta de viajero? <a routerLink="/registro">Regístrate gratis</a></p>
     </section>
     <aside class="showcase" aria-label="Experiencia de viaje">
@@ -30,5 +30,6 @@
       <section class="benefits"><h2>Beneficios exclusivos para pasajeros registrados</h2><div class="benefit-grid"><article><span aria-hidden="true">◷</span><h3>Check-in anticipado</h3><p>Prepara tu abordaje y organiza tu llegada al terminal.</p></article><article><span aria-hidden="true">▤</span><h3>Asiento preferencial</h3><p>Encuentra tu ubicación favorita para viajar con comodidad.</p></article><article><span aria-hidden="true">▱</span><h3>Alertas WhatsApp</h3><p>Recibe novedades sobre tus próximos trayectos.</p></article></div></section>
     </aside>
   </main>
-  <footer><div><strong>Buses Universal</strong><p>© 2026 Buses Universal. Todos los derechos reservados.</p></div><nav aria-label="Enlaces del portal"><a routerLink="/">Portal de pasajeros</a><a routerLink="/registro">Crear cuenta</a><a routerLink="/login">Acceso administrativo</a></nav></footer>
+  <footer><div><strong>Buses Universal</strong><p>© 2026 Buses Universal. Todos los derechos reservados.</p></div><nav aria-label="Enlaces del portal"><a routerLink="/">Portal de pasajeros</a><a routerLink="/registro">Crear cuenta</a></nav></footer>
 </div>
+
