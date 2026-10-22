@@ -154,6 +154,12 @@ Para emitir exige cliente con documento/correo/teléfono, viaje, silla, tarifa p
 
 Bloquea envíos simultáneos y nuevas emisiones después del éxito. Ante un resultado ambiguo (red/error del servidor), bloquea el reintento para evitar duplicados e indica verificar la operación en el servidor. La facturación Factus depende del backend; un fallo posterior al registro requiere conciliación. No se ejecutaron ventas reales durante las comprobaciones. Concurrencia y unicidad deben garantizarse también en el backend.
 
+### Diagnóstico en consola de ventas
+
+En F12 → Consola, filtrar por `[Ventas]` o `[Factus]`. Los fallos de registrar venta y consultar venta/factura usan `console.error` con operación, endpoint, HTTP y motivo general. Una venta sin `factus_invoice` o con factura pendiente genera `console.warn`; una factura con estado `error` genera `console.error`, aunque el HTTP sea exitoso. No se imprime el cuerpo completo, datos del pasajero, tokens, credenciales, CUFE ni códigos de tiquete. Los errores originales siguen llegando a la vista y el registro no genera reintentos ni solicitudes adicionales.
+
+La consola del navegador solo conoce lo que devuelve la API. Un HTTP 500 sin detalle exige revisar los logs de Django; estos registros no exponen excepciones internas del servidor.
+
 ### Facturación Factus
 
 El backend existente solicita un token con `POST /oauth/token` (formulario `grant_type=password`, credenciales de aplicación y cuenta) y envía la factura con Bearer a `/v2/bills/validate`. Angular no solicita ni guarda credenciales o tokens de Factus.
@@ -172,17 +178,15 @@ La búsqueda por documento usa `GET /api/accounts/customers/search/?identificati
 
 Ambos endpoints requieren administrador. La consulta tiene límite de 15 segundos y el registro bloquea solicitudes duplicadas. Los errores conservan los campos y distinguen ruta no disponible, permisos y validación; ante un resultado incierto se indica buscar el documento antes de reintentar. El directorio general conserva `/accounts/users/` como consulta paginada independiente, sin condicionar búsqueda/alta a su disponibilidad.
 
-**Disponibilidad del backend:** las rutas específicas no aparecen todavía en el checkout local revisado. Angular implementa el contrato suministrado; deben estar implementadas y desplegadas en el servidor para guardar cuentas realmente. No se hicieron altas reales en producción ni se confirma su disponibilidad con pruebas simuladas. El formulario administrativo independiente `/clientes/nuevo` aún usa el contrato anterior de cuentas con credenciales.
+**Disponibilidad del backend:** las rutas específicas no aparecen todavía en el checkout local revisado. Angular implementa el contrato suministrado; deben estar implementadas y desplegadas en el servidor para guardar cuentas realmente. No se hicieron altas reales en producción ni se confirma su disponibilidad con pruebas simuladas. El formulario administrativo independiente `/clientes/nuevo` también usa el endpoint específico de clientes.
 
 ### Registrar cliente
 
-`/clientes/nuevo` es una ruta administrativa protegida, accesible desde el dashboard de clientes. El formulario basado en Stitch envía documento, nombres, apellidos, teléfono, correo, usuario y contraseña mediante POST a `/api/accounts/users/`; el backend fija el rol `client`. Valida campos obligatorios, longitudes, formatos y confirmación de contraseña, bloquea envíos duplicados y muestra errores de validación del servidor. No guarda contraseñas en almacenamiento local.
+`/clientes/nuevo` utiliza `POST /api/accounts/customers/`, igual que el alta rápida de ventas. Solicita tipo y número de documento, nombres, apellidos, teléfono y correo. Combina nombres/apellidos en `name` (máximo 150 caracteres) y envía únicamente los cinco campos básicos; no pide ni envía usuario o contraseña. El servidor genera las credenciales internas. Elimina así la dependencia del antiguo POST de cuentas que producía HTTP 500 en sus validadores.
 
-Tipo de documento, nacimiento, género, residencia, preferencias, emergencia y consentimiento persistido aún requieren soporte de API. Se identifican como pendientes. Guardar vuelve al directorio; la acción alternativa abre la venta administrativa con el cliente preseleccionado únicamente después de una creación exitosa.
+El guard protege el formulario. Valida campos obligatorios, formatos y longitudes, bloquea duplicados mientras guarda y distingue errores de red, sesión, permisos, validación y servidor. Muestra errores por `name`, documento, tipo, correo y teléfono. Solo vuelve al directorio o continúa a ventas con el ID seleccionado tras una respuesta exitosa. Datos adicionales y preferencias permanecen pendientes.
 
-El registro administrativo distingue errores de conexión, sesión, permisos, validación, conflicto, servicio inexistente y errores internos HTTP 5xx. Los fallos conservan el formulario y no muestran una creación exitosa. Para diagnosticar un caso real, revisar el código HTTP y la respuesta de `POST /api/accounts/users/` en la pestaña Red del navegador, sin copiar contraseñas ni tokens.
-
-**Impedimento detectado en el backend local:** `UserSerializer.validate_username` llama `value.get("username")` cuando `value` es un string; `validate_password` también trata su argumento como diccionario. Estos validadores necesitan corrección en el backend para que el POST funcione. Esta modificación del frontend no cambia esos archivos. La creación real debe verificarse después de corregirlos.
+Las rutas `/accounts/customers/` y `/accounts/customers/search/` deben estar disponibles en el backend desplegado. Un error 500 de esas rutas todavía requiere revisar Django; cambiar Angular no corrige errores internos del servidor. Las comprobaciones de frontend usan servicios simulados.
 
 ### Crear y editar rutas
 
@@ -264,6 +268,8 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
 
 
 
