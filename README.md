@@ -136,6 +136,22 @@ Para emitir exige cliente con documento/correo/teléfono, viaje, silla, tarifa p
 
 Bloquea envíos simultáneos y nuevas emisiones después del éxito. Ante un resultado ambiguo (red/error del servidor), bloquea el reintento para evitar duplicados e indica verificar la operación en el servidor. La facturación Factus depende del backend; un fallo posterior al registro requiere conciliación. No se ejecutaron ventas reales durante las comprobaciones. Concurrencia y unicidad deben garantizarse también en el backend.
 
+### Facturación Factus
+
+El backend existente solicita un token con `POST /oauth/token` (formulario `grant_type=password`, credenciales de aplicación y cuenta) y envía la factura con Bearer a `/v2/bills/validate`. Angular no solicita ni guarda credenciales o tokens de Factus.
+
+El resultado de venta muestra `factus_invoice`: estado pendiente/emitida/error, número, CUFE, enlace público HTTPS y notificaciones recibidas en `raw_response.data.errors`. **Actualizar estado de factura** consulta `GET /api/sales/sales/:id/`, sin emitir otra venta ni reintentar la factura. Un error fiscal no implica que el tiquete no se haya emitido.
+
+Para probar la integración, configurar en el servidor `FACTUS_BASE_URL`, `FACTUS_USERNAME`, `FACTUS_PASSWORD`, `FACTUS_CLIENT_ID`, `FACTUS_CLIENT_SECRET` y las variables fiscales existentes `FACTUS_NUMBERING_RANGE_ID`, `FACTUS_MUNICIPALITY_CODE`, `FACTUS_PRODUCT_CODE`, `FACTUS_PRODUCT_NAME`, `FACTUS_UNIT_MEASURE_CODE`, `FACTUS_STANDARD_CODE`, `FACTUS_TAX_CODE`, `FACTUS_TAX_RATE`, `FACTUS_TAX_EXCLUDED`, según la cuenta y el servicio. No copiar credenciales al frontend ni al repositorio. No se verificaron credenciales, configuración del servidor ni emisión real de sandbox desde esta sesión.
+
+Queda pendiente almacenar y mapear el tipo de documento: el backend actual fija `identification_document_code` en `13`. También requiere revisar los datos fiscales y la relación entre tarifa, impuestos y total; no se debe copiar el IVA o los productos del ejemplo como regla del transporte. El cliente OAuth actual no envía explícitamente `Accept: application/json`; conviene añadirlo al revisar el backend.
+
+### Registro rápido desde ventas
+
+**Añadir cliente** sustituye el selector de pasajero por un formulario dentro de la venta: nombre completo, celular, correo, tipo y número de documento. Crear y seleccionar realiza el POST de cuenta, agrega el cliente al catálogo y lo selecciona sin perder viaje ni silla. Cancelar conserva el pasajero anterior. No permite emitir mientras el formulario está abierto ni crear cuentas simultáneas; valida campos y duplicados en el catálogo y mantiene los datos ante errores.
+
+Para adaptar el contrato existente, el número de documento se usa como usuario, el último término del nombre como apellido y el resto como nombres. Se genera una contraseña inicial aleatoria con Web Crypto, sin mostrarla ni almacenarla localmente. El acceso del pasajero requiere implementar activación/recuperación; no se usa el documento como contraseña. El tipo de documento se selecciona pero todavía no se persiste porque no existe en la API. Los errores de validadores del backend descritos abajo siguen siendo un impedimento para crear cuentas reales.
+
 ### Registrar cliente
 
 `/clientes/nuevo` es una ruta administrativa protegida, accesible desde el dashboard de clientes. El formulario basado en Stitch envía documento, nombres, apellidos, teléfono, correo, usuario y contraseña mediante POST a `/api/accounts/users/`; el backend fija el rol `client`. Valida campos obligatorios, longitudes, formatos y confirmación de contraseña, bloquea envíos duplicados y muestra errores de validación del servidor. No guarda contraseñas en almacenamiento local.
@@ -224,6 +240,8 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
 
 
 
