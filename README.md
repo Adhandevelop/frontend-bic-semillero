@@ -184,6 +184,20 @@ La ruta `/` usa la version actualizada de Stitch (22 de octubre de 2026): consul
 
 Archivos: `src/app/pages/home/home.component.ts`, `home.component.html`, `home.component.css` (cabecera, consulta y formulario) y `home-content.component.css` (tarjetas, novedades, comunidad y estilos adaptables).
 
+## Registrar y editar conductores
+
+Las rutas protegidas `/conductores/nuevo` y `/conductores/editar/:id` usan el nuevo diseno de Stitch: informacion personal, licencia y certificaciones a la izquierda; perfil y progreso a la derecha.
+
+- Guarda en la API unicamente `full_name`, `user`, `license_number`, `address` y `phone_number`. Se conserva el nombre completo en un unico campo para no dividir de forma ambigua los registros existentes.
+- Campos obligatorios sin valores en blanco; ID de usuario asociado entero mayor que cero y telefono con 7 a 15 digitos (admite prefijo + y separadores). El ID debe pertenecer a un usuario existente; este formulario no crea cuentas.
+- Previsualizacion reactiva de nombre, licencia y progreso de los cinco campos obligatorios; guardado real mediante crear/actualizar y regreso al panel cuando responde correctamente.
+- Foto PNG, JPG o WEBP de hasta 5 MB con vista previa local, opcion de quitar y liberacion de la URL temporal al salir o reemplazarla. La imagen inicial es ilustrativa y proviene del HTML de referencia.
+- Documento, nacimiento, correo, categoria/vencimiento de licencia, experiencia, RH y estado sugerido son opcionales y exclusivamente locales. Se indica en pantalla que no se guardan ni se cargan desde el registro real.
+- Certificaciones inicialmente desmarcadas y solo para previsualizar. No se realizan verificaciones de licencia, antecedentes ni consultas a organismos oficiales.
+- Bloqueo de envios duplicados, error de carga con reintento, impedimento de sobrescritura tras fallar la carga y manejo de errores al guardar. Descartar vuelve al panel sin enviar datos.
+
+Archivos: `src/app/pages/conductores/conductor-form.component.ts`, `conductor-form.component.html` y `conductor.component.css`. Pendiente: ampliar el contrato del backend para fotografia, datos complementarios y verificaciones.
+
 ## Dashboard: panel de conductores
 
 La ruta protegida `/conductores` adapta el diseno de Stitch al layout administrativo. Usa los registros reales de `/fleet/drivers/` y conserva registro, edicion y eliminacion.
@@ -286,6 +300,8 @@ La vista publica `/registro` adapta el HTML de Stitch a un componente Angular st
 Archivos: `src/app/pages/registro/registro.component.ts`, `registro.component.html` y `registro.component.css`.
 
 ## Estado de verificacion
+
+El formulario de registro y edicion de conductores paso la compilacion completa el 22 de octubre de 2026. Se verificaron con servicios simulados campos obligatorios, ID numerico, telefono, payload de creacion/edicion sin datos locales, formato/tamano de imagen, liberacion de URL, bloqueo de duplicados y errores de carga/guardado. No se modificaron conductores reales. Permanecen advertencias de tamano del paquete inicial, estilos y Leaflet.
 
 La pagina principal actualizada compilo con `npm run build` el 22 de octubre de 2026. Se comprobaron navegacion a compra, origen/destino distintos, fechas reales y orden del regreso, solicitudes no soportadas, rutas populares, pestanas de consulta y boletin. No se enviaron datos a servicios externos. Quedan advertencias de tamano del paquete inicial y estilos, ademas de Leaflet en CommonJS.
 
