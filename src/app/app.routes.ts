@@ -16,6 +16,11 @@ import { ViajeFormComponent } from './pages/viajes/viaje-form.component';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: HomeComponent },
   { path: 'login', component: LoginComponent },
+  { path: 'clientes/comprar', loadComponent: () => import('./pages/booking/booking.component').then(m => m.BookingComponent) },
+  { path: 'clientes/panel', loadComponent: () => import('./pages/client-panel/client-panel.component').then(m => m.ClientPanelComponent) },
+  { path: 'clientes/login', loadComponent: () => import('./pages/client-login/client-login.component').then(m => m.ClientLoginComponent) },
+  { path: 'registro', loadComponent: () => import('./pages/registro/registro.component').then(m => m.RegistroComponent) },
+  { path: 'ubicacion', loadComponent: () => import('./pages/ubicacion/ubicacion.component').then(m => m.UbicacionComponent) },
   {
     path: '',
     component: LayoutComponent,

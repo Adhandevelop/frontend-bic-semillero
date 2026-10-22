@@ -1,0 +1,46 @@
+<div class="registration-page">
+  <header class="registration-header">
+    <a class="brand" routerLink="/"><span aria-hidden="true">▣</span> Buses Universal</a>
+    <nav aria-label="Navegación de pasajeros"><a routerLink="/">Inicio</a><a routerLink="/ubicacion">Ubicación del bus</a></nav>
+    <div class="header-account"><span>¿Ya tienes cuenta?</span><a routerLink="/clientes/login">Iniciar sesión</a></div>
+  </header>
+  <main>
+    <div class="breadcrumb"><a routerLink="/">Portal pasajeros</a><span aria-hidden="true">›</span><span>Registro de nuevos clientes</span></div>
+    <div class="registration-grid">
+      <section class="registration-card" aria-labelledby="registration-title">
+        <span class="eyebrow">♙ Cuenta personal de pasajero</span>
+        <h1 id="registration-title">Únete a Buses Universal</h1>
+        <p class="intro">Crea tu cuenta de pasajero y viaja con mayor comodidad, descuentos exclusivos y seguimiento de tus trayectos.</p>
+        <div class="social-heading">Acceso alternativo rápido</div>
+        <div class="social-buttons"><button type="button" disabled>G &nbsp; Continuar con Google</button><button type="button" disabled>◈ &nbsp; Continuar con Apple</button></div>
+        <p class="coming-soon">Google y Apple estarán disponibles próximamente.</p>
+        <div class="divider"><span>O con tu documento de identidad</span></div>
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <div class="fields">
+            <div class="field"><label for="first-name">Nombres completos <small>Obligatorio</small></label><input id="first-name" formControlName="firstName" autocomplete="given-name" placeholder="Ej. Carlos Andrés" maxlength="100" required [attr.aria-invalid]="invalid('firstName')" aria-describedby="first-name-error"><span id="first-name-error" class="error" *ngIf="invalid('firstName')">Ingresa tus nombres.</span></div>
+            <div class="field"><label for="last-name">Apellidos completos <small>Obligatorio</small></label><input id="last-name" formControlName="lastName" autocomplete="family-name" placeholder="Ej. Restrepo Valencia" maxlength="100" required [attr.aria-invalid]="invalid('lastName')" aria-describedby="last-name-error"><span id="last-name-error" class="error" *ngIf="invalid('lastName')">Ingresa tus apellidos.</span></div>
+            <div class="field"><label for="document-type">Tipo de documento</label><select id="document-type" formControlName="documentType"><option value="CC">Cédula de ciudadanía</option><option value="PAS">Pasaporte</option><option value="CE">Cédula de extranjería</option></select></div>
+            <div class="field"><label for="document-number">Número de documento</label><input id="document-number" formControlName="documentNumber" placeholder="Ej. 1020458923" maxlength="20" required [attr.aria-invalid]="invalid('documentNumber')" aria-describedby="document-error"><span id="document-error" class="error" *ngIf="invalid('documentNumber')">Usa entre 5 y 20 letras, números o guiones.</span></div>
+            <div class="field"><label for="phone">Teléfono móvil <small>Colombia</small></label><div class="phone-input"><span>+57</span><input id="phone" type="tel" formControlName="phone" autocomplete="tel-national" inputmode="numeric" placeholder="3100000000" maxlength="10" required [attr.aria-invalid]="invalid('phone')" aria-describedby="phone-error"></div><span id="phone-error" class="error" *ngIf="invalid('phone')">Ingresa 10 dígitos comenzando por 3, sin espacios.</span></div>
+            <div class="field"><label for="email">Correo electrónico <small>Para tus tiquetes</small></label><input id="email" type="email" formControlName="email" autocomplete="email" placeholder="nombre@correo.com" required [attr.aria-invalid]="invalid('email')" aria-describedby="email-error"><span id="email-error" class="error" *ngIf="invalid('email')">Ingresa un correo electrónico válido.</span></div>
+            <div class="field"><label for="new-password">Contraseña</label><div class="password-input"><input id="new-password" [type]="showPassword ? 'text' : 'password'" formControlName="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required [attr.aria-invalid]="invalid('password')" aria-describedby="password-help password-error"><button type="button" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="showPassword">{{ showPassword ? 'Ocultar' : 'Ver' }}</button></div><span id="password-error" class="error" *ngIf="invalid('password')">Usa 8 caracteres o más, mayúsculas, minúsculas y un número.</span></div>
+            <div class="field"><label for="confirm-password">Confirmar contraseña</label><div class="password-input"><input id="confirm-password" [type]="showConfirmation ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" placeholder="Repite tu clave" required [attr.aria-invalid]="form.controls.confirmPassword.touched && (form.hasError('passwordsMismatch') || invalid('confirmPassword'))" aria-describedby="confirmation-error"><button type="button" (click)="showConfirmation = !showConfirmation" [attr.aria-label]="showConfirmation ? 'Ocultar confirmación' : 'Mostrar confirmación'" [attr.aria-pressed]="showConfirmation">{{ showConfirmation ? 'Ocultar' : 'Ver' }}</button></div><span id="confirmation-error" class="error" *ngIf="form.controls.confirmPassword.touched && (form.hasError('passwordsMismatch') || invalid('confirmPassword'))">Las contraseñas deben coincidir.</span></div>
+          </div>
+          <div class="strength"><div><strong>Seguridad de la contraseña</strong><span>{{ strengthLabel }}</span></div><div class="strength-bars" role="meter" aria-label="Seguridad de la contraseña" aria-valuemin="0" aria-valuemax="4" [attr.aria-valuenow]="strength" [attr.aria-valuetext]="strengthLabel"><span *ngFor="let level of [1, 2, 3, 4]" [class.filled]="strength >= level"></span></div><p id="password-help">Usa al menos 8 caracteres combinando mayúsculas, minúsculas y un número.</p></div>
+          <label class="check"><input type="checkbox" formControlName="terms" required [attr.aria-invalid]="invalid('terms')" aria-describedby="terms-error"><span>Acepto los términos y condiciones y la política de privacidad y tratamiento de datos personales.</span></label>
+          <span id="terms-error" class="error" *ngIf="invalid('terms')">Debes aceptar los términos para continuar.</span>
+          <label class="check"><input type="checkbox" formControlName="promotions"><span>Deseo recibir promociones exclusivas, cupones de descuento y novedades de rutas por WhatsApp o correo electrónico.</span></label>
+          <p class="form-message" role="status" aria-live="polite">{{ message }}</p>
+          <button class="submit" type="submit">Crear cuenta de pasajero <span aria-hidden="true">→</span></button>
+          <p class="sign-in">¿Ya eres miembro? <a routerLink="/clientes/login">Inicia sesión aquí →</a></p>
+        </form>
+      </section>
+      <aside class="benefits" aria-label="Beneficios para pasajeros">
+        <section class="welcome"><span class="eyebrow">✦ Beneficio de bienvenida</span><h2>¡Recibe 15% de descuento en tu primer viaje intermunicipal!</h2><p>Descubre las ventajas de viajar con Buses Universal y tener tus trayectos siempre a mano.</p><div class="coupon"><strong>CÓDIGO: UNIVERSAL15</strong><span>Promoción de ejemplo</span></div></section>
+        <section class="benefit-card"><h2>✦ Ventajas de viajar con cuenta activa</h2><article><span aria-hidden="true">ϟ</span><div><h3>Compra en 1 clic</h3><p>Reserva tus pasajes con mayor comodidad y encuentra tus viajes en un solo lugar.</p></div></article><article><span aria-hidden="true">▤</span><div><h3>Asientos en tiempo real</h3><p>Encuentra tu ubicación preferida para disfrutar de cada trayecto.</p></div></article><article><span aria-hidden="true">⌖</span><div><h3>Monitoreo GPS con tu familia</h3><p>Consulta la ubicación de tu bus y comparte el trayecto con quienes te esperan.</p></div></article><article><span aria-hidden="true">▦</span><div><h3>Gestión y cambios sin filas</h3><p>Consulta tus tiquetes y organiza tus próximas salidas desde tu celular.</p></div></article></section>
+        <section class="testimonial"><div class="stars" aria-label="5 estrellas">★★★★★ <strong>Pasajero frecuente</strong></div><blockquote>“Crear mi perfil me ahorró horas en las fechas pico. Compartir la ubicación de mi viaje le da tranquilidad a mi familia.”</blockquote><div class="reviewer"><span aria-hidden="true">MC</span><div><strong>Mateo Cárdenas Silva</strong><p>Ruta Bogotá — Medellín · Testimonio de ejemplo</p></div></div></section>
+      </aside>
+    </div>
+  </main>
+  <footer><div><strong>Buses Universal</strong><p>© 2026 Buses Universal. Todos los derechos reservados.</p></div><a routerLink="/">Portal de pasajeros</a><a routerLink="/clientes/login">Iniciar sesión</a></footer>
+</div>
