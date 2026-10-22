@@ -144,7 +144,8 @@ PATCH /api/accounts/me/
 ```
 
 Requiere autenticación. El cliente solo puede consultar y editar su propio
-nombre, correo y celular. El tipo y número de documento son de solo lectura.
+nombre, correo y celular. El tipo, número de documento y `role` se devuelven
+en la respuesta, pero son de solo lectura.
 
 ### Listar usuarios
 
@@ -753,5 +754,54 @@ Framework y `drf-spectacular`.
 5. Enviar POST /api/sales/wompi/status/ con el resultado.
 6. Consultar GET /api/sales/sales/{id}/ o GET /api/sales/tickets/.
 ```
+
+### Compra online de varias sillas
+
+```http
+POST /api/sales/wompi/multi-checkout/
+```
+
+Solicitud:
+
+```json
+{
+  "trip": 15,
+  "passengers": [
+    {
+      "seat": 5,
+      "name": "Ana Perez",
+      "identification_number": "100000001",
+      "email": "ana@example.com",
+      "telephone": "3001234567"
+    },
+    {
+      "seat": 6,
+      "name": "Luis Perez",
+      "identification_number": "100000002",
+      "email": "luis@example.com",
+      "telephone": "3007654321"
+    }
+  ],
+  "redirect_url": "https://portalbic.site/clientes/comprar"
+}
+```
+
+El backend calcula el total, reserva todas las sillas durante cinco minutos y
+devuelve un único `purchase_id`, `reference`, `amount_in_cents`,
+`signature_integrity` y `expires_at` para el Widget de Wompi. Si una silla no
+está disponible, responde `409` y no deja reservas parciales.
+
+Para confirmar el pago se utiliza `POST /api/sales/wompi/status/` enviando
+`purchase_id` y el `transaction_id` de Wompi:
+
+```json
+{
+  "purchase_id": 31,
+  "transaction_id": "ID_DEVUELTO_POR_WOMPI"
+}
+```
+
+Se genera un tiquete por pasajero; una confirmación repetida no duplica los
+tiquetes. El endpoint individual continúa usando `sale_id`.
 
 El precio siempre debe provenir del backend. El frontend solo lo muestra.

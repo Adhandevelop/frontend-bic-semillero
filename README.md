@@ -213,7 +213,7 @@ Solo envía a la API los IDs de origen y destino y la distancia. Duración, tari
 
 El portal de pasajeros está separado del layout administrativo. Registro `/registro` envía a `POST /api/accounts/register/` los datos básicos, tipo de documento numérico y contraseña; no envía confirmación, promociones ni un rol elegido en el navegador. Valida los campos, bloquea envíos repetidos, muestra errores JSON y limpia las contraseñas tras el éxito. Después permite iniciar sesión; no anuncia autenticación automática.
 
-Login `/clientes/login` envía correo o documento como `username` a `/api/token/`, consulta `/api/accounts/me/` con el token recibido y exige `role: client` antes de almacenarlo. Esta comprobación requiere que la respuesta de perfil incluya `role`; si no lo devuelve, la entrada se deniega hasta aclarar el contrato. La sesión usa claves `bic_passenger_access` y `bic_passenger_refresh`, distintas de las administrativas. **Recordar sesión** elige localStorage; sin marcarlo usa sessionStorage. El cierre de sesión de cliente no borra la sesión administrativa. La renovación automática no está implementada.
+Login `/clientes/login` envía correo o documento como `username` a `/api/token/`, consulta `/api/accounts/me/` con el token recibido y exige `role: client` antes de almacenarlo. Esta comprobación requiere que la respuesta de perfil incluya `role`. Si falta, la vista informa expresamente que no pudo verificarlo, sin afirmar que la cuenta tenga otro rol; la consola registra `[Portal cliente]` y `rolePresent`, sin datos personales. Un rol distinto de `client` y un HTTP 403 del servidor muestran motivos separados. La entrada continúa denegada si no se puede comprobar el rol. La sesión usa claves `bic_passenger_access` y `bic_passenger_refresh`, distintas de las administrativas. **Recordar sesión** elige localStorage; sin marcarlo usa sessionStorage. El cierre de sesión de cliente no borra la sesión administrativa. La renovación automática no está implementada.
 
 `passengerGuard` protege perfil y compra mediante consulta del perfil, sin aceptar una sesión administrativa. Las peticiones de cliente envían explícitamente su token; token y registro públicos no reciben el token administrativo del interceptor. El perfil carga `/accounts/me/`, permite PATCH únicamente de nombre/correo/celular y muestra documentos de solo lectura. El historial reúne todas las páginas de `/sales/sales/`, con importes históricos, estados, tiquetes y factura cuando se devuelven. No presenta puntos, membresías ni viajes ficticios. El backend debe aplicar permisos por propietario.
 
@@ -305,6 +305,7 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
 
 
 
