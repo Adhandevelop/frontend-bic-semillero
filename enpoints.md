@@ -95,6 +95,57 @@ editar o eliminar. Las excepciones se indican en cada sección.
 
 ## 4. Usuarios
 
+### Registro público
+
+```http
+POST /api/accounts/register/
+```
+
+No requiere token. Recibe:
+
+```json
+{
+  "identification_document_code": "13",
+  "identification_number": "1000000000",
+  "name": "Juan Perez",
+  "email": "juan@example.com",
+  "telephone": "3001234567",
+  "password": "ClaveSegura123"
+}
+```
+
+El backend valida duplicados, guarda la contraseña cifrada y fija el rol
+`client`.
+
+### Login
+
+```http
+POST /api/token/
+```
+
+El campo `username` acepta el correo o el número de documento:
+
+```json
+{
+  "username": "juan@example.com",
+  "password": "ClaveSegura123"
+}
+```
+
+Las cuentas creadas por un administrativo inicialmente usan la cédula como
+contraseña. El cliente debe cambiarla posteriormente desde un flujo de cambio
+de contraseña, todavía pendiente de agregar.
+
+### Perfil propio
+
+```http
+GET /api/accounts/me/
+PATCH /api/accounts/me/
+```
+
+Requiere autenticación. El cliente solo puede consultar y editar su propio
+nombre, correo y celular. El tipo y número de documento son de solo lectura.
+
 ### Listar usuarios
 
 ```http
@@ -544,9 +595,9 @@ genera el tiquete. No se debe enviar `amount_cents`: el frontend no puede
 definir el precio. Si la silla tiene una reserva online vigente, responde
 `409 Conflict`. Las reservas online vencen después de 5 minutos.
 
-Si el documento no existe, el endpoint crea un usuario cliente. También se
-puede buscar o registrar previamente mediante los endpoints específicos de
-customers documentados en la sección 4.
+Si el documento no existe, el endpoint crea un usuario cliente. Actualmente
+no hay un endpoint independiente para buscar o crear clientes con un payload
+reducido.
 
 ## 10. Compra online con Wompi
 
@@ -704,4 +755,3 @@ Framework y `drf-spectacular`.
 ```
 
 El precio siempre debe provenir del backend. El frontend solo lo muestra.
-
