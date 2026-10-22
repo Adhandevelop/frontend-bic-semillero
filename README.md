@@ -148,7 +148,7 @@ Queda pendiente almacenar y mapear el tipo de documento: el backend actual fija 
 
 ### Registro rápido desde ventas
 
-**Cliente existente** consulta una coincidencia exacta por documento, rellena nombre, correo y celular y muestra el tipo de documento si la API lo devuelve. Mientras no exista el filtro del backend, `ClienteService.buscarPorDocumento` consulta todas las páginas del catálogo y filtra por documento completo; no presupone que el servidor aplique `?identification_number=`. El filtro independiente de API queda pendiente. Una búsqueda sin resultados ofrece **Añadir cliente** y precarga su documento; un error de consulta no se interpreta como cliente inexistente. Cambiar el documento elimina la selección anterior y bloquea emitir mientras se busca.
+**Cliente existente** consulta una coincidencia exacta por documento, rellena nombre, correo y celular y muestra el tipo de documento si la API lo devuelve. Mientras no exista el filtro del backend, `ClienteService.buscarPorDocumento` consulta todas las páginas del catálogo y filtra por documento completo; no presupone que el servidor aplique `?identification_number=`. El filtro independiente de API queda pendiente. El directorio se carga mediante una suscripción independiente de viajes/sillas/rutas/tarifas: un fallo de esos catálogos no descarta una respuesta 200 de clientes. Muestra conteo, selección directa de los primeros 20 clientes, búsqueda exacta para el resto y su propio estado de carga/error/reintento. La búsqueda y el formulario de pasajero funcionan independientemente de la carga de viajes/sillas. El botón ejecuta explícitamente la búsqueda y Enter también la envía; la consulta tiene un límite de 15 segundos para evitar un bloqueo indefinido. Se compara el documento completo como texto, tolerando espacios externos y valores numéricos del catálogo. Si se preparan datos con un documento ya cargado, se selecciona automáticamente la cuenta existente. Una búsqueda sin resultados ofrece **Añadir cliente** y precarga su documento; un error de consulta no se interpreta como cliente inexistente. Cambiar el documento elimina la selección anterior y bloquea emitir mientras se busca.
 
 **Cliente nuevo / Añadir cliente** abre los cinco campos dentro de la venta. **Usar estos datos en la venta** valida y prepara al pasajero en memoria, conservando viaje y silla; no crea una cuenta todavía. Al confirmar la venta, un único POST a `/api/sales/admin-sales/` envía `identification_number`, `name`, `email`, `telephone`, `trip`, `seat` y `payment_method`. El backend busca o crea al cliente y emite el tiquete. Este flujo no utiliza el POST separado de cuentas ni genera credenciales desde Angular.
 
@@ -244,6 +244,8 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
 
 
 

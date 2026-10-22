@@ -21,11 +21,12 @@ export class ClienteService {
   buscarPorDocumento(documento:string):Observable<Cliente[]>{
     const value=documento.trim().toLocaleLowerCase();
     // Temporary exact match across all pages until the API supports this filter.
-    return this.listar().pipe(map(clients=>clients.filter(c=>c.identification_number.trim().toLocaleLowerCase()===value)));
+    return this.listar().pipe(map(clients=>clients.filter(c=>String(c.identification_number??'').trim().toLocaleLowerCase()===value)));
   }
   listar():Observable<Cliente[]>{
     return allApiPages<Cliente>(this.http,API_BASE_URL+'/accounts/users/').pipe(map(users=>users.filter(user=>user.role==='client')));
   }
 }
+
 
 

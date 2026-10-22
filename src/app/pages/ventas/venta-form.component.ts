@@ -2,23 +2,34 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, timeout } from 'rxjs';
 import { Cliente, ClienteService } from '../../core/services/cliente.service';
 import { RutaService } from '../../core/services/ruta.service';
 import { Ruta } from '../../core/models/ruta.model';
 import { VentaService, SaleTrip, SaleSeat, SaleFare, SaleTicket, SaleResult, AdminSalePayload } from '../../core/services/venta.service';
 @Component({selector:'app-venta-form',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./venta-form.component.html',styleUrl:'./venta-form.component.css'})
 export class VentaFormComponent implements OnInit {
+  get passengerLocked():boolean{return this.searchingClient||this.saving||this.uncertain||!!this.result;}
+  clientsLoading=false;clientsError='';
+  cargarClientes():void{
+    if(this.clientsLoading)return;this.clientsLoading=true;this.clientsError='';
+    this.clientsApi.listar().pipe(timeout(15000)).subscribe({next:clients=>{
+      this.clients=clients;this.clientsLoading=false;
+      const id=Number(this.route.snapshot.queryParamMap.get('cliente'));
+      if(!this.clientId&&!this.draftPassenger&&clients.some(c=>c.id===id)){this.clientId=id;this.lookupDocument=this.client?.identification_number??'';}
+    },error:()=>{this.clientsLoading=false;this.clientsError='No se pudo cargar el directorio de clientes. Reintenta la carga o prepara los datos del pasajero para la venta.';}});
+  }
+  chooseClient(client:Cliente):void{if(this.passengerLocked)return;this.clientId=client.id;this.draftPassenger=null;this.lookupDocument=client.identification_number;this.addingClient=false;this.clientNotFound=false;this.lookupError='';this.paid=false;this.clientNotice='Cliente seleccionado para la venta.';}
   searchingClient=false;lookupDocument='';lookupError='';clientNotFound=false;
   documentChanged():void{this.clientId=null;this.draftPassenger=null;this.paid=false;this.clientNotFound=false;this.lookupError='';this.clientNotice='';}
-  existingMode():void{if(this.locked)return;this.addingClient=false;this.draftPassenger=null;this.clientError='';this.clientNotice='';this.paid=false;}
+  existingMode():void{if(this.passengerLocked)return;this.addingClient=false;this.draftPassenger=null;this.clientError='';this.clientNotice='';this.paid=false;}
   buscarCliente():void{
-    if(this.locked)return;
+    if(this.passengerLocked)return;
     const document=this.lookupDocument.trim();
     this.documentChanged();
     if(!/^[A-Za-z0-9.-]{1,20}$/.test(document)){this.lookupError='Ingresa un documento válido de hasta 20 caracteres.';return;}
     this.searchingClient=true;
-    this.clientsApi.buscarPorDocumento(document).subscribe({next:matches=>{
+    this.clientsApi.buscarPorDocumento(document).pipe(timeout(15000)).subscribe({next:matches=>{
       this.searchingClient=false;
       if(matches.length>1){this.lookupError='Hay varias cuentas con ese documento. Revisa el catálogo antes de vender.';return;}
       if(!matches.length){this.clientNotFound=true;return;}
@@ -39,18 +50,18 @@ export class VentaFormComponent implements OnInit {
   draftPassenger:Omit<Cliente,'id'|'role'>|null=null;
   addingClient=false;clientError='';clientNotice='';
   newClient={name:'',telephone:'',email:'',documentType:'CC',documentNumber:''};
-  openClient():void{if(this.locked)return;this.addingClient=true;if(this.clientNotFound)this.newClient.documentNumber=this.lookupDocument.trim();this.clientError='';this.clientNotice='';this.paid=false;}
-  cancelClient():void{if(this.locked)return;this.addingClient=false;this.clientError='';}
+  openClient():void{if(this.passengerLocked)return;this.addingClient=true;if(this.lookupDocument.trim())this.newClient.documentNumber=this.lookupDocument.trim();this.clientError='';this.clientNotice='';this.paid=false;}
+  cancelClient():void{if(this.passengerLocked)return;this.addingClient=false;this.clientError='';}
   createClient():void{
-    if(this.locked)return;
+    if(this.passengerLocked)return;
     this.clientError='';
     const draft=this.newClient,name=draft.name.trim().replace(/\s+/g,' '),email=draft.email.trim().toLowerCase(),telephone=draft.telephone.trim(),document=draft.documentNumber.trim();
     const names=name.split(' ');
     if(names.length<2||name.length>150||!/^\+?[0-9 ()-]{7,20}$/.test(telephone)||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>50||! /^[A-Za-z0-9.-]{1,20}$/.test(document)||!['CC','CE','PAS','TI','PEP'].includes(draft.documentType)){
       this.clientError='Revisa nombre y apellido, celular (7 a 20 caracteres), correo (máximo 50) y documento (hasta 20 letras, números, puntos o guiones).';return;
     }
-    const existing=this.clients.find(c=>c.identification_number.toLocaleLowerCase()===document.toLocaleLowerCase());
-    if(existing){this.clientError='Ya existe un cliente con ese documento. Selecciónalo en el directorio de pasajeros.';return;}
+    const existing=this.clients.find(c=>String(c.identification_number??'').trim().toLocaleLowerCase()===document.toLocaleLowerCase());
+    if(existing){this.clientId=existing.id;this.draftPassenger=null;this.addingClient=false;this.lookupDocument=document;this.paid=false;this.clientNotice='El documento ya existe. Cliente seleccionado para la venta.';return;}
     if(this.clients.some(c=>c.email?.toLocaleLowerCase()===email)){this.clientError='Ya existe un cliente con ese correo. Búscalo en el directorio de pasajeros.';return;}
     this.draftPassenger={username:'',first_name:name,last_name:'',email,telephone,identification_number:document};
     this.clientId=null;this.search='';this.addingClient=false;this.paid=false;
@@ -61,7 +72,7 @@ export class VentaFormComponent implements OnInit {
   clients:Cliente[]=[];trips:SaleTrip[]=[];seats:SaleSeat[]=[];fares:SaleFare[]=[];tickets:SaleTicket[]=[];routes:Ruta[]=[];
   tripId:number|null=null;clientId:number|null=null;seatId:number|null=null;search='';payment:AdminSalePayload['payment_method']='cash';paid=false;
   constructor(private sales:VentaService,private clientsApi:ClienteService,private routesApi:RutaService,private route:ActivatedRoute){}
-  ngOnInit():void{this.cargar();}
+  ngOnInit():void{this.cargarClientes();this.cargar();}
   get locked():boolean{return this.searchingClient||this.loading||this.saving||this.uncertain||!!this.result;}
   get trip():SaleTrip|undefined{return this.trips.find(t=>t.id===this.tripId);}
   get client():Omit<Cliente,'id'|'role'>|undefined{return this.draftPassenger??this.clients.find(c=>c.id===this.clientId);}
@@ -77,11 +88,11 @@ export class VentaFormComponent implements OnInit {
   selectSeat(s:SaleSeat):void{if(this.locked||this.sold(s.id))return;this.seatId=s.id;this.paid=false;}
   cargar():void{
     if(this.locked)return;this.loading=true;this.error='';
-    forkJoin({catalog:this.sales.catalogos(),clients:this.clientsApi.listar(),routes:this.routesApi.listar()}).subscribe({next:({catalog,clients,routes})=>{
-      this.trips=catalog.trips.filter(t=>t.trip_state==='scheduled'&&new Date(t.date_time_start).getTime()>Date.now());this.seats=catalog.seats;this.fares=catalog.fares;this.tickets=catalog.tickets;this.clients=clients;this.routes=routes;
+    forkJoin({catalog:this.sales.catalogos(),routes:this.routesApi.listar()}).pipe(timeout(15000)).subscribe({next:({catalog,routes})=>{
+      this.trips=catalog.trips.filter(t=>t.trip_state==='scheduled'&&new Date(t.date_time_start).getTime()>Date.now());this.seats=catalog.seats;this.fares=catalog.fares;this.tickets=catalog.tickets;this.routes=routes;
       if(!this.trip)this.tripId=null;this.seatId=null;this.paid=false;
-      const id=Number(this.route.snapshot.queryParamMap.get('cliente'));if(!this.clientId&&clients.some(c=>c.id===id))this.clientId=id;if(this.clientId)this.lookupDocument=this.client?.identification_number??'';this.loading=false;
-    },error:()=>{this.loading=false;this.error='No se pudieron cargar los viajes, clientes, tarifas o sillas. Revisa tu sesión, permisos y la disponibilidad de la API.';this.trips=[];this.seats=[];}});
+      this.loading=false;
+    },error:()=>{this.loading=false;this.error='No se pudieron cargar los viajes, rutas, tarifas o sillas. El directorio de clientes se carga por separado. Revisa tu sesión, permisos y la disponibilidad de la API.';this.trips=[];this.seats=[];}});
   }
   emitir():void {
     if(!this.ready)return;
@@ -100,6 +111,8 @@ export class VentaFormComponent implements OnInit {
     },error:()=>{this.saving=false;this.error='No se pudo verificar la disponibilidad de la silla. No se envió la venta.';}});
   }
 }
+
+
 
 
 
