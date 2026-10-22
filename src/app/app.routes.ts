@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+﻿import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { LayoutComponent } from './shared/layout/layout.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
@@ -27,7 +27,9 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
+      { path: 'ventas/nueva', loadComponent: () => import('./pages/ventas/venta-form.component').then(m => m.VentaFormComponent) },
       { path: 'dashboard', component: DashboardComponent },
+      { path: 'clientes/nuevo', loadComponent: () => import('./pages/clientes/client-form.component').then(m => m.ClientFormComponent) },
       { path: 'clientes', loadComponent: () => import('./pages/clientes/client-list.component').then(m => m.ClientListComponent) },
       { path: 'buses', component: BusListComponent },
       { path: 'buses/nuevo', component: BusFormComponent },
@@ -45,3 +47,5 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' }
 ];
+
+

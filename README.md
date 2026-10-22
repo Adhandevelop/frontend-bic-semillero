@@ -10,11 +10,11 @@ Aplicación académica de gestión de transporte desarrollada con Angular 18 y T
 | Buses | Consulta, búsqueda, filtros, creación, edición y eliminación | Guardar fotos y equipamiento; telemetría real |
 | Conductores | Consulta, ficha, búsqueda, paginación, exportación CSV y gestión de registros | Guardar fotos, certificaciones y datos complementarios; verificaciones oficiales |
 | Rutas y viajes | Gestión con la API; asignación de recursos, horarios y cambios de estado de viajes | Validación de conflictos y disponibilidad horaria en el backend |
-| Clientes | Listado administrativo de cuentas con rol `client`, búsqueda y paginación | Gestión adicional de clientes |
+| Clientes | Directorio, filtros, ficha, CSV y formulario administrativo de registro | Corregir validadores de registro en el backend; historial y fidelización |
 | Portal de pasajeros | Inicio, formularios de acceso y registro, perfil y compra de demostración | Autenticación y registro reales de pasajeros, reservas, ventas y pagos |
 | Ubicación | Mapa Leaflet/OpenStreetMap con tres buses estáticos en GeoJSON | Recepción de lecturas del dispositivo GPS y actualización en vivo |
 
-**Generar venta** abre la simulación de compra existente: no registra ventas, reserva puestos ni realiza cobros. Los datos del perfil de pasajero, las promociones y el monedero son de ejemplo.
+**Generar venta** abre la venta administrativa conectada a la API. Registra un recaudo ya realizado; no procesa cobros electrónicos. La compra pública permanece como demostración. Los datos del perfil de pasajero, las promociones y el monedero son de ejemplo.
 
 ## Requisitos e instalación
 
@@ -88,7 +88,8 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 | Ruta | Función |
 | --- | --- |
 | `/dashboard` | Resumen de operación |
-| `/clientes` | Consulta de clientes reales, filtrados por rol `client` |
+| `/clientes` | Directorio de clientes reales, filtros, ficha y exportación |
+| `/ventas/nueva` | Venta administrativa, selección de silla y emisión por API |
 | `/buses` | Gestión de buses |
 | `/conductores` | Gestión de conductores |
 | `/rutas` | Gestión de rutas |
@@ -96,7 +97,7 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 
 Formularios de creación: `/buses/nuevo`, `/conductores/nuevo`, `/rutas/nueva` y `/viajes/nuevo`. La edición usa `/<módulo>/editar/:id`.
 
-La navegación está definida en [app.routes.ts](src/app/app.routes.ts). El acceso **Generar venta** del menú administrativo lleva a `/clientes/comprar`; programar servicios sigue disponible en Viajes.
+La navegación está definida en [app.routes.ts](src/app/app.routes.ts). El acceso **Generar venta** del menú administrativo lleva a `/ventas/nueva`; programar servicios sigue disponible en Viajes.
 
 ## Comportamientos importantes
 
@@ -123,7 +124,25 @@ Archivos: `src/app/pages/rutas/ruta-list.component.*` y `ruta-map.component.ts`.
 
 El directorio de `/clientes` sigue el diseño de Stitch y consulta cuentas con rol `client` de todas las páginas de la API. Incluye indicadores de registros y clientes con contacto, búsqueda por nombre/usuario/documento/correo/teléfono, filtros de contacto, paginación de seis registros, ficha de consulta y exportación CSV de todos los resultados filtrados.
 
-Registro administrativo, emisión de tiquetes, historial, reservas, categorías VIP y puntos permanecen pendientes y se identifican en pantalla. La referencia de silletería enlaza a la compra de demostración; no representa inventario real. No se asumen tipo de documento, verificación de WhatsApp ni estado de cuenta.
+Historial, reservas, categorías VIP y puntos permanecen pendientes y se identifican en pantalla. La referencia de silletería enlaza a la compra de demostración; no representa inventario real. No se asumen tipo de documento, verificación de WhatsApp ni estado de cuenta.
+
+### Venta administrativa de tiquetes
+
+`/ventas/nueva` implementa el diseño de venta en ventanilla bajo el guard administrativo. Se abre desde **Generar venta**, desde **Tiquete** en el directorio (cliente preseleccionado por ID) y después de registrar un cliente. La compra pública `/clientes/comprar` conserva su demostración independiente.
+
+Consulta viajes futuros programados, terminales, clientes, tarifas (`/api/trips/fares/`), sillas (`/api/fleet/seats/`) y tiquetes (`/api/sales/tickets/`), incluyendo todas las páginas. Ordena las sillas por fila/columna sin inventar pisos, categorías o un plano físico. Las sillas con tiquetes `issued` quedan bloqueadas; no hay reserva temporal ni seguimiento en vivo.
+
+Para emitir exige cliente con documento/correo/teléfono, viaje, silla, tarifa positiva y confirmación de recaudo. Reconsulta tiquetes antes del POST a `/api/sales/admin-sales/`. Envía IDs de viaje/silla, datos del pasajero y método `cash`, `card` o `transfer`; el servidor calcula el importe y registra la venta pagada. No envía precios calculados en el navegador ni procesa PSE/Nequi. Muestra el número de venta y códigos de tiquete devueltos por el servidor.
+
+Bloquea envíos simultáneos y nuevas emisiones después del éxito. Ante un resultado ambiguo (red/error del servidor), bloquea el reintento para evitar duplicados e indica verificar la operación en el servidor. La facturación Factus depende del backend; un fallo posterior al registro requiere conciliación. No se ejecutaron ventas reales durante las comprobaciones. Concurrencia y unicidad deben garantizarse también en el backend.
+
+### Registrar cliente
+
+`/clientes/nuevo` es una ruta administrativa protegida, accesible desde el dashboard de clientes. El formulario basado en Stitch envía documento, nombres, apellidos, teléfono, correo, usuario y contraseña mediante POST a `/api/accounts/users/`; el backend fija el rol `client`. Valida campos obligatorios, longitudes, formatos y confirmación de contraseña, bloquea envíos duplicados y muestra errores de validación del servidor. No guarda contraseñas en almacenamiento local.
+
+Tipo de documento, nacimiento, género, residencia, preferencias, emergencia y consentimiento persistido aún requieren soporte de API. Se identifican como pendientes. Guardar vuelve al directorio; la acción alternativa abre la venta administrativa con el cliente preseleccionado únicamente después de una creación exitosa.
+
+**Impedimento detectado en el backend local:** `UserSerializer.validate_username` llama `value.get("username")` cuando `value` es un string; `validate_password` también trata su argumento como diccionario. Estos validadores necesitan corrección en el backend para que el POST funcione. Esta modificación del frontend no cambia esos archivos. La creación real debe verificarse después de corregirlos.
 
 ### Crear y editar rutas
 
@@ -188,7 +207,7 @@ Se realizaron comprobaciones con servicios simulados sobre filtros, paginación,
 Pendientes prioritarios:
 
 - Conectar autenticación, registro y perfil reales de pasajeros.
-- Implementar ventas, reservas, pagos y emisión de tiquetes.
+- Completar reservas y pagos en línea; verificar ventas administrativas y facturación contra el backend desplegado.
 - Integrar el dispositivo y las lecturas GPS/IoT.
 - Ampliar el backend para fotos, equipamiento y certificaciones.
 - Resolver la diferencia del estado de mantenimiento: el frontend usa `mantenimiento` y el modelo del backend local define `Maintenance`; actualmente no hay adaptación entre ambos.
@@ -205,5 +224,8 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
+
 
 
