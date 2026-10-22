@@ -1,76 +1,9 @@
-<main class="public-home">
-  <header class="home-header">
-    <a class="brand" routerLink="/">
-      <span class="brand-icon">●</span>
-      <span>Buses Universal</span>
-    </a>
-    <div class="header-actions">
-      <a class="login-link" routerLink="/ubicacion">Ver ubicación del bus</a>
-      <a class="login-link" routerLink="/clientes/login">Iniciar sesión</a>
-      <a class="register-link" routerLink="/registro">Registrarse</a>
-    </div>
-  </header>
-
-  <section class="hero" id="consultar">
-    <div class="route-pattern"></div>
-    <div class="hero-content">
-      <span class="eyebrow">● Monitoreo satelital activo</span>
-      <h1>Consulta y monitorea tu viaje en tiempo real</h1>
-      <p>Ingresa tu código de boleto, número de viaje o puesto asignado para verificar el estado de tu bus y ubicación al instante.</p>
-
-      <div class="search-card">
-        <div class="search-tabs">
-          <button type="button" [class.active]="searchMode === 'Número de viaje'" (click)="seleccionarBusqueda('Número de viaje')">Número de viaje</button>
-          <button type="button" [class.active]="searchMode === 'Código de puesto'" (click)="seleccionarBusqueda('Código de puesto')">Código de puesto</button>
-          <button type="button" [class.active]="searchMode === 'Placa de bus'" (click)="seleccionarBusqueda('Placa de bus')">Placa de bus</button>
-        </div>
-        <div class="search-row">
-          <input [(ngModel)]="searchValue" (keyup.enter)="buscarTrayecto()" [placeholder]="searchMode === 'Número de viaje' ? 'Ej. VJ-8492' : searchMode === 'Código de puesto' ? 'Ej. 14B o #0981' : 'Ej. ABC-123'" />
-          <button class="search-button" type="button" (click)="buscarTrayecto()">⌕ <span>Buscar trayecto</span></button>
-        </div>
-        <p class="search-message" *ngIf="searchMessage">{{ searchMessage }}</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="content-section">
-    <div class="section-heading">
-      <div><span class="section-kicker">Actualidad y beneficios</span><h2>Todo lo que necesitas para viajar mejor</h2></div>
-      <a routerLink="/clientes/comprar">Ver todos los viajes →</a>
-    </div>
-    <div class="feature-grid">
-      <article class="feature-card offer-card">
-        <span class="card-icon">♨</span><span class="offer-label">Oferta limitada</span>
-        <h3>Descuento del 20% en rutas nocturnas</h3>
-        <p>Viaja con total confort mientras duermes y despierta en tu destino ahorrando un 20% en salidas después de las 20:00 hrs.</p>
-        <div class="promo-code"><span>Código promocional</span><strong>NOCHE2024</strong></div>
-        <a routerLink="/login">Aprovechar oferta →</a>
-      </article>
-      <article class="feature-card">
-        <span class="card-icon blue">✦</span><h3>Tecnología a bordo</h3>
-        <p>Nueva flota con asientos reclinables ejecutivos y Wi-Fi 5G. Incorporamos unidades con suspensión neumática y conexión satelital.</p>
-        <a routerLink="/login">Conocer la flota →</a>
-      </article>
-      <article class="feature-card">
-        <span class="card-icon green">▣</span><h3>Itinerarios actualizados</h3>
-        <p>Revisa las nuevas salidas programadas hacia los destinos turísticos e interurbanos principales.</p>
-        <a routerLink="/login">Consultar rutas →</a>
-      </article>
-    </div>
-  </section>
-
-  <section class="stats-section">
-    <div><span class="section-kicker">Nuestra operación</span><h2>Conectamos tus destinos</h2><p>Gestionamos cada trayecto con precisión, seguridad y tecnología para que llegues siempre a tiempo.</p></div>
-    <div class="stats-grid"><div><strong>24/7</strong><span>Monitoreo activo</span></div><div><strong>100%</strong><span>Viajes seguros</span></div><div><strong>5G</strong><span>Conectividad a bordo</span></div><div><strong>1</strong><span>Comunidad viajera</span></div></div>
-  </section>
-
-  <section class="contact-banner"><div><span class="card-icon">◌</span><h2>¿Necesitas ayuda con tu viaje?</h2><p>Estamos disponibles para acompañarte antes, durante y después de cada trayecto.</p></div><a routerLink="/login">Acceder a la plataforma →</a></section>
-
-  <footer class="home-footer">
-    <div class="footer-brand"><strong>● Buses Universal</strong><p>Líderes en conectividad interurbana nacional. Precisión en cada trayecto y tecnología en tiempo real.</p></div>
-    <div><h3>Servicios y flota</h3><a routerLink="/login">Servicio ejecutivo</a><a routerLink="/login">Mapa de cobertura</a><a routerLink="/login">Viajes programados</a></div>
-    <div><h3>Atención al pasajero</h3><a routerLink="/login">Preguntas frecuentes</a><a routerLink="/login">Equipaje y cambios</a><a routerLink="/login">Seguridad vial</a></div>
-    <div><h3>Plataforma</h3><a routerLink="/login">Iniciar sesión</a><a routerLink="/login">Gestión de buses</a><a routerLink="/login">Gestión de rutas</a></div>
-    <p class="copyright">© 2026 Buses Universal. Todos los derechos reservados.</p>
-  </footer>
-</main>
+<div class="public-home">
+<header class="home-header"><a class="brand" routerLink="/"><span class="brand-icon" aria-hidden="true">▣</span><span>Buses Universal</span></a><div class="header-actions"><a routerLink="/ubicacion">Ver buses</a><a routerLink="/clientes/login">Iniciar sesión</a><a class="primary" routerLink="/registro">Registrarse</a></div></header>
+<main><section class="hero" id="consultar"><div class="route-pattern" aria-hidden="true"></div><div class="hero-content"><span class="eyebrow">⌖ Consulta de ubicación</span><h1>Consulta y monitorea tu viaje en tiempo real</h1><p>Ingresa tu código de boleto, número de viaje o puesto asignado para consultar tu trayecto.</p><div class="search-card"><div class="search-tabs" role="group" aria-label="Tipo de consulta"><button type="button" *ngFor="let mode of ['Número de viaje', 'Código de puesto', 'Placa de bus']" [class.active]="searchMode === mode" [attr.aria-pressed]="searchMode === mode" (click)="seleccionarBusqueda(mode)">{{ mode }}</button></div><form class="search-row" (ngSubmit)="buscarTrayecto()"><label class="sr-only" for="main-search">{{ searchMode }}</label><span aria-hidden="true">⌖</span><input id="main-search" name="tracking" [(ngModel)]="searchValue" [placeholder]="searchMode === 'Número de viaje' ? 'Ej. VJ-8492' : searchMode === 'Código de puesto' ? 'Ej. Puesto 14B o boleto #0981' : 'Ej. ABC-123'"><button class="primary" type="submit">⌕ Buscar trayecto</button></form><p class="form-message" *ngIf="searchMessage" role="status">{{ searchMessage }}</p></div><div class="hero-footnote"><span>GPS en desarrollo · Posiciones de ejemplo</span><a routerLink="/ubicacion">Ver mapa de buses →</a></div></div></section>
+<section class="booking-section content-width" id="reservar-rutas" aria-labelledby="reserve-title"><div class="section-heading"><div><span class="section-kicker">↪ Compra de pasajes en línea</span><h2 id="reserve-title">Reserva y encuentra tu próximo destino</h2><p>Explora la selección de horarios y asientos de nuestra vista de compra.</p></div><span class="sample-note">Simulación de compra sin cobros</span></div><form class="booking-search" (ngSubmit)="buscarRutas()" novalidate><div class="field"><label for="route-origin">Origen</label><select id="route-origin" name="origin" [(ngModel)]="origin"><option *ngFor="let city of cities" [value]="city.code">{{ city.name }}</option></select></div><div class="field"><label for="route-destination">Destino</label><select id="route-destination" name="destination" [(ngModel)]="destination"><option *ngFor="let city of cities" [value]="city.code">{{ city.name }}</option></select></div><div class="field"><label for="route-departure">Fecha de ida</label><input id="route-departure" type="date" name="departureDate" [(ngModel)]="departureDate" [min]="today" required></div><div class="field"><label for="route-return">Regreso <small>(opcional)</small></label><input id="route-return" type="date" name="returnDate" [(ngModel)]="returnDate" [min]="departureDate || today"></div><div class="field"><label for="route-passengers">Pasajeros</label><select id="route-passengers" name="passengers" [(ngModel)]="passengers"><option [ngValue]="1">1 adulto</option><option [ngValue]="2">2 pasajeros</option><option [ngValue]="3">3 pasajeros</option><option [ngValue]="4">4 pasajeros</option></select></div><button class="primary" type="submit">⌕ Buscar rutas</button></form><p class="form-message route-message" *ngIf="routeMessage" role="status">{{ routeMessage }}</p>
+<div class="popular-heading"><h3>↗ Rutas populares</h3><span>Rutas y tarifas de ejemplo</span></div><div class="popular-grid"><article class="route-card" *ngFor="let route of popularRoutes"><div class="route-card-top"><span class="route-badge">{{ route.destination === 'MDE' ? 'Simulación disponible' : 'Catálogo próximamente' }}</span><span>◷ ~{{ route.duration }}</span></div><h3><span>Bogotá</span> → {{ route.name }}</h3><p>{{ route.service }}</p><div class="route-card-bottom"><div><small>Desde (ejemplo)</small><strong>{{ route.price }} <small>COP</small></strong></div><button type="button" (click)="choosePopular(route.destination)">Reservar asiento →</button></div></article></div></section>
+<div class="news-layout content-width"><section class="news" aria-labelledby="news-title"><div class="section-heading"><div><span class="section-kicker">Actualidad y beneficios</span><h2 id="news-title">Novedades y promociones</h2></div><button type="button" class="text-button" (click)="pending('Más novedades')">Ver todas →</button></div><article class="news-card featured"><img [src]="images[0]" alt="Bus de pasajeros circulando por una carretera al anochecer" loading="lazy"><div><span class="section-kicker warm">Oferta de ejemplo</span><h3>Descuento del 20% en rutas nocturnas seleccionadas</h3><p>Viaja con confort mientras duermes y descubre las ventajas de nuestras salidas nocturnas.</p><div class="promo-code"><span>Código promocional</span><strong>NOCHE2024</strong></div><button type="button" class="primary" (click)="pending('Promoción de rutas nocturnas')">Aprovechar oferta →</button></div></article><div class="secondary-news"><article class="news-card"><img [src]="images[1]" alt="Interior de un bus con asientos reclinables" loading="lazy"><div><span class="section-kicker">Tecnología a bordo</span><h3>Asientos ejecutivos y conectividad para tu viaje</h3><p>Conoce las comodidades que acompañan nuestros trayectos.</p><a routerLink="/clientes/comprar">Conocer servicios de ejemplo →</a></div></article><article class="news-card"><img [src]="images[2]" alt="Bus recorriendo una carretera entre montañas" loading="lazy"><div><span class="section-kicker">Itinerarios</span><h3>Encuentra tu próxima salida</h3><p>Explora la selección de horarios y puestos en el portal de pasajeros.</p><a href="#reservar-rutas">Consultar rutas →</a></div></article></div></section>
+<aside class="community" aria-label="Atención y comunidad"><section class="support-card"><span class="section-kicker">Canal directo</span><h2>Asistencia por WhatsApp</h2><p>¿Dudas con tu abordaje, equipaje o trasbordo?</p><button type="button" class="primary" (click)="pending('El canal oficial de WhatsApp')">Iniciar conversación</button></section><section class="community-card"><span class="section-kicker">Comunidad digital</span><h2>Conéctate en redes sociales</h2><p>Encuentra novedades de rutas y del portal de pasajeros.</p><div class="social-row" *ngFor="let network of ['Instagram', 'Facebook', 'X / Twitter']"><span>{{ network }}</span><button type="button" (click)="pending('El perfil oficial de ' + network)">Seguir</button></div><section class="newsletter"><h3>✉ Boletín de ofertas exclusivas</h3><p>Recibe novedades y promociones de temporada.</p><form (ngSubmit)="subscribeNewsletter()" novalidate><label class="sr-only" for="newsletter-email">Correo para el boletín</label><input id="newsletter-email" name="newsletterEmail" type="email" autocomplete="email" [(ngModel)]="newsletterEmail" placeholder="tu.correo@ejemplo.com" required><button type="submit">Suscribirme gratis</button></form><p class="form-message" *ngIf="newsletterMessage" role="status">{{ newsletterMessage }}</p></section></section></aside></div>
+</main><footer class="home-footer"><div class="footer-columns content-width"><div><a class="brand" routerLink="/">Buses Universal</a><p>Conectamos tus destinos con comodidad y tecnología para acompañarte en cada trayecto.</p></div><div><h3>Servicios y flota</h3><a routerLink="/clientes/comprar">Compra de tiquetes</a><a routerLink="/ubicacion">Mapa de buses de ejemplo</a><a href="#reservar-rutas">Rutas y horarios</a></div><div><h3>Atención al pasajero</h3><button type="button" (click)="pending('Preguntas frecuentes')">Preguntas frecuentes</button><button type="button" (click)="pending('Políticas de equipaje')">Políticas de equipaje</button><button type="button" (click)="pending('Cambios y cancelaciones')">Cambios y cancelaciones</button></div><div><h3>Tu plataforma</h3><a routerLink="/clientes/login">Acceso de pasajeros</a><a routerLink="/registro">Crear cuenta</a><a routerLink="/login">Acceso administrativo</a></div></div><div class="legal content-width"><p>© 2026 Buses Universal. Todos los derechos reservados.</p><div><button type="button" (click)="pending('Términos y condiciones')">Términos</button><button type="button" (click)="pending('Privacidad de datos')">Privacidad</button></div></div></footer>
+<div class="notice" *ngIf="notice" role="status" aria-live="polite"><p>{{ notice }}</p><button type="button" (click)="notice = ''" aria-label="Cerrar aviso">×</button></div></div>

@@ -170,6 +170,20 @@ Cada bus se representa como una `Feature` con geometria `Point`. Las coordenadas
 
 La integracion futura prevista es: dispositivo GPS -> base de datos con `PointField` -> API que serializa a GeoJSON -> mapa. `PointField` pertenece al backend; este frontend consume la geometria. El endpoint de ubicaciones y las actualizaciones automaticas aun no estan implementados.
 
+## Pagina principal publica
+
+La ruta `/` usa la version actualizada de Stitch (22 de octubre de 2026): consulta de trayecto, formulario de reservas, rutas populares, novedades con fotografias, soporte, comunidad, boletin y pie de pagina. Se conservan los accesos al mapa de ejemplo, login de clientes, registro y acceso administrativo.
+
+- Reservas con origen, destino, ida, regreso opcional y cantidad de pasajeros. Se valida que las ciudades sean distintas, la fecha sea real y no pasada (zona America/Bogota), y el regreso no preceda a la ida.
+- Solo la combinacion disponible en el simulador (Bogota Salitre - Medellin, 24 de octubre de 2026, 1 adulto, solo ida) abre `/clientes/comprar`. Otras solicitudes muestran el catalogo pendiente, sin cambiar el destino o fecha en silencio.
+- Rutas populares Bogota - Medellin, Cali y Bucaramanga con tarifas de ejemplo, sin inventar salidas disponibles hoy. Reservar Medellin abre el simulador; las otras rutas muestran un aviso.
+- Se mantienen las pestanas de consulta por viaje, puesto y placa; la consulta real sigue pendiente y se ofrece el mapa de buses estaticos.
+- Tres imagenes de novedades reutilizadas del HTML de referencia mediante URLs externas; requieren internet. Promociones y codigos son de ejemplo, sin aplicar descuentos reales.
+- WhatsApp, redes, textos legales y funciones sin servicio muestran avisos de disponibilidad futura. No hay enlaces oficiales configurados ni se envian mensajes.
+- Boletin con validacion de correo y aviso de servicio pendiente. No guarda correos ni simula suscripciones exitosas.
+
+Archivos: `src/app/pages/home/home.component.ts`, `home.component.html`, `home.component.css` (cabecera, consulta y formulario) y `home-content.component.css` (tarjetas, novedades, comunidad y estilos adaptables).
+
 ## Dashboard: panel de conductores
 
 La ruta protegida `/conductores` adapta el diseno de Stitch al layout administrativo. Usa los registros reales de `/fleet/drivers/` y conserva registro, edicion y eliminacion.
@@ -272,6 +286,8 @@ La vista publica `/registro` adapta el HTML de Stitch a un componente Angular st
 Archivos: `src/app/pages/registro/registro.component.ts`, `registro.component.html` y `registro.component.css`.
 
 ## Estado de verificacion
+
+La pagina principal actualizada compilo con `npm run build` el 22 de octubre de 2026. Se comprobaron navegacion a compra, origen/destino distintos, fechas reales y orden del regreso, solicitudes no soportadas, rutas populares, pestanas de consulta y boletin. No se enviaron datos a servicios externos. Quedan advertencias de tamano del paquete inicial y estilos, ademas de Leaflet en CommonJS.
 
 La compilacion completa del panel de conductores paso el 21 de octubre de 2026, con advertencias de estilos y Leaflet. Se verificaron con servicios simulados los conteos, filtros, paginacion de pantalla y carga de todas las paginas de la API, enlaces telefonicos, bloqueo de eliminaciones duplicadas, conservacion de datos tras un error y exportacion CSV con escape de comillas y neutralizacion de formulas. No se eliminaron conductores reales durante las pruebas.
 
