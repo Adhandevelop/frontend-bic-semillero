@@ -198,6 +198,21 @@ Correccion del 22 de octubre de 2026: el error generico de carga del formulario 
 
 La comprobacion se realizo contra el codigo del backend y pruebas HTTP simuladas, sin autenticar ni modificar datos de produccion. Si el despliegue usa otro contrato debe contrastarse con esa version. Los errores 401/403 o de conexion siguen requiriendo una sesion con permisos y una API accesible.
 
+## Dashboard de viajes
+
+La ruta protegida `/viajes` incorpora el dashboard de Stitch al layout administrativo existente. El formulario de programacion continua en `/viajes/nuevo` y la edicion en `/viajes/editar/:id`.
+
+- Carga viajes y catalogos reales de buses, conductores y rutas. Muestra placa, modelo, capacidad, nombre y licencia del conductor y origen/destino; si falla un catalogo secundario conserva los viajes y muestra IDs como alternativa, con aviso del recurso y codigo HTTP.
+- Indicadores de en curso, programados, finalizados y cancelados. Se calculan sobre todos los viajes de la fecha seleccionada, sin depender del resto de filtros. Sin fecha seleccionada muestran el total de todas las fechas.
+- Pestanas por estado, busqueda por ID/ruta/placa/conductor, filtros de origen, conductor y modelo, fecha de salida en Colombia y opcion de limpiar. Tabla de cinco viajes por pagina con anterior/siguiente.
+- Proximas tres salidas programadas futuras ordenadas por salida, respetando la fecha si se elige. No se simulan andenes ni cuentas regresivas.
+- Sincronizar recarga datos y muestra hora de actualizacion. Exportar viajes CSV descarga todos los resultados filtrados, con fechas ISO UTC y proteccion frente a formulas; no es un manifiesto oficial de pasajeros.
+- Se mantienen editar, eliminar, iniciar, finalizar y cancelar. Guardas de estado y bloqueo de solicitudes simultaneas; eliminar y cancelar requieren confirmacion. Tras exito se actualizan filas e indicadores; tras error se conserva el listado.
+- Ocupacion IoT, alertas viales/meteorologicas, andenes y velocidad permanecen sin datos. Capacidad no significa puestos disponibles. El enlace de mapa lleva a buses estaticos de ejemplo y no a seguimiento real del viaje.
+- Usa el termino viaje en toda la vista, incluidos los accesos a viaje extra.
+
+Archivos: `src/app/pages/viajes/viaje-list.component.ts`, `viaje-list.component.html` y `viaje-list.component.css`. No se duplican cabeceras ni se modifica el formulario al renovar el listado.
+
 ## Programar y editar viajes
 
 La interfaz usa el termino viaje en los titulos de creacion y edicion, el aviso de carga y la descripcion del formulario (actualizacion del 22 de octubre de 2026).
@@ -330,6 +345,8 @@ La vista publica `/registro` adapta el HTML de Stitch a un componente Angular st
 Archivos: `src/app/pages/registro/registro.component.ts`, `registro.component.html` y `registro.component.css`.
 
 ## Estado de verificacion
+
+El dashboard de viajes paso `npm run build` el 22 de octubre de 2026. Se comprobaron con servicios simulados nombres de catalogos, fechas y zona horaria, filtros, conteos, paginacion, proximas salidas, transiciones permitidas y solicitudes duplicadas, errores de eliminacion, CSV y fallos parciales de catalogos. No se modificaron viajes reales. Quedan advertencias de paquete inicial, estilos y Leaflet.
 
 La correccion de catalogos paso `npm run build` el 22 de octubre de 2026. Las pruebas con HTTP simulado verificaron URLs, paginacion, IDs/etiquetas de lugares y alternativa sin etiquetas, campos y estados de viajes, payload de rutas y PATCH de estado. Tambien paso la regresion del formulario (hora de Colombia, fechas, recursos, creacion/edicion y errores). Se mantienen advertencias de paquete inicial, estilos y Leaflet.
 
