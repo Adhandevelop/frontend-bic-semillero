@@ -29,9 +29,10 @@ export class ClienteService {
     );
   }
   listar():Observable<Cliente[]>{
-    return allApiPages<Cliente>(this.http,API_BASE_URL+'/accounts/users/').pipe(map(users=>users.filter(user=>user.role==='client')));
+    return allApiPages<CustomerDto>(this.http,API_BASE_URL+'/accounts/customers/').pipe(map(customers=>customers.map(customer=>this.customerView(customer))));
   }
 }
+
 
 
 

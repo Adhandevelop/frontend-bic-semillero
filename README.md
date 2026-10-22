@@ -49,6 +49,7 @@ En desarrollo, este repositorio no incluye un proxy configurado para `ng serve`.
 | --- | --- |
 | Inicio de sesión | `/api/token/` |
 | Renovación de token configurada | `/api/token/refresh/` |
+| Clientes administrativos | `/api/accounts/customers/` y `/api/accounts/customers/search/` |
 | Usuarios y perfil del administrador | `/api/accounts/users/` y `/api/accounts/users/:id/` |
 | Buses | `/api/fleet/buses/` |
 | Conductores | `/api/fleet/drivers/` |
@@ -140,7 +141,7 @@ Archivos: `src/app/pages/rutas/ruta-list.component.*` y `ruta-map.component.ts`.
 
 ### Dashboard de clientes
 
-El directorio de `/clientes` sigue el diseño de Stitch y consulta cuentas con rol `client` de todas las páginas de la API. Incluye indicadores de registros y clientes con contacto, búsqueda por nombre/usuario/documento/correo/teléfono, filtros de contacto, paginación de seis registros, ficha de consulta y exportación CSV de todos los resultados filtrados.
+El directorio de `/clientes` sigue el diseño de Stitch y consulta el recurso específico de clientes de todas las páginas de la API. Incluye indicadores de registros y clientes con contacto, búsqueda por nombre/usuario/documento/correo/teléfono, filtros de contacto, paginación de seis registros, ficha de consulta y exportación CSV de todos los resultados filtrados.
 
 Historial, reservas, categorías VIP y puntos permanecen pendientes y se identifican en pantalla. La referencia de silletería enlaza a la compra de demostración; no representa inventario real. No se asumen tipo de documento, verificación de WhatsApp ni estado de cuenta.
 
@@ -176,13 +177,13 @@ La búsqueda por documento usa `GET /api/accounts/customers/search/?identificati
 
 **Guardar y seleccionar cliente** envía los cinco datos básicos mediante `POST /api/accounts/customers/`, incluyendo el código numérico del tipo de documento. No envía usuario, contraseña, rol ni credenciales externas. El cliente se selecciona y el éxito se anuncia únicamente después de la respuesta del servidor, conservando viaje y silla. La venta posterior sigue usando `/api/sales/admin-sales/`, sin `amount_cents`. Guardar cliente no registra una venta ni emite tiquetes.
 
-Ambos endpoints requieren administrador. La consulta tiene límite de 15 segundos y el registro bloquea solicitudes duplicadas. Los errores conservan los campos y distinguen ruta no disponible, permisos y validación; ante un resultado incierto se indica buscar el documento antes de reintentar. El directorio general conserva `/accounts/users/` como consulta paginada independiente, sin condicionar búsqueda/alta a su disponibilidad.
+Ambos endpoints requieren administrador. La consulta tiene límite de 15 segundos y el registro bloquea solicitudes duplicadas. Los errores conservan los campos y distinguen ruta no disponible, permisos y validación; ante un resultado incierto se indica buscar el documento antes de reintentar. El directorio general consulta `/api/accounts/customers/` de forma independiente, admitiendo arrays o paginación DRF y adaptando `name` a las vistas. Ya no descarga usuarios administradores o conductores desde `/accounts/users/`.
 
-**Disponibilidad del backend:** las rutas específicas no aparecen todavía en el checkout local revisado. Angular implementa el contrato suministrado; deben estar implementadas y desplegadas en el servidor para guardar cuentas realmente. No se hicieron altas reales en producción ni se confirma su disponibilidad con pruebas simuladas. El formulario administrativo independiente `/clientes/nuevo` también usa el endpoint específico de clientes.
+**Contrato actualizado:** `enpoints.md` documenta búsqueda, listado, alta, detalle y edición parcial en `/api/accounts/customers/`. El frontend usa búsqueda, listado y alta. La documentación no confirma por sí sola que el servidor esté actualizado; no se hicieron altas reales en producción. El formulario administrativo independiente `/clientes/nuevo` también usa el endpoint específico de clientes.
 
 ### Registrar cliente
 
-`/clientes/nuevo` utiliza `POST /api/accounts/customers/`, igual que el alta rápida de ventas. Solicita tipo y número de documento, nombres, apellidos, teléfono y correo. Combina nombres/apellidos en `name` (máximo 150 caracteres) y envía únicamente los cinco campos básicos; no pide ni envía usuario o contraseña. El servidor genera las credenciales internas. Elimina así la dependencia del antiguo POST de cuentas que producía HTTP 500 en sus validadores.
+`/clientes/nuevo` utiliza `POST /api/accounts/customers/`, igual que el alta rápida de ventas. Solicita tipo y número de documento, nombres, apellidos, teléfono y correo. Combina nombres/apellidos en `name` (máximo 150 caracteres) y envía únicamente los cinco campos básicos; no pide ni envía usuario o contraseña. Las cuentas se crean sin una contraseña utilizable; Angular no pide ni envía contraseñas. Elimina así la dependencia del antiguo POST de cuentas que producía HTTP 500 en sus validadores.
 
 El guard protege el formulario. Valida campos obligatorios, formatos y longitudes, bloquea duplicados mientras guarda y distingue errores de red, sesión, permisos, validación y servidor. Muestra errores por `name`, documento, tipo, correo y teléfono. Solo vuelve al directorio o continúa a ventas con el ID seleccionado tras una respuesta exitosa. Datos adicionales y preferencias permanecen pendientes.
 
@@ -268,6 +269,7 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
 
 
 
