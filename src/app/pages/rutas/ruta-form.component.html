@@ -1,43 +1,24 @@
-<section class="form-card panel">
-  <div class="page-header">
-    <h1>{{ editando ? 'Editar ruta' : 'Nueva ruta' }}</h1>
-  </div>
-
-  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-  <div class="loading" *ngIf="loading">Procesando...</div>
-
-  <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()" *ngIf="!loading || editando">
-    <div class="form-field">
-      <label for="origen">Origen</label>
-      <input id="origen" type="text" formControlName="origen">
-      <span class="field-error" *ngIf="form.controls.origen.touched && form.controls.origen.invalid">El origen es obligatorio.</span>
-    </div>
-
-    <div class="form-field">
-      <label for="destino">Destino</label>
-      <input id="destino" type="text" formControlName="destino">
-      <span class="field-error" *ngIf="form.controls.destino.touched && form.controls.destino.invalid">El destino es obligatorio.</span>
-    </div>
-
-    <div class="form-field">
-      <label for="distancia_km">Distancia km</label>
-      <input id="distancia_km" type="number" min="1" formControlName="distancia_km">
-      <span class="field-error" *ngIf="form.controls.distancia_km.touched && form.controls.distancia_km.invalid">La distancia debe ser mayor que 0.</span>
-    </div>
-
-    <div class="form-field">
-      <label for="estado">Estado</label>
-      <select id="estado" formControlName="estado">
-        <option value="activa">Activa</option>
-        <option value="inactiva">Inactiva</option>
-      </select>
-      <span class="field-error" *ngIf="form.controls.estado.touched && form.controls.estado.invalid">El estado es obligatorio.</span>
-    </div>
-
-    <div class="actions">
-      <button class="btn btn-primary" type="submit" [disabled]="loading">Guardar</button>
-      <a class="btn btn-secondary" routerLink="/rutas">Cancelar</a>
-    </div>
+﻿<div class="route-editor">
+  <nav class="breadcrumbs" aria-label="Ruta de navegación"><a routerLink="/dashboard">Gestión</a><span>/</span><a routerLink="/rutas">Rutas</a><span>/</span><strong>{{ editando ? 'Editar ruta' : 'Nueva ruta' }}</strong></nav>
+  <header class="page-heading"><div><span class="eyebrow">CORREDOR NACIONAL</span><h1>{{ editando ? 'Editar Ruta Intermunicipal' : 'Registrar Nueva Ruta Intermunicipal' }}</h1><p>Configura los puntos de conexión y el kilometraje de tu ruta de transporte.</p></div><span class="record-badge">{{ editando ? 'Ruta #' + rutaId : 'Nuevo registro' }}</span></header>
+  <div *ngIf="error" class="alert" role="alert">{{ error }} <button *ngIf="loadFailed" type="button" (click)="cargar()" [disabled]="loading">Reintentar carga</button></div>
+  <p *ngIf="loading" role="status">Cargando terminales y datos de la ruta…</p>
+  <form [formGroup]="form" (ngSubmit)="guardar()" [attr.aria-busy]="loading || saving">
+    <div class="editor-grid"><div class="form-sections">
+      <section class="card"><div class="section-heading"><span class="section-icon">01</span><div><h2>Puntos de Conexión</h2><p>Selecciona terminales registradas en el sistema.</p></div></div>
+        <fieldset [disabled]="loading || saving || loadFailed"><div class="terminal-grid"><div class="field"><label for="terminalOrigen">TERMINAL DE ORIGEN <span>*</span></label><select id="terminalOrigen" formControlName="origen_id"><option [ngValue]="null">Selecciona terminal de salida…</option><option *ngFor="let place of places" [ngValue]="place.id">{{ place.place_name }} · #{{ place.id }}</option></select><small *ngIf="form.controls.origen_id.touched && form.controls.origen_id.invalid" class="invalid">Selecciona una terminal de origen.</small></div>
+        <button type="button" class="swap" (click)="intercambiar()" aria-label="Intercambiar terminales">⇄</button>
+        <div class="field"><label for="terminalDestino">TERMINAL DE DESTINO <span>*</span></label><select id="terminalDestino" formControlName="destino_id"><option [ngValue]="null">Selecciona terminal de llegada…</option><option *ngFor="let place of places" [ngValue]="place.id">{{ place.place_name }} · #{{ place.id }}</option></select><small *ngIf="form.controls.destino_id.touched && form.controls.destino_id.invalid" class="invalid">Selecciona una terminal de destino.</small></div></div></fieldset>
+        <p *ngIf="form.hasError('sameTerminal') && (form.controls.origen_id.touched || form.controls.destino_id.touched)" class="invalid" role="alert">El origen y el destino deben ser diferentes.</p>
+        <p *ngIf="!loading && !loadFailed && !places.length" class="invalid">No hay terminales registradas. Se necesitan lugares en el catálogo para crear una ruta.</p>
+        <div class="subnote">Las terminales se identifican por su ID, incluso cuando comparten nombre. Los puntos intermedios están pendientes de integración.</div>
+      </section>
+      <section class="card"><div class="section-heading"><span class="section-icon">02</span><div><h2>Métricas y Parámetros Operativos</h2><p>Define la distancia total del recorrido.</p></div></div>
+        <fieldset [disabled]="loading || saving || loadFailed"><div class="metrics-grid"><div class="field"><label for="distanciaKm">DISTANCIA TOTAL <span>*</span></label><div class="unit-input"><input id="distanciaKm" type="number" formControlName="distancia_km" placeholder="Ej. 415.50" min="0.01" max="999999.99" step="0.01"><span>km</span></div><small *ngIf="form.controls.distancia_km.touched && form.controls.distancia_km.invalid" class="invalid">Ingresa entre 0.01 y 999999.99 km, con máximo dos decimales.</small></div><div class="pending-field"><span>DURACIÓN ESTIMADA</span><strong>Pendiente de integración</strong><small>La API aún no almacena tiempos por ruta.</small></div></div></fieldset>
+        <div class="integration-note"><strong>Tarifa y estado operativo</strong><p>El registro actual guarda origen, destino y distancia. La tarifa base, los borradores y la activación operativa requieren ampliar el backend.</p></div>
+      </section>
+      <section class="card map-card"><div class="section-heading"><span class="section-icon">03</span><div><h2>Vista Previa de Conexión</h2><p>Ubicación geográfica de las terminales seleccionadas.</p></div><span class="geo-badge">GeoJSON Point</span></div><app-ruta-map [route]="previewRoute" /></section>
+    </div><aside><section class="summary"><span class="eyebrow">RESUMEN DE LA RUTA</span><h2>Conexión intermunicipal</h2><div class="stop"><span class="dot"></span><div><small>ORIGEN</small><strong>{{ previewRoute?.origen || 'Selecciona una terminal' }}</strong></div></div><div class="stop destination"><span class="dot"></span><div><small>DESTINO</small><strong>{{ previewRoute?.destino || 'Selecciona una terminal' }}</strong></div></div><div class="distance"><span>Distancia registrada</span><strong>{{ form.controls.distancia_km.value === null ? '—' : (form.controls.distancia_km.value | number:'1.0-2') }} <small>km</small></strong></div><p>Revisa las terminales y el kilometraje antes de guardar.</p></section><section class="help"><h3>Datos del mapa</h3><p>El visor utiliza los puntos GeoJSON de las terminales. La conexión entre ellos es una referencia visual, sin cálculo de carretera ni seguimiento GPS.</p></section></aside></div>
+    <footer class="form-actions"><span>Los campos con * son obligatorios.</span><div><a routerLink="/rutas" class="cancel">Cancelar</a><button type="submit" class="save" [disabled]="loading || saving || loadFailed || !places.length">{{ saving ? 'Guardando…' : editando ? 'Guardar cambios' : 'Guardar ruta' }} <span aria-hidden="true">→</span></button></div></footer>
   </form>
-</section>
+</div>
