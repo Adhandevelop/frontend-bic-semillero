@@ -1,4 +1,18 @@
-<app-navbar></app-navbar>
-<main class="main-content">
-  <router-outlet></router-outlet>
-</main>
+﻿<app-navbar></app-navbar>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Menú de operación">
+    <div class="sidebar-heading"><strong>Precision Fleet</strong><span>Consola Central de Despacho</span></div>
+    <a class="dispatch-action" routerLink="/viajes/nuevo">＋ Crear viaje</a>
+    <nav aria-label="Módulos administrativos">
+      <a routerLink="/dashboard" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▦</span>Dashboard</a>
+      <a routerLink="/buses" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▣</span>Buses</a>
+      <a routerLink="/conductores" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">♙</span>Conductores</a>
+      <a routerLink="/rutas" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌁</span>Rutas</a>
+      <a routerLink="/viajes" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">↗</span>Viajes</a>
+      <a routerLink="/ubicacion"><span aria-hidden="true">⌖</span>Mapa de demostración</a>
+    </nav>
+    <div class="sidebar-note"><strong>Tu centro de operación</strong><p>Administra la flota y organiza cada trayecto.</p></div>
+    <button type="button" class="sidebar-logout" (click)="cerrarSesion()">↪ Salir</button>
+  </aside>
+  <main class="main-content"><router-outlet></router-outlet></main>
+</div>

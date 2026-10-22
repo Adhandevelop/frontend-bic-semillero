@@ -1,89 +1,30 @@
-<main class="home-page">
-  <section class="hero">
-    <div class="route-pattern"></div>
-    <div class="hero-content">
-      <span class="eyebrow">● Monitoreo satelital activo</span>
-      <h1>Consulta y monitorea tu viaje en tiempo real</h1>
-      <p>Ingresa tu código de boleto, número de viaje o placa para verificar el estado de tu bus y ubicación al instante.</p>
-
-      <div class="search-card">
-        <div class="search-tabs">
-          <button type="button" [class.active]="searchMode === 'Número de viaje'"
-            (click)="seleccionarBusqueda('Número de viaje')">Número de viaje</button>
-          <button type="button" [class.active]="searchMode === 'Código de puesto'"
-            (click)="seleccionarBusqueda('Código de puesto')">Código de puesto</button>
-          <button type="button" [class.active]="searchMode === 'Placa de bus'"
-            (click)="seleccionarBusqueda('Placa de bus')">Placa de bus</button>
-        </div>
-        <div class="search-row">
-          <input [(ngModel)]="searchValue" (keyup.enter)="buscarTrayecto()"
-            [placeholder]="searchMode === 'Número de viaje' ? 'Ej. VJ-8492' : searchMode === 'Código de puesto' ? 'Ej. 14B o #0981' : 'Ej. ABC-123'" />
-          <button class="search-button" type="button" (click)="buscarTrayecto()">⌕ <span>Buscar trayecto</span></button>
-        </div>
-        <p class="search-message" *ngIf="searchMessage">{{ searchMessage }}</p>
-      </div>
-    </div>
+﻿<section class="console" aria-labelledby="dashboard-title">
+  <header class="console-heading"><div><span class="eyebrow">Consola central de despacho</span><h1 id="dashboard-title">Dashboard General Administrativo</h1><p>Supervisa tu flota, conductores, rutas y viajes desde un solo lugar.</p></div><button class="refresh" type="button" (click)="cargarResumen()" [disabled]="loading">↻ {{ loading ? 'Cargando...' : 'Actualizar' }}</button></header>
+  <div class="toolbar"><label><span class="sr-only">Buscar bus o conductor</span><input type="search" [(ngModel)]="searchValue" placeholder="Buscar ID, placa, modelo o conductor..."></label><div class="toolbar-actions"><button type="button" (click)="exportReport()" [disabled]="loading || errors.includes('buses')">↓ Exportar flota</button><details><summary>＋ Nuevo registro</summary><div class="dropdown"><a routerLink="/buses/nuevo">Registrar bus</a><a routerLink="/conductores/nuevo">Registrar conductor</a><a routerLink="/viajes/nuevo">Crear viaje</a><a routerLink="/rutas/nueva">Crear ruta</a></div></details></div></div>
+  <p class="update-note" *ngIf="updatedAt && !loading">Última consulta: {{ updatedAt | date:'shortTime' }} · {{ errors.length ? 'Carga parcial' : 'Datos consultados en la API' }}</p>
+  <div class="error-panel" *ngIf="errors.length" role="alert">No se pudieron consultar: {{ errors.join(', ') }}. <button type="button" (click)="cargarResumen()" [disabled]="loading">Reintentar</button></div>
+  <div class="loading" *ngIf="loading" role="status">Consultando información de la operación...</div>
+  <ng-container *ngIf="!loading">
+  <section class="kpis" aria-label="Indicadores generales">
+    <article><span>Flota operativa <i aria-hidden="true">▣</i></span><strong>{{ errors.includes('buses') ? '—' : activeCount }} <small>/ {{ errors.includes('buses') ? '—' : buses.length }}</small></strong><p>{{ errors.includes('buses') ? 'Sin datos disponibles' : maintenanceCount + ' unidades en mantenimiento' }}</p><div class="meter"><span [style.width.%]="buses.length ? activeCount / buses.length * 100 : 0"></span></div></article>
+    <article><span>Viajes registrados <i aria-hidden="true">↗</i></span><strong>{{ errors.includes('viajes') ? '—' : trips.length }}</strong><p>Programación y servicios de ruta</p><a routerLink="/viajes">Gestionar viajes →</a></article>
+    <article><span>Conductores <i aria-hidden="true">♙</i></span><strong>{{ errors.includes('conductores') ? '—' : drivers.length }}</strong><p>Directorio del equipo de operación</p><a routerLink="/conductores">Ver equipo →</a></article>
+    <article><span>Rutas registradas <i aria-hidden="true">⌁</i></span><strong>{{ errors.includes('rutas') ? '—' : routes.length }}</strong><p>Conexiones de tu operación</p><a routerLink="/rutas">Administrar rutas →</a></article>
   </section>
-
-  <section class="home-section">
-    <div class="section-heading">
-      <div>
-        <span class="section-kicker">Actualidad y beneficios</span>
-        <h2>Todo lo que necesitas para viajar mejor</h2>
-      </div>
-      <a routerLink="/viajes">Ver todos los viajes →</a>
-    </div>
-
-    <div class="feature-grid">
-      <article class="feature-card offer-card">
-        <span class="card-icon">♨</span>
-        <span class="offer-label">Oferta limitada</span>
-        <h3>Descuento del 20% en rutas nocturnas</h3>
-        <p>Viaja con total confort mientras duermes y despierta en tu destino ahorrando un 20% en salidas después de las 20:00 hrs.</p>
-        <div class="promo-code"><span>Código promocional</span><strong>NOCHE2024</strong></div>
-        <a routerLink="/viajes">Aprovechar oferta →</a>
-      </article>
-      <article class="feature-card">
-        <span class="card-icon blue">✦</span>
-        <h3>Tecnología a bordo</h3>
-        <p>Nueva flota con asientos reclinables ejecutivos y Wi-Fi 5G. Incorporamos unidades con suspensión neumática y conexión satelital.</p>
-        <a routerLink="/buses">Conocer la flota →</a>
-      </article>
-      <article class="feature-card">
-        <span class="card-icon green">▣</span>
-        <h3>Itinerarios actualizados</h3>
-        <p>Revisa las nuevas salidas programadas hacia los destinos turísticos e interurbanos principales.</p>
-        <a routerLink="/rutas">Consultar rutas →</a>
-      </article>
-    </div>
-  </section>
-
-  <section class="stats-section">
-    <div class="stats-intro">
-      <span class="section-kicker">Nuestra operación</span>
-      <h2>Conectamos tus destinos</h2>
-      <p>Gestionamos cada trayecto con precisión, seguridad y tecnología para que llegues siempre a tiempo.</p>
-    </div>
-    <div class="stats-grid" *ngIf="!loading">
-      <div><strong>{{ totalBuses }}</strong><span>Buses en flota</span></div>
-      <div><strong>{{ totalRutas }}</strong><span>Rutas activas</span></div>
-      <div><strong>{{ totalViajes }}</strong><span>Viajes registrados</span></div>
-      <div><strong>{{ totalConductores }}</strong><span>Conductores</span></div>
-    </div>
-    <div class="loading" *ngIf="loading">Cargando información de la operación...</div>
-    <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-  </section>
-
-  <section class="contact-banner">
-    <div><span class="card-icon">◌</span><h2>¿Necesitas ayuda con tu viaje?</h2><p>Estamos disponibles para acompañarte antes, durante y después de cada trayecto.</p></div>
-    <a routerLink="/viajes">Gestionar mis viajes →</a>
-  </section>
-
-  <footer class="home-footer">
-    <div class="footer-brand"><strong>● Buses Universal</strong><p>Líderes en conectividad interurbana nacional. Precisión en cada trayecto y tecnología en tiempo real.</p></div>
-    <div><h3>Servicios y flota</h3><a routerLink="/buses">Nuestra flota</a><a routerLink="/rutas">Mapa de rutas</a><a routerLink="/viajes">Viajes programados</a></div>
-    <div><h3>Atención al pasajero</h3><a routerLink="/dashboard">Preguntas frecuentes</a><a routerLink="/dashboard">Equipaje y cambios</a><a routerLink="/dashboard">Seguridad vial</a></div>
-    <div><h3>Gestión</h3><a routerLink="/conductores">Conductores</a><a routerLink="/buses">Administrar buses</a><a routerLink="/rutas">Administrar rutas</a></div>
-    <p class="copyright">© 2026 Buses Universal. Todos los derechos reservados.</p>
-  </footer>
-</main>
+  <div class="content-grid"><div class="main-column">
+    <section class="panel"><div class="panel-heading"><div><h2><b aria-hidden="true">●</b> Gestión de buses y flota</h2><p>Estado registrado y capacidad por vehículo</p></div><a class="primary-action" routerLink="/buses/nuevo">＋ Añadir bus</a></div>
+      <div class="table-tools"><button type="button" [attr.aria-pressed]="onlyActive" [class.selected]="onlyActive" (click)="onlyActive = !onlyActive">{{ onlyActive ? 'Mostrar todos' : 'Solo activos' }}</button><span>{{ filteredBuses.length }} unidades</span></div>
+      <div class="table-scroll"><table><thead><tr><th>Vehículo / placa</th><th>Modelo</th><th>Estado</th><th>Capacidad</th><th>Gestión</th></tr></thead><tbody><tr *ngFor="let bus of filteredBuses"><td><div class="vehicle"><span class="vehicle-id">{{ bus.id }}</span><strong>{{ bus.plate }}</strong></div></td><td>{{ bus.model || 'Sin registrar' }}</td><td><span class="status" [class.active]="bus.state === 'Active'" [class.maintenance]="bus.state === 'mantenimiento'">{{ stateLabel(bus.state) }}</span></td><td>{{ bus.capacity }} pasajeros</td><td><a [routerLink]="['/buses/editar', bus.id]">Ver detalle ↗</a></td></tr></tbody></table></div>
+      <p class="empty" *ngIf="!filteredBuses.length">{{ errors.includes('buses') ? 'No se pudo cargar la flota.' : 'No hay buses que mostrar con estos filtros.' }}</p>
+      <a class="section-link" routerLink="/buses">Ir a la gestión de buses →</a>
+    </section>
+    <section class="panel"><div class="panel-heading"><div><h2><b aria-hidden="true">●</b> Operación de viajes</h2><p>Organiza los servicios de la flota y sus asignaciones</p></div><a class="primary-action" routerLink="/viajes/nuevo">＋ Crear viaje</a></div><div class="operation-links"><a routerLink="/viajes"><span aria-hidden="true">↗</span><div><strong>Programación de viajes</strong><p>Consulta los servicios registrados</p></div>→</a><a routerLink="/rutas"><span aria-hidden="true">⌁</span><div><strong>Directorio de rutas</strong><p>Administra las conexiones de la operación</p></div>→</a></div></section>
+    <section class="panel"><div class="panel-heading"><div><h2><b aria-hidden="true">●</b> Equipo de conductores</h2><p>Directorio de personal y licencias registradas</p></div><a class="primary-action" routerLink="/conductores/nuevo">＋ Registrar</a></div><div class="driver-grid"><article class="driver-card" *ngFor="let driver of filteredDrivers"><div class="driver-name"><span aria-hidden="true">{{ driver.full_name.slice(0, 1) }}</span><div><h3>{{ driver.full_name }}</h3><p>Licencia: {{ driver.license_number }}</p></div></div><p>{{ driver.phone_number || 'Teléfono sin registrar' }}</p><a [routerLink]="['/conductores/editar', driver.id]">Gestionar conductor →</a></article></div><p class="empty" *ngIf="!filteredDrivers.length">{{ errors.includes('conductores') ? 'No se pudo cargar el directorio.' : 'No hay conductores que mostrar.' }}</p><a class="section-link" routerLink="/conductores">Ver directorio completo →</a></section>
+  </div><aside class="widgets">
+    <section class="panel gps-panel"><div class="panel-heading"><h2>⌖ Monitoreo GPS</h2><span class="tag">Demostración</span></div><div class="map-preview"><div class="map-grid" aria-hidden="true"></div><div class="map-callout"><span aria-hidden="true">⌖</span><strong>Explora el mapa de buses</strong><p>Posiciones fijas de ejemplo</p></div></div><p>El GPS y los eventos en vivo aún no están conectados a esta consola.</p><a class="section-link" routerLink="/ubicacion">Abrir mapa de demostración ↗</a></section>
+    <section class="panel quick-links"><h2>Accesos operativos</h2><a routerLink="/buses">▣ <span>Administrar buses</span> →</a><a routerLink="/conductores">♙ <span>Gestionar conductores</span> →</a><a routerLink="/rutas">⌁ <span>Consultar rutas</span> →</a><a routerLink="/viajes">↗ <span>Programar viajes</span> →</a></section>
+    <section class="integration-card"><span class="eyebrow">Próximas integraciones</span><h2>Una operación conectada</h2><p>Ventas, ocupación de asientos y alertas de telemetría aparecerán aquí cuando sus servicios estén integrados.</p></section>
+  </aside></div>
+  </ng-container>
+  <footer>© {{ currentYear }} Buses Universal <span>Consola administrativa · Precision Fleet</span></footer>
+</section>

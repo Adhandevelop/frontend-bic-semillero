@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { Bus } from '../models/bus.model';
 
@@ -19,6 +19,16 @@ export class BusService {
   private readonly apiUrl = `${API_BASE_URL}/fleet/buses/`;
 
   constructor(private http: HttpClient) {}
+
+  listarTodos(): Observable<Bus[]> {
+    return this.http.get<Bus[] | PaginatedResponse<Bus>>(this.apiUrl).pipe(
+      expand((response, index) => !Array.isArray(response) && response.next
+        ? this.http.get<Bus[] | PaginatedResponse<Bus>>(this.apiUrl, { params: { page: index + 2 } })
+        : EMPTY),
+      map(response => Array.isArray(response) ? response : response.results),
+      reduce((buses, page) => buses.concat(page), [] as Bus[])
+    );
+  }
 
   listar(): Observable<Bus[]> {
     return this.http
