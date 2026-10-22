@@ -184,6 +184,20 @@ La ruta `/` usa la version actualizada de Stitch (22 de octubre de 2026): consul
 
 Archivos: `src/app/pages/home/home.component.ts`, `home.component.html`, `home.component.css` (cabecera, consulta y formulario) y `home-content.component.css` (tarjetas, novedades, comunidad y estilos adaptables).
 
+## Programar y editar viajes
+
+El HTML recibido como vista de viajes corresponde al formulario de programacion. Se integra en `/viajes/nuevo` y `/viajes/editar/:id`, manteniendo el listado en `/viajes`.
+
+- Diseno de configuracion de ruta y horario a la izquierda; asignacion de bus/conductor, resumen y confirmacion a la derecha.
+- Origen y destino proceden de una ruta registrada. Intercambiar solo selecciona una ruta inversa existente; no crea ni modifica rutas.
+- Buses y conductores cargados mediante sus catalogos completos; rutas desde el servicio existente. Para nuevas asignaciones se ofrecen buses activos y rutas activas. En edicion se conservan como opciones el bus y la ruta actuales aunque hayan quedado inactivos.
+- Salida obligatoria y fin opcional, con fechas reales y fin posterior a salida. Entrada y visualizacion en America/Bogota (UTC-05:00); envio ISO UTC independiente de la zona del navegador.
+- Resumen de capacidad y estado registrado del bus, licencia/contacto del conductor y distancia de la ruta cuando existe. No se inventan tiempos de transito, GPS, disponibilidad horaria ni ausencia de conflictos.
+- Guardado mediante los metodos existentes de `ViajeService`, conservando bus, conductor, ruta, fechas y estado. Validacion de referencias contra los catalogos cargados, bloqueo de envios duplicados y de guardado tras error de carga, y reintento.
+- No se envian SMS ni notificaciones. Conflictos y disponibilidad deben validarse en el backend. Se conserva el contrato actual de endpoints; este cambio no migra la API de viajes o rutas.
+
+Archivos: `src/app/pages/viajes/viaje-form.component.ts`, `viaje-form.component.html` y `viaje-form.component.css` (separado de los estilos del listado).
+
 ## Registrar y editar conductores
 
 Las rutas protegidas `/conductores/nuevo` y `/conductores/editar/:id` usan el nuevo diseno de Stitch: informacion personal, licencia y certificaciones a la izquierda; perfil y progreso a la derecha.
@@ -300,6 +314,8 @@ La vista publica `/registro` adapta el HTML de Stitch a un componente Angular st
 Archivos: `src/app/pages/registro/registro.component.ts`, `registro.component.html` y `registro.component.css`.
 
 ## Estado de verificacion
+
+El formulario de viajes paso la compilacion completa el 22 de octubre de 2026. Se verificaron con servicios simulados conversion horaria de Colombia a UTC y viceversa, fechas invalidas y fin anterior a salida, ruta inversa registrada, referencias existentes, recursos activos y asignaciones actuales al editar, payloads de creacion/edicion, bloqueo de duplicados y errores de carga/guardado. No se crearon viajes reales. Quedan advertencias de paquete inicial, estilos y Leaflet.
 
 El formulario de registro y edicion de conductores paso la compilacion completa el 22 de octubre de 2026. Se verificaron con servicios simulados campos obligatorios, ID numerico, telefono, payload de creacion/edicion sin datos locales, formato/tamano de imagen, liberacion de URL, bloqueo de duplicados y errores de carga/guardado. No se modificaron conductores reales. Permanecen advertencias de tamano del paquete inicial, estilos y Leaflet.
 
