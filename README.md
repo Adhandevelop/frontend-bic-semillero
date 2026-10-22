@@ -110,6 +110,8 @@ La navegación está definida en [app.routes.ts](src/app/app.routes.ts). El acce
 - Las exportaciones CSV incluyen los resultados filtrados, no solo la página visible. No generan manifiestos oficiales ni PDF.
 - Los catálogos secundarios que fallen se identifican en pantalla; el listado de viajes puede conservar los registros mostrando sus referencias por ID.
 
+El dashboard de viajes muestra como máximo **7 registros por página**. El número de páginas se calcula sobre los resultados filtrados y se ajusta al eliminar correctamente o sincronizar los datos. Si desaparece la última página, vuelve a la última disponible; un DELETE fallido conserva el registro y el conteo.
+
 ### Eliminación de viajes
 
 El dashboard muestra el código HTTP y los motivos JSON que devuelve la API (`detail`, `message`, `reason`, errores de validación conocidos) en fallos al cargar viajes, eliminar o cambiar estado. Si la respuesta es HTML o no incluye un motivo, lo indica expresamente; no presenta una causa supuesta como diagnóstico confirmado. El botón de recuperación actualiza el listado sin repetir la eliminación.
@@ -262,6 +264,7 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
 
 
 

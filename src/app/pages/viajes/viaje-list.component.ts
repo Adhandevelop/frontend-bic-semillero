@@ -37,7 +37,7 @@ export class ViajeListComponent implements OnInit {
   viajes:Viaje[]=[];buses:Bus[]=[];conductores:Conductor[]=[];rutas:Ruta[]=[];
   loading=false;loadFailed=false;error='';success='';warnings:string[]=[];
   searchValue='';selectedDate='';originFilter='';driverFilter=0;modelFilter='';stateFilter='';
-  page=1;readonly pageSize=5;busyId:number|null=null;updatedAt:Date|null=null;
+  page=1;readonly pageSize=7;busyId:number|null=null;updatedAt:Date|null=null;
   readonly states:Viaje['estado'][]=['en_curso','programado','finalizado','cancelado'];
   constructor(private viajeService:ViajeService,private busService:BusService,private conductorService:ConductorService,private rutaService:RutaService){}
   ngOnInit():void{this.cargarViajes();}
@@ -102,5 +102,6 @@ export class ViajeListComponent implements OnInit {
     const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));const link=document.createElement('a');link.href=url;link.download='viajes.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 }
+
 
 
