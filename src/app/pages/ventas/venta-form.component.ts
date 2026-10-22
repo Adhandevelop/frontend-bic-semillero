@@ -9,12 +9,12 @@ import { Ruta } from '../../core/models/ruta.model';
 import { VentaService, SaleTrip, SaleSeat, SaleFare, SaleTicket, SaleResult, AdminSalePayload } from '../../core/services/venta.service';
 @Component({selector:'app-venta-form',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./venta-form.component.html',styleUrl:'./venta-form.component.css'})
 export class VentaFormComponent implements OnInit {
-  get passengerLocked():boolean{return this.searchingClient||this.saving||this.uncertain||!!this.result;}
+  get passengerLocked():boolean{return this.creatingClient||this.searchingClient||this.saving||this.uncertain||!!this.result;}
   clientsLoading=false;clientsError='';
   cargarClientes():void{
     if(this.clientsLoading)return;this.clientsLoading=true;this.clientsError='';
     this.clientsApi.listar().pipe(timeout(15000)).subscribe({next:clients=>{
-      this.clients=clients;this.clientsLoading=false;
+      this.clients=[...clients,...this.clients.filter(c=>!clients.some(loaded=>loaded.id===c.id))];this.clientsLoading=false;
       const id=Number(this.route.snapshot.queryParamMap.get('cliente'));
       if(!this.clientId&&!this.draftPassenger&&clients.some(c=>c.id===id)){this.clientId=id;this.lookupDocument=this.client?.identification_number??'';}
     },error:()=>{this.clientsLoading=false;this.clientsError='No se pudo cargar el directorio de clientes. Reintenta la carga o prepara los datos del pasajero para la venta.';}});
@@ -32,10 +32,10 @@ export class VentaFormComponent implements OnInit {
     this.clientsApi.buscarPorDocumento(document).pipe(timeout(15000)).subscribe({next:matches=>{
       this.searchingClient=false;
       if(matches.length>1){this.lookupError='Hay varias cuentas con ese documento. Revisa el catálogo antes de vender.';return;}
-      if(!matches.length){this.clientNotFound=true;return;}
+      if(!matches.length){this.clientNotFound=true;this.openClient();return;}
       const client=matches[0];this.clients=[...this.clients.filter(c=>c.id!==client.id),client];this.clientId=client.id;
       this.clientNotice='Cliente encontrado. Sus datos se usarán para la venta.';
-    },error:()=>{this.searchingClient=false;this.lookupError='No se pudo consultar el cliente. Revisa la conexión y tus permisos; no se confirmó que el documento sea nuevo.';}});
+    },error:(err)=>{this.searchingClient=false;this.lookupError=err.status===404?'La ruta de búsqueda de clientes no está disponible en el servidor.':err.status===401?'La sesión venció. Inicia sesión nuevamente.':err.status===403?'Tu cuenta no tiene permisos para buscar clientes.':'No se pudo consultar el cliente. Revisa la conexión y el servicio de clientes.';}});
   }
   documentLabel():string{const code=this.client?.identification_document_code;const labels:Record<string,string>={'13':'Cédula de ciudadanía','22':'Cédula de extranjería','41':'Pasaporte','12':'Tarjeta de identidad',CC:'Cédula de ciudadanía',CE:'Cédula de extranjería',PAS:'Pasaporte',TI:'Tarjeta de identidad',PEP:'Permiso especial de permanencia'};return code?(labels[code]??code):'No disponible en la API';}
   invoiceLoading=false;invoiceError='';
@@ -48,8 +48,9 @@ export class VentaFormComponent implements OnInit {
     this.sales.consultar(this.result.id).subscribe({next:sale=>{this.result=sale;this.invoiceLoading=false;},error:()=>{this.invoiceLoading=false;this.invoiceError='No se pudo consultar la factura. La venta registrada se conserva; no vuelvas a emitir el tiquete.';}});
   }
   draftPassenger:Omit<Cliente,'id'|'role'>|null=null;
+  creatingClient=false;
   addingClient=false;clientError='';clientNotice='';
-  newClient={name:'',telephone:'',email:'',documentType:'CC',documentNumber:''};
+  newClient={name:'',telephone:'',email:'',documentType:'13',documentNumber:''};
   openClient():void{if(this.passengerLocked)return;this.addingClient=true;if(this.lookupDocument.trim())this.newClient.documentNumber=this.lookupDocument.trim();this.clientError='';this.clientNotice='';this.paid=false;}
   cancelClient():void{if(this.passengerLocked)return;this.addingClient=false;this.clientError='';}
   createClient():void{
@@ -57,15 +58,26 @@ export class VentaFormComponent implements OnInit {
     this.clientError='';
     const draft=this.newClient,name=draft.name.trim().replace(/\s+/g,' '),email=draft.email.trim().toLowerCase(),telephone=draft.telephone.trim(),document=draft.documentNumber.trim();
     const names=name.split(' ');
-    if(names.length<2||name.length>150||!/^\+?[0-9 ()-]{7,20}$/.test(telephone)||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>50||! /^[A-Za-z0-9.-]{1,20}$/.test(document)||!['CC','CE','PAS','TI','PEP'].includes(draft.documentType)){
+    if(names.length<2||name.length>150||!/^\+?[0-9 ()-]{7,20}$/.test(telephone)||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>50||! /^[A-Za-z0-9.-]{1,20}$/.test(document)||!['13','22','41','12'].includes(draft.documentType)){
       this.clientError='Revisa nombre y apellido, celular (7 a 20 caracteres), correo (máximo 50) y documento (hasta 20 letras, números, puntos o guiones).';return;
     }
     const existing=this.clients.find(c=>String(c.identification_number??'').trim().toLocaleLowerCase()===document.toLocaleLowerCase());
     if(existing){this.clientId=existing.id;this.draftPassenger=null;this.addingClient=false;this.lookupDocument=document;this.paid=false;this.clientNotice='El documento ya existe. Cliente seleccionado para la venta.';return;}
     if(this.clients.some(c=>c.email?.toLocaleLowerCase()===email)){this.clientError='Ya existe un cliente con ese correo. Búscalo en el directorio de pasajeros.';return;}
-    this.draftPassenger={username:'',first_name:name,last_name:'',email,telephone,identification_number:document};
-    this.clientId=null;this.search='';this.addingClient=false;this.paid=false;
-    this.clientNotice='Datos preparados. El cliente se buscará o creará al confirmar la venta; todavía no se ha registrado.';
+    this.creatingClient=true;
+    this.clientsApi.crearCliente({identification_document_code:draft.documentType,identification_number:document,name,email,telephone}).pipe(timeout(15000)).subscribe({
+      next:client=>{
+        this.creatingClient=false;
+        this.clients=[...this.clients.filter(c=>c.id!==client.id),client];
+        this.chooseClient(client);this.clientNotice='Cliente guardado y seleccionado. Ya puedes continuar con la venta.';
+        this.newClient={name:'',telephone:'',email:'',documentType:'13',documentNumber:''};
+      },error:err=>{
+        this.creatingClient=false;
+        const fields=['identification_document_code','identification_number','name','email','telephone','detail','non_field_errors'];
+        const detail=err.status===400||err.status===409?Object.entries(err.error&&typeof err.error==='object'?err.error:{}).filter(([key])=>fields.includes(key)).flatMap(([,value])=>Array.isArray(value)?value.filter(v=>typeof v==='string'):typeof value==='string'?[value]:[]).join(' '):'';
+        this.clientError=detail||(err.status===404?'El servicio para guardar clientes todavía no está disponible en el servidor.':err.status===403?'Tu cuenta no tiene permisos para guardar clientes.':err.status===401?'La sesión venció. Inicia sesión nuevamente.':'No se pudo confirmar el registro. Busca el documento antes de reintentar para comprobar si fue guardado.');
+      }
+    });
   }
   selectRegisteredClient():void{this.draftPassenger=null;this.clientNotice='';this.paid=false;}
   loading=false;saving=false;error='';uncertain=false;result:SaleResult|null=null;
@@ -73,7 +85,7 @@ export class VentaFormComponent implements OnInit {
   tripId:number|null=null;clientId:number|null=null;seatId:number|null=null;search='';payment:AdminSalePayload['payment_method']='cash';paid=false;
   constructor(private sales:VentaService,private clientsApi:ClienteService,private routesApi:RutaService,private route:ActivatedRoute){}
   ngOnInit():void{this.cargarClientes();this.cargar();}
-  get locked():boolean{return this.searchingClient||this.loading||this.saving||this.uncertain||!!this.result;}
+  get locked():boolean{return this.creatingClient||this.searchingClient||this.loading||this.saving||this.uncertain||!!this.result;}
   get trip():SaleTrip|undefined{return this.trips.find(t=>t.id===this.tripId);}
   get client():Omit<Cliente,'id'|'role'>|undefined{return this.draftPassenger??this.clients.find(c=>c.id===this.clientId);}
   get seat():SaleSeat|undefined{return this.availableSeats.find(s=>s.id===this.seatId);}
@@ -111,6 +123,7 @@ export class VentaFormComponent implements OnInit {
     },error:()=>{this.saving=false;this.error='No se pudo verificar la disponibilidad de la silla. No se envió la venta.';}});
   }
 }
+
 
 
 

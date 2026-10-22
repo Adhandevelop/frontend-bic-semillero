@@ -1,8 +1,8 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable, catchError, forkJoin, of } from 'rxjs';
+import { Observable, catchError, forkJoin, of, switchMap } from 'rxjs';
 import { Bus } from '../../core/models/bus.model';
 import { Conductor } from '../../core/models/conductor.model';
 import { Ruta } from '../../core/models/ruta.model';
@@ -29,8 +29,10 @@ export class ViajeFormComponent implements OnInit {
   private readonly fb=inject(FormBuilder);
   buses:Bus[]=[];conductores:Conductor[]=[];rutas:Ruta[]=[];
   loading=false;loadFailed=false;error='';success='';editando=false;viajeId?:number;
+  partialSaved=false;
   private originalBus=0;private originalRoute=0;
   readonly form=this.fb.nonNullable.group({
+    precio_cop:[null as number|null,[Validators.required,Validators.min(0.01),Validators.max(21474836.47),Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
     bus:[0,[Validators.required,Validators.min(1),Validators.pattern(/^\d+$/)]],
     conductor:[0,[Validators.required,Validators.min(1),Validators.pattern(/^\d+$/)]],
     ruta:[0,[Validators.required,Validators.min(1),Validators.pattern(/^\d+$/)]],
@@ -58,11 +60,14 @@ export class ViajeFormComponent implements OnInit {
       buses:load('Unidades',this.busService.listarTodos(),[] as Bus[]),
       conductores:load('Conductores',this.conductorService.listarTodos(),[] as Conductor[]),
       rutas:load('Rutas',this.rutaService.listar(),[] as Ruta[]),
+      tarifas:this.editando?load('Tarifa',this.viajeService.listarTarifas(),null):of([]),
       viaje:this.editando&&this.viajeId?load('Viaje #'+this.viajeId,this.viajeService.obtenerPorId(this.viajeId),null as Viaje|null):of(null)
     }).subscribe({
       next:data=>{
         this.buses=data.buses;this.conductores=data.conductores;this.rutas=data.rutas;
         if(data.viaje){this.originalBus=data.viaje.bus;this.originalRoute=data.viaje.ruta;this.form.patchValue({...data.viaje,fecha_hora_inicio:this.localDate(data.viaje.fecha_hora_inicio),fecha_hora_fin:data.viaje.fecha_hora_fin?this.localDate(data.viaje.fecha_hora_fin):''});}
+        const fare=data.tarifas?.find(f=>f.trip===this.viajeId);
+        this.form.controls.precio_cop.setValue(fare?fare.amount_cents/100:null);
         this.loading=false;this.loadFailed=failures.length>0;if(this.loadFailed)this.error='No se pudo cargar: '+failures.join('; ')+'. Reintenta la carga.';
       },error:()=>{this.loading=false;this.loadFailed=true;this.error='No se pudieron cargar las rutas, unidades, conductores o datos del viaje.';}
     });
@@ -74,8 +79,24 @@ export class ViajeFormComponent implements OnInit {
     if(!this.eligibleBuses.some(bus=>bus.id===Number(v.bus))||!this.conductores.some(driver=>driver.id===Number(v.conductor))||!this.eligibleRoutes.some(route=>route.id===Number(v.ruta))){this.error='Selecciona una ruta, un bus y un conductor existentes en los catálogos.';return;}
     this.loading=true;this.error='';
     const viaje:Viaje={bus:Number(v.bus),conductor:Number(v.conductor),ruta:Number(v.ruta),fecha_hora_inicio:bogotaIso(v.fecha_hora_inicio)!,fecha_hora_fin:v.fecha_hora_fin?bogotaIso(v.fecha_hora_fin):null,estado:v.estado};
-    const request=this.editando&&this.viajeId?this.viajeService.actualizar(this.viajeId,viaje):this.viajeService.crear(viaje);
-    request.subscribe({next:()=>{this.success=this.editando?'Viaje actualizado correctamente.':'Viaje creado correctamente.';this.router.navigateByUrl('/viajes').then(ok=>{this.loading=false;if(!ok)this.error='El viaje se guardó. Vuelve al listado para consultarlo.';}).catch(()=>{this.loading=false;this.error='El viaje se guardó. Vuelve al listado para consultarlo.';});},error:()=>{this.loading=false;this.error='No se pudo guardar el viaje. Revisa la asignación e inténtalo nuevamente.';}});
+    const request=this.editando&&this.viajeId?this.viajeService.actualizarParcial(this.viajeId,viaje):this.viajeService.crear(viaje);
+    request.subscribe({next:saved=>{
+      const id=saved.id??this.viajeId;
+      if(!id){this.loading=false;this.error='El servidor no devolvió el ID del viaje. Revisa el listado antes de reintentar.';this.loadFailed=true;return;}
+      this.viajeId=id;this.editando=true;this.partialSaved=true;
+      // Reconcile the fare on each attempt: a previous POST may have succeeded
+      // even if its response was lost. Never blindly create a second fare.
+      const cents=Math.round(v.precio_cop!*100);
+      this.viajeService.listarTarifas().pipe(switchMap(fares=>{
+        const matches=fares.filter(f=>f.trip===id);
+        if(matches.length>1)throw new Error('Hay varias tarifas para este viaje.');
+        return matches.length?this.viajeService.actualizarTarifa(matches[0].id,cents):this.viajeService.crearTarifa(id,cents);
+      })).subscribe({next:()=>{
+        this.partialSaved=false;this.success='Viaje y tarifa guardados correctamente.';
+        this.router.navigateByUrl('/viajes').then(ok=>{this.loading=false;if(!ok)this.error='El viaje y su tarifa se guardaron. Vuelve al listado para consultarlos.';}).catch(()=>{this.loading=false;this.error='El viaje y su tarifa se guardaron. Vuelve al listado para consultarlos.';});
+      },error:()=>{this.loading=false;this.error='El viaje #'+id+' está guardado, pero no se pudo confirmar su tarifa. Reintenta guardar: se actualizará este mismo viaje y se consultará su tarifa antes de crearla.';}});
+    },error:()=>{this.loading=false;this.error=this.partialSaved?'No se pudo actualizar el viaje #'+this.viajeId+'. Su tarifa sigue pendiente de confirmar.':'No se pudo confirmar el guardado del viaje. Revisa el listado antes de reintentar.';}});
   }
   private localDate(value:string):string{const date=new Date(value);return Number.isFinite(date.getTime())?new Date(date.getTime()-5*3600000).toISOString().slice(0,16):'';}
 }
+

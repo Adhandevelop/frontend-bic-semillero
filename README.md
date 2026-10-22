@@ -110,6 +110,14 @@ La navegación está definida en [app.routes.ts](src/app/app.routes.ts). El acce
 - Las exportaciones CSV incluyen los resultados filtrados, no solo la página visible. No generan manifiestos oficiales ni PDF.
 - Los catálogos secundarios que fallen se identifican en pantalla; el listado de viajes puede conservar los registros mostrando sus referencias por ID.
 
+### Precio de cada viaje
+
+El formulario de creación/edición permite asignar el precio por silla en COP, obligatorio, positivo y con máximo dos decimales (hasta 21.474.836,47 COP). Convierte pesos a centavos enteros: 25000 COP → `amount_cents: 2500000`. Al editar carga la tarifa del viaje; si no existe, requiere asignarla.
+
+Se guarda primero el viaje con el servicio existente (`POST /api/trips/trips/` o `PATCH /api/trips/trips/:id/`) y después se consulta `/api/trips/fares/`: crea con `{trip, amount_cents}` o actualiza la tarifa existente con `PATCH /api/trips/fares/:id/`. Se conserva el prefijo real de viajes configurado en el proyecto; el ejemplo `/api/trips/` no coincide con el router local. El JWT administrativo lo añade el interceptor.
+
+Las solicitudes no son atómicas. Si falla la tarifa, la pantalla informa que el viaje ya se guardó y conserva su ID: reintentar actualiza ese viaje, consulta si ya existe tarifa y evita crear otro viaje. Si se abandona la pantalla, se puede completar desde editar. No se anuncia éxito completo ni se navega hasta guardar ambas partes. Ante un error de red en la primera solicitud, revisar el listado antes de reintentar. La venta continúa tomando el precio del backend; no envía `amount_cents`.
+
 ### Dashboard de rutas
 
 `/rutas` muestra el catalogo real con busqueda por ID/origen/destino, filtros de origen y distancia, nueve registros por pagina, exportacion CSV, actualizacion, edicion y eliminacion confirmada. PDF permanece pendiente.
@@ -148,11 +156,13 @@ Queda pendiente almacenar y mapear el tipo de documento: el backend actual fija 
 
 ### Registro rápido desde ventas
 
-**Cliente existente** consulta una coincidencia exacta por documento, rellena nombre, correo y celular y muestra el tipo de documento si la API lo devuelve. Mientras no exista el filtro del backend, `ClienteService.buscarPorDocumento` consulta todas las páginas del catálogo y filtra por documento completo; no presupone que el servidor aplique `?identification_number=`. El filtro independiente de API queda pendiente. El directorio se carga mediante una suscripción independiente de viajes/sillas/rutas/tarifas: un fallo de esos catálogos no descarta una respuesta 200 de clientes. Muestra conteo, selección directa de los primeros 20 clientes, búsqueda exacta para el resto y su propio estado de carga/error/reintento. La búsqueda y el formulario de pasajero funcionan independientemente de la carga de viajes/sillas. El botón ejecuta explícitamente la búsqueda y Enter también la envía; la consulta tiene un límite de 15 segundos para evitar un bloqueo indefinido. Se compara el documento completo como texto, tolerando espacios externos y valores numéricos del catálogo. Si se preparan datos con un documento ya cargado, se selecciona automáticamente la cuenta existente. Una búsqueda sin resultados ofrece **Añadir cliente** y precarga su documento; un error de consulta no se interpreta como cliente inexistente. Cambiar el documento elimina la selección anterior y bloquea emitir mientras se busca.
+La búsqueda por documento usa `GET /api/accounts/customers/search/?identification_number=...`, con respuesta de un cliente `{id, name, email, telephone, identification_number, identification_document_code}`. El servicio adapta `name` a la vista existente. Solo el 404 con `detail: Cliente no encontrado.` se interpreta como ausencia y abre automáticamente el formulario con el documento precargado; otros errores no se presentan como clientes inexistentes.
 
-**Cliente nuevo / Añadir cliente** abre los cinco campos dentro de la venta. **Usar estos datos en la venta** valida y prepara al pasajero en memoria, conservando viaje y silla; no crea una cuenta todavía. Al confirmar la venta, un único POST a `/api/sales/admin-sales/` envía `identification_number`, `name`, `email`, `telephone`, `trip`, `seat` y `payment_method`. El backend busca o crea al cliente y emite el tiquete. Este flujo no utiliza el POST separado de cuentas ni genera credenciales desde Angular.
+**Guardar y seleccionar cliente** envía los cinco datos básicos mediante `POST /api/accounts/customers/`, incluyendo el código numérico del tipo de documento. No envía usuario, contraseña, rol ni credenciales externas. El cliente se selecciona y el éxito se anuncia únicamente después de la respuesta del servidor, conservando viaje y silla. La venta posterior sigue usando `/api/sales/admin-sales/`, sin `amount_cents`. Guardar cliente no registra una venta ni emite tiquetes.
 
-El precio es de solo lectura y `amount_cents` no se envía. El tipo de documento sigue sin formar parte del contrato de venta y no se persiste. Cancelar conserva el pasajero previo; elegir un cliente registrado descarta el pasajero preparado. Mientras se edita el formulario no se permite emitir. La creación del cliente no se anuncia como exitosa antes de recibir la venta.
+Ambos endpoints requieren administrador. La consulta tiene límite de 15 segundos y el registro bloquea solicitudes duplicadas. Los errores conservan los campos y distinguen ruta no disponible, permisos y validación; ante un resultado incierto se indica buscar el documento antes de reintentar. El directorio general conserva `/accounts/users/` como consulta paginada independiente, sin condicionar búsqueda/alta a su disponibilidad.
+
+**Disponibilidad del backend:** las rutas específicas no aparecen todavía en el checkout local revisado. Angular implementa el contrato suministrado; deben estar implementadas y desplegadas en el servidor para guardar cuentas realmente. No se hicieron altas reales en producción ni se confirma su disponibilidad con pruebas simuladas. El formulario administrativo independiente `/clientes/nuevo` aún usa el contrato anterior de cuentas con credenciales.
 
 ### Registrar cliente
 
@@ -244,6 +254,8 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
 
 
 
