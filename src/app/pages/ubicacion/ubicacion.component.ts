@@ -1,12 +1,13 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import { BUS_LOCATIONS_MOCK } from '../../core/data/bus-locations.mock';
 import { BusLocationCollection } from '../../core/models/bus-location.model';
 
 @Component({
-  selector: 'app-ubicacion', standalone: true, imports: [CommonModule, RouterLink],
+  selector: 'app-ubicacion', standalone: true, imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './ubicacion.component.html', styleUrl: './ubicacion.component.css'
 })
 export class UbicacionComponent implements AfterViewInit, OnDestroy {
@@ -15,6 +16,10 @@ export class UbicacionComponent implements AfterViewInit, OnDestroy {
   selectedBus = this.locations.features[0];
   message = '';
   tileError = false;
+  passengerName = '';
+  travelCode = '';
+  submitted = false;
+  trackingMessage = '';
   private map?: L.Map;
   private busLayer?: L.GeoJSON;
   private resizeObserver?: ResizeObserver;
@@ -54,6 +59,17 @@ export class UbicacionComponent implements AfterViewInit, OnDestroy {
     this.selectedBus = bus;
     const [longitude, latitude] = bus.geometry.coordinates;
     this.map?.setView([latitude, longitude], 14);
+  }
+
+  viewTracking(): void {
+    this.submitted = true;
+    if (!this.passengerName.trim() || !/^[0-9]{6}$/.test(this.travelCode)) return;
+    this.trackingMessage = 'Mostrando posiciones de ejemplo. El código ingresado no se ha validado.';
+    this.showAllBuses();
+    this.mapContainer.nativeElement.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'center'
+    });
   }
 
   showAllBuses(): void {

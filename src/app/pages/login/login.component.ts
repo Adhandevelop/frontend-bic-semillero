@@ -58,7 +58,7 @@ export class LoginComponent {
         } else if (err.status === 400 || err.status === 401) {
           this.error = 'Usuario o contraseña incorrectos.';
         } else if (err.status === 403) {
-          this.error = 'No tienes permiso para iniciar sesión.';
+          this.error = 'Este panel requiere una cuenta con rol de administrador.';
         } else {
           this.error =
             'Ocurrió un error en el servidor. Inténtalo nuevamente.';
