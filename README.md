@@ -67,6 +67,7 @@ http://localhost:4200/
 
 Las siguientes rutas requieren autenticacion:
 
+- `/clientes`: listado administrativo de clientes con busqueda y paginacion.
 - `/dashboard`
 - `/buses`
 - `/buses/nuevo`
@@ -197,6 +198,16 @@ Correccion del 22 de octubre de 2026: el error generico de carga del formulario 
 - El formulario captura fallos por recurso y muestra codigo HTTP y motivo (sesion, permisos, endpoint o conexion), conserva los catalogos que si llegaron y bloquea guardar hasta completar una carga correcta.
 
 La comprobacion se realizo contra el codigo del backend y pruebas HTTP simuladas, sin autenticar ni modificar datos de produccion. Si el despliegue usa otro contrato debe contrastarse con esa version. Los errores 401/403 o de conexion siguen requiriendo una sesion con permisos y una API accesible.
+
+## Navegacion administrativa: ventas y clientes
+
+El acceso principal del menu lateral cambia de **Crear viaje** a **Generar venta** y abre `/clientes/comprar`, el flujo de compra existente. Este flujo sigue siendo una simulacion sin reserva ni cobro; no crea ventas reales. Programar viajes continua disponible en el modulo Viajes.
+
+Se incorpora **Clientes** en el menu lateral y en la barra superior (tambien visible en movil), enlazado a la ruta protegida `/clientes` dentro del layout administrativo. El listado consulta todas las paginas de `/api/accounts/users/` y muestra exclusivamente cuentas con `role: client`, excluyendo conductores y administradores. La API exige permisos de administrador.
+
+Incluye nombre/usuario, documento, correo, telefono, busqueda, diez registros por pagina, actualizacion y mensajes de error de sesion/permisos/conexion. Es una consulta de clientes reales, separada de la vista previa del perfil de pasajero en `/clientes/panel`. No crea, edita ni elimina usuarios.
+
+Archivos: `src/app/core/services/cliente.service.ts`, `src/app/pages/clientes/`, `app.routes.ts` y plantillas de layout/navbar.
 
 ## Dashboard de viajes
 
@@ -351,6 +362,8 @@ Si Docker muestra `Could not find stylesheet file './viaje-list.component.css'`,
 Actualizar el repositorio del servidor con `git pull --ff-only`, confirmar la presencia del archivo y reconstruir el servicio `frontend`. Reconstruir una copia antigua sin actualizar Git no incorpora archivos pendientes. Si el archivo existe en el servidor pero no en la imagen, revisar el contexto de build, `COPY` y `.dockerignore`.
 
 ## Estado de verificacion
+
+Los accesos Generar venta/Clientes y el listado administrativo compilaron con `npm run build` el 22 de octubre de 2026. Se verificaron con HTTP simulado el filtrado por rol entre paginas de usuarios, busqueda, paginacion, nombre alternativo y errores de permisos. No se consultaron ni modificaron cuentas reales en estas pruebas. Permanecen las advertencias de tamano y Leaflet.
 
 El dashboard de viajes paso `npm run build` el 22 de octubre de 2026. Se comprobaron con servicios simulados nombres de catalogos, fechas y zona horaria, filtros, conteos, paginacion, proximas salidas, transiciones permitidas y solicitudes duplicadas, errores de eliminacion, CSV y fallos parciales de catalogos. No se modificaron viajes reales. Quedan advertencias de paquete inicial, estilos y Leaflet.
 

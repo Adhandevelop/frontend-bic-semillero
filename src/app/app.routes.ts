@@ -28,6 +28,7 @@ export const routes: Routes = [
     canActivateChild: [authGuard],
     children: [
       { path: 'dashboard', component: DashboardComponent },
+      { path: 'clientes', loadComponent: () => import('./pages/clientes/client-list.component').then(m => m.ClientListComponent) },
       { path: 'buses', component: BusListComponent },
       { path: 'buses/nuevo', component: BusFormComponent },
       { path: 'buses/editar/:id', component: BusFormComponent },

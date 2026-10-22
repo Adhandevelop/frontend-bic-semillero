@@ -2,6 +2,8 @@
   <a class="brand" routerLink="/dashboard">Buses Universal</a>
   <div class="nav-links">
     <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page">Dashboard</a>
+    <a routerLink="/clientes" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" ariaCurrentWhenActive="page">Clientes</a>
+    <a routerLink="/clientes/comprar">Generar venta</a>
     <a routerLink="/buses" routerLinkActive="active" ariaCurrentWhenActive="page">Buses</a>
     <a routerLink="/conductores" routerLinkActive="active" ariaCurrentWhenActive="page">Conductores</a>
     <button type="button" class="logout-btn" (click)="cerrarSesion()">Salir</button>
