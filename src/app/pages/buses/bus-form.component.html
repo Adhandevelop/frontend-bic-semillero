@@ -1,44 +1,12 @@
-<section class="form-card panel">
-  <div class="page-header">
-    <h1>{{ editando ? 'Editar bus' : 'Nuevo bus' }}</h1>
-  </div>
-
-  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-  <div class="loading" *ngIf="loading">Procesando...</div>
-
-  <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()" *ngIf="!loading || editando">
-    <div class="form-field">
-      <label for="placa">Placa</label>
-      <input id="placa" type="text" formControlName="plate">
-      <span class="field-error" *ngIf="form.controls.plate.touched && form.controls.plate.invalid">La placa es obligatoria.</span>
-    </div>
-
-    <div class="form-field">
-      <label for="capacidad">Capacidad</label>
-      <input id="capacidad" type="number" min="1" formControlName="capacity">
-      <span class="field-error" *ngIf="form.controls.capacity.touched && form.controls.capacity.invalid">La capacidad debe ser mayor que 0.</span>
-    </div>
-
-    <div class="form-field">
-      <label for="modelo">Modelo</label>
-      <input id="modelo" type="text" formControlName="model">
-      <span class="field-error" *ngIf="form.controls.model.touched && form.controls.model.invalid">El modelo es obligatorio.</span>
-    </div>
-
-    <div class="form-field">
-      <label for="estado">Estado</label>
-      <select id="estado" formControlName="state">
-        <option value="Active">Activo</option>
-        <option value="Inactive">Inactivo</option>
-        <option value="Maintenance">Mantenimiento</option>
-      </select>
-      <span class="field-error" *ngIf="form.controls.state.touched && form.controls.state.invalid">El estado es obligatorio.</span>
-    </div>
-
-    <div class="actions">
-      <button class="btn btn-primary" type="submit" [disabled]="loading">Guardar</button>
-      <a class="btn btn-secondary" routerLink="/buses">Cancelar</a>
-    </div>
-  </form>
-</section>
+<section class="unit-page" aria-labelledby="unit-title">
+<a class="back-link" routerLink="/buses">← Volver al panel de flota</a><div class="unit-heading"><h1 id="unit-title">{{ editando ? 'Editar unidad' : 'Agregar nueva unidad' }}</h1><p>Registra los datos del vehículo. Verifica que la capacidad y el modelo coincidan con su ficha técnica oficial.</p></div>
+<div class="feedback error" *ngIf="error" role="alert">{{ error }} <button type="button" *ngIf="loadFailed && busId" (click)="cargarBus(busId)" [disabled]="loading">Reintentar carga</button></div><p class="feedback success" *ngIf="success" role="status">{{ success }}</p><p class="loading-note" *ngIf="loading" role="status">Procesando datos de la unidad...</p>
+<div class="unit-grid"><form class="unit-card" [formGroup]="form" (ngSubmit)="guardar()" novalidate><fieldset [disabled]="loading || loadFailed" [attr.aria-busy]="loading"><section><h2>✎ Información general</h2><div class="fields">
+<div class="field"><div class="floating"><input id="unit-plate" formControlName="plate" placeholder=" " required [attr.aria-invalid]="invalid('plate')" aria-describedby="plate-error"><label for="unit-plate">Número de unidad (placa)</label></div><span id="plate-error" class="field-error" *ngIf="invalid('plate')">La placa es obligatoria y no puede estar en blanco.</span></div>
+<div class="field"><div class="floating"><input id="unit-model" formControlName="model" placeholder=" " required [attr.aria-invalid]="invalid('model')" aria-describedby="model-error"><label for="unit-model">Modelo del vehículo</label></div><span id="model-error" class="field-error" *ngIf="invalid('model')">Ingresa el modelo del vehículo.</span></div>
+<div class="field"><div class="floating"><input id="unit-capacity" type="number" min="1" step="1" formControlName="capacity" placeholder=" " required [attr.aria-invalid]="invalid('capacity')" aria-describedby="capacity-error"><label for="unit-capacity">Capacidad de pasajeros</label></div><span id="capacity-error" class="field-error" *ngIf="invalid('capacity')">Ingresa un número entero mayor que cero.</span></div>
+<div class="field"><div class="floating select-field"><label for="unit-state">{{ editando ? 'Estado' : 'Estado inicial' }}</label><select id="unit-state" formControlName="state" required [attr.aria-invalid]="invalid('state')" aria-describedby="state-error"><option value="Active">Activo</option><option value="Inactive">Inactivo</option><option value="mantenimiento">Mantenimiento</option></select></div><span id="state-error" class="field-error" *ngIf="invalid('state')">Selecciona un estado válido.</span></div>
+</div><div class="image-field"><label class="upload-zone" for="unit-image"><span aria-hidden="true">↑</span><strong>{{ imageName || 'Cargar imagen de la unidad' }}</strong><small>PNG, JPG o WEBP · Máximo 5 MB</small></label><input id="unit-image" class="file-input" type="file" accept="image/png,image/jpeg,image/webp" (change)="selectImage($event)" aria-describedby="image-help image-error"><p id="image-help" class="local-note">La imagen es una vista previa local; todavía no se guarda en la API.</p><span id="image-error" class="field-error" *ngIf="imageError" role="alert">{{ imageError }}</span><button class="text-button" type="button" *ngIf="imageUrl" (click)="removeImage()">Quitar imagen seleccionada</button></div></section>
+<section class="equipment"><h2>▤ Equipamiento e instalaciones</h2><p class="local-note">Selección para previsualizar. Estos datos aún no se guardan en el registro.</p><div class="equipment-grid"><label *ngFor="let item of equipmentOptions"><input type="checkbox" [checked]="selectedEquipment.has(item)" (change)="toggleEquipment(item)"><span>{{ item }}</span></label></div></section>
+<button type="submit" class="save-button" [disabled]="loading || loadFailed || !!success">{{ loading ? 'Procesando...' : editando ? 'Guardar cambios de la unidad' : 'Registrar unidad en flota' }}</button><a class="cancel-link" routerLink="/buses">Cancelar y volver a la flota</a></fieldset></form>
+<aside class="preview-column" aria-label="Previsualización de unidad"><section class="preview-card"><div class="preview-photo"><img [src]="imageUrl || defaultImage" [alt]="imageUrl ? 'Imagen seleccionada para previsualizar la unidad' : 'Imagen ilustrativa de un bus, no asociada al registro'" loading="lazy"><div class="photo-shade"></div><div class="photo-caption"><span>Previsualización de unidad</span><h2>{{ form.controls.plate.value.trim() || 'Nueva unidad' }}</h2><p>{{ form.controls.model.value.trim() || 'Modelo del vehículo' }}</p></div></div><div class="preview-details"><div class="preview-status"><strong>Estado seleccionado</strong><span [class.maintenance]="form.controls.state.value === 'mantenimiento'">{{ stateLabel }}</span></div><div class="preview-capacity"><span>Capacidad</span><strong>{{ form.controls.capacity.valid ? form.controls.capacity.value + ' pasajeros' : 'Por completar' }}</strong></div><div class="progress-heading"><span>Progreso de datos obligatorios</span><strong>{{ progress }}%</strong></div><progress [value]="progress" max="100" aria-label="Progreso de los cuatro campos obligatorios"></progress><div class="equipment-preview" *ngIf="selectedEquipment.size"><span *ngFor="let item of selectedEquipment">{{ item }}</span></div><p class="preview-note">Al guardar, la unidad aparecerá en el panel de flota con su placa, modelo, capacidad y estado.</p></div></section><section class="registration-info"><span aria-hidden="true">◈</span><div><h2>Antes de registrar</h2><p>Comprueba la ficha técnica y el estado de operación. La foto y el equipamiento son opcionales y solo se previsualizan en esta pantalla.</p></div></section></aside></div></section>

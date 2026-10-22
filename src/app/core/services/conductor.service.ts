@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { Conductor } from '../models/conductor.model';
 
@@ -18,6 +18,16 @@ export class ConductorService {
   private readonly apiUrl = `${API_BASE_URL}/fleet/drivers/`;
 
   constructor(private http: HttpClient) {}
+
+  listarTodos(): Observable<Conductor[]> {
+    return this.http.get<Conductor[] | PaginatedResponse<Conductor>>(this.apiUrl).pipe(
+      expand((response, index) => !Array.isArray(response) && response.next
+        ? this.http.get<Conductor[] | PaginatedResponse<Conductor>>(this.apiUrl, { params: { page: index + 2 } })
+        : EMPTY),
+      map(response => Array.isArray(response) ? response : response.results),
+      reduce((drivers, page) => drivers.concat(page), [] as Conductor[])
+    );
+  }
 
   listar(): Observable<Conductor[]> {
     return this.http

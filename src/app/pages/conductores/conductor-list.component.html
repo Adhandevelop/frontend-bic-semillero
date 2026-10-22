@@ -1,42 +1,11 @@
-<section>
-  <div class="page-header">
-    <h1>Conductores</h1>
-    <a class="btn btn-primary" routerLink="/conductores/nuevo">Nuevo conductor</a>
-  </div>
-
-  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-  <div class="panel">
-    <div class="loading" *ngIf="loading">Cargando conductores...</div>
-    <div class="empty-state" *ngIf="!loading && conductores.length === 0">No hay conductores registrados.</div>
-    <div class="table-wrap" *ngIf="!loading && conductores.length > 0">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Licencia</th>
-            <th>Dirección</th>
-            <th>Teléfono</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let conductor of conductores">
-            <td>{{ conductor.id }}</td>
-            <td>{{ conductor.full_name }}</td>
-            <td>{{ conductor.license_number }}</td>
-            <td>{{ conductor.address || 'No registrado' }}</td>
-            <td>{{ conductor.phone_number || 'No registrado' }}</td>
-            <td>
-              <div class="actions">
-                <a class="btn btn-info" [routerLink]="['/conductores/editar', conductor.id]">Editar</a>
-                <button class="btn btn-danger" type="button" (click)="eliminarConductor(conductor)">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
+<section class="drivers-page" aria-labelledby="drivers-title"><div class="drivers-heading"><div><span class="eyebrow">Flota › Gestión de operadores</span><h1 id="drivers-title">Panel de conductores</h1><p>Consulta y gestiona el personal de transporte registrado.</p></div><div class="heading-actions"><button type="button" (click)="exportCsv()" [disabled]="loading || loadFailed || !filteredDrivers.length">↓ Exportar CSV</button><a class="primary" routerLink="/conductores/nuevo">+ Registrar conductor</a></div></div>
+<div class="feedback error" *ngIf="error" role="alert">{{ error }} <button type="button" (click)="cargarConductores()" [disabled]="loading || deletingId !== null">Reintentar</button></div><p class="feedback success" *ngIf="success" role="status">{{ success }}</p><p class="loading" *ngIf="loading" role="status">Cargando conductores...</p>
+<ng-container *ngIf="!loading && !loadFailed"><section class="driver-metrics" aria-label="Resumen de registros"><article><span class="metric-icon">▤</span><strong>{{ conductores.length }}</strong><span>Total conductores</span></article><article><span class="metric-icon">✓</span><strong>{{ withLicense }}</strong><span>Con licencia registrada</span></article><article><span class="metric-icon">☎</span><strong>{{ withPhone }}</strong><span>Con teléfono registrado</span></article><article><span class="metric-icon">⌖</span><strong>{{ withAddress }}</strong><span>Con dirección registrada</span></article></section>
+<div class="toolbar"><div class="search"><label class="sr-only" for="driver-search">Buscar por nombre, ID, usuario, licencia o teléfono</label><input id="driver-search" type="search" [(ngModel)]="searchValue" (ngModelChange)="page = 1" placeholder="Buscar nombre, ID, usuario, licencia o teléfono..."></div><select aria-label="Filtrar contacto" [(ngModel)]="contactFilter" (ngModelChange)="page = 1"><option value="">Contacto: Todos</option><option value="with">Con teléfono</option><option value="without">Sin teléfono</option></select><button type="button" class="text-button" *ngIf="searchValue || contactFilter" (click)="clearFilters()">Limpiar</button><div class="view-switch" role="group" aria-label="Formato de visualización"><button type="button" [class.selected]="view === 'table'" [attr.aria-pressed]="view === 'table'" (click)="view = 'table'">Tabla</button><button type="button" [class.selected]="view === 'grid'" [attr.aria-pressed]="view === 'grid'" (click)="view = 'grid'">Tarjetas</button></div><button type="button" (click)="cargarConductores()" [disabled]="deletingId !== null">Actualizar</button></div>
+<p class="data-note">Estado operativo, turnos, categoría de licencia, RH y evaluaciones: pendientes de datos del backend.</p>
+<section class="profile-card" *ngIf="selectedDriver as driver" aria-labelledby="driver-file-title"><div class="profile-header"><span class="avatar">{{ initials(driver.full_name) }}</span><div><h2 id="driver-file-title">{{ driver.full_name }}</h2><p>Ficha del conductor #{{ driver.id }}</p></div><button type="button" (click)="selectedDriver = null" aria-label="Cerrar ficha">×</button></div><dl><div><dt>Licencia</dt><dd>{{ driver.license_number || 'Sin registrar' }}</dd></div><div><dt>Usuario asociado</dt><dd>{{ driver.user }}</dd></div><div><dt>Dirección</dt><dd>{{ driver.address || 'Sin registrar' }}</dd></div><div><dt>Teléfono</dt><dd>{{ driver.phone_number || 'Sin registrar' }}</dd></div></dl><a [routerLink]="['/conductores/editar', driver.id]">Editar datos del conductor →</a></section>
+<div class="empty-state" *ngIf="!filteredDrivers.length"><h2>{{ conductores.length ? 'No se encontraron coincidencias' : 'No hay conductores registrados' }}</h2><p>{{ conductores.length ? 'Prueba con otros datos o limpia los filtros.' : 'Registra un conductor para comenzar.' }}</p></div>
+<section class="results-card" *ngIf="filteredDrivers.length"><div class="table-scroll" *ngIf="view === 'table'"><table><caption class="sr-only">Conductores registrados en la API</caption><thead><tr><th scope="col">Conductor</th><th scope="col">Licencia</th><th scope="col">Dirección</th><th scope="col">Contacto directo</th><th scope="col">Acciones</th></tr></thead><tbody><tr *ngFor="let driver of visibleDrivers"><td><div class="driver-name"><span class="avatar">{{ initials(driver.full_name) }}</span><div><strong>{{ driver.full_name }}</strong><small>ID {{ driver.id }} · Usuario {{ driver.user }}</small></div></div></td><td><span class="license">{{ driver.license_number || 'Sin registrar' }}</span></td><td>{{ driver.address || 'Sin registrar' }}</td><td><a class="phone" *ngIf="phoneLink(driver.phone_number || '') as phone; else plainPhone" [href]="phone">☎ {{ driver.phone_number }}</a><ng-template #plainPhone>{{ driver.phone_number || 'Sin registrar' }}</ng-template></td><td><ng-container *ngTemplateOutlet="driverActions; context: {$implicit: driver}"></ng-container></td></tr></tbody></table></div>
+<div class="driver-grid" *ngIf="view === 'grid'"><article *ngFor="let driver of visibleDrivers"><div class="driver-name"><span class="avatar">{{ initials(driver.full_name) }}</span><div><h2>{{ driver.full_name }}</h2><small>ID {{ driver.id }} · Usuario {{ driver.user }}</small></div></div><dl><div><dt>Licencia</dt><dd>{{ driver.license_number || 'Sin registrar' }}</dd></div><div><dt>Dirección</dt><dd>{{ driver.address || 'Sin registrar' }}</dd></div><div><dt>Contacto</dt><dd>{{ driver.phone_number || 'Sin registrar' }}</dd></div></dl><ng-container *ngTemplateOutlet="driverActions; context: {$implicit: driver}"></ng-container></article></div>
+<div class="pagination"><span aria-live="polite">Mostrando {{ firstResult }} - {{ lastResult }} de {{ filteredDrivers.length }} conductores{{ filteredDrivers.length !== conductores.length ? ' filtrados' : '' }}</span><div><button type="button" [disabled]="currentPage === 1" (click)="changePage(-1)">Anterior</button><span>Página {{ currentPage }} de {{ pageCount }}</span><button type="button" [disabled]="currentPage === pageCount" (click)="changePage(1)">Siguiente</button></div></div></section></ng-container>
+<ng-template #driverActions let-driver><div class="row-actions"><button type="button" (click)="selectedDriver = driver">Ver ficha</button><a [routerLink]="['/conductores/editar', driver.id]">Editar</a><button class="delete" type="button" [disabled]="deletingId !== null" (click)="eliminarConductor(driver)">{{ deletingId === driver.id ? 'Eliminando...' : 'Eliminar' }}</button></div></ng-template></section>

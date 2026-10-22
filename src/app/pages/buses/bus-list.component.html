@@ -1,42 +1,15 @@
-<section>
-  
-  <div class="page-header">
-    <h1>Buses</h1>
-    <a class="btn btn-primary" routerLink="/buses/nuevo">Nuevo bus</a>
-  </div>
-  <div class="alert alert-error" *ngIf="error">{{ error }}</div>
-  <div class="alert alert-success" *ngIf="success">{{ success }}</div>
-  <div class="panel">
-    <div class="loading" *ngIf="loading">Cargando buses...</div>
-    <div class="empty-state" *ngIf="!loading && buses.length === 0">No hay buses registrados.</div>
-    <div class="table-wrap" *ngIf="!loading && buses.length > 0">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Placa</th>
-            <th>Capacidad</th>
-            <th>Modelo</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let bus of buses">
-            <td>{{ bus.id }}</td>
-            <td>{{ bus.plate }}</td>
-            <td>{{ bus.capacity }}</td>
-            <td>{{ bus.model || 'No registrado' }}</td>
-            <td><span class="badge">{{ bus.state }}</span></td>
-            <td>
-              <div class="actions">
-                <a class="btn btn-info" [routerLink]="['/buses/editar', bus.id]">Editar</a>
-                <button class="btn btn-danger" type="button" (click)="eliminarBus(bus)">Eliminar</button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+<section class="fleet-page" aria-labelledby="fleet-title">
+  <div class="fleet-heading"><div><span class="eyebrow">Administración de flota</span><h1 id="fleet-title">Panel de control de buses</h1><p>Consulta y gestiona los vehículos registrados.</p></div><div class="heading-actions"><button type="button" (click)="cargarBuses()" [disabled]="loading || deletingId !== null">{{ loading ? 'Actualizando...' : 'Actualizar' }}</button><a class="primary" routerLink="/buses/nuevo">+ Nuevo bus</a></div></div>
+  <div class="fleet-toolbar"><div class="search"><label for="fleet-search" class="sr-only">Buscar bus por ID, placa o modelo</label><span aria-hidden="true">⌕</span><input id="fleet-search" type="search" [(ngModel)]="searchValue" placeholder="Buscar bus por ID, placa o modelo..."></div><button type="button" [class.filter-active]="onlyActive" [attr.aria-pressed]="onlyActive" (click)="onlyActive = !onlyActive">{{ onlyActive ? '✓ Solo activos' : 'Filtrar activos' }}</button><button type="button" class="text-button" *ngIf="onlyActive || searchValue" (click)="clearFilters()">Limpiar filtros</button></div>
+  <div class="feedback error" *ngIf="error" role="alert">{{ error }} <button type="button" (click)="cargarBuses()" [disabled]="loading">Reintentar</button></div><p class="feedback success" *ngIf="success" role="status">{{ success }}</p>
+  <div class="loading-state" *ngIf="loading" role="status">Cargando registros de la flota...</div>
+  <ng-container *ngIf="!loading && !loadFailed">
+    <section class="fleet-metrics" aria-label="Resumen de los registros"><article class="metric metric-primary"><div><span>Buses activos</span><strong>{{ activeCount }}</strong></div><p>Estado activo registrado en la API</p><span class="metric-decoration" aria-hidden="true">▣</span></article><article class="metric"><span>Inactivos</span><strong>{{ inactiveCount }}</strong><p>Fuera de operación según registro</p></article><article class="metric maintenance"><span>Mantenimiento</span><strong>{{ maintenanceCount }}</strong><p>Unidades marcadas en mantenimiento</p></article></section>
+    <div class="results-heading"><h2>Vehículos de la flota</h2><span aria-live="polite">{{ filteredBuses.length }} de {{ buses.length }} buses</span></div>
+    <div class="empty-state" *ngIf="buses.length === 0"><h2>No hay buses registrados</h2><p>Agrega la primera unidad para gestionar tu flota.</p><a class="primary" routerLink="/buses/nuevo">Registrar bus</a></div>
+    <div class="empty-state" *ngIf="buses.length > 0 && filteredBuses.length === 0"><h2>No se encontraron coincidencias</h2><p>Prueba con otro ID, placa o modelo.</p><button type="button" (click)="clearFilters()">Limpiar filtros</button></div>
+    <section class="bus-grid" *ngIf="filteredBuses.length > 0" aria-label="Buses registrados"><article class="bus-card" *ngFor="let bus of filteredBuses" [class.in-maintenance]="bus.state === 'mantenimiento'"><div class="bus-card-top"><span class="bus-symbol" aria-hidden="true">▣</span><span class="model-chip">{{ bus.model || 'Modelo sin registrar' }}</span></div><h3>BUS-{{ bus.id }}</h3><p class="plate">Placa: <strong>{{ bus.plate }}</strong></p><dl><div><dt>Capacidad</dt><dd>{{ bus.capacity }} pasajeros</dd></div><div><dt>Ocupación</dt><dd class="no-data">Sin datos</dd></div></dl><p class="telemetry-note">Telemetría pendiente de conexión.</p><div class="bus-card-status"><span class="status" [class.active]="bus.state === 'Active'" [class.maintenance]="bus.state === 'mantenimiento'">● {{ stateLabel(bus.state) }}</span><button class="text-button" type="button" *ngIf="bus.state === 'mantenimiento'" (click)="showReport(bus)">Ver reporte</button><a *ngIf="bus.state !== 'mantenimiento'" routerLink="/ubicacion">Mapa de ejemplo ↗</a></div><div class="bus-card-actions"><a [routerLink]="['/buses/editar', bus.id]">Editar bus</a><button class="delete" type="button" (click)="eliminarBus(bus)" [disabled]="deletingId !== null">{{ deletingId === bus.id ? 'Eliminando...' : 'Eliminar' }}</button></div></article><a class="new-bus-card" routerLink="/buses/nuevo"><span aria-hidden="true">+</span><strong>Asignar nuevo bus</strong></a></section>
+    <section class="fleet-bottom"><article class="fleet-health"><h2>Estado general de la flota</h2><p>Resumen calculado con todos los registros recibidos de la API. El estado activo no confirma movimiento ni disponibilidad GPS.</p><div class="health-metrics"><div><strong>{{ activePercentage }}%</strong><span>Registros activos</span></div><div><strong>{{ buses.length }}</strong><span>Unidades registradas</span></div></div></article><article class="operations-support"><h2>Soporte operativo</h2><p>Consulta el estado de tus unidades y sus datos de registro antes de planear la operación.</p><button type="button" (click)="message = 'El contacto con la central operativa estará disponible cuando se configure el canal de soporte.'">Contactar central</button></article></section>
+  </ng-container>
+  <div class="notice" *ngIf="message" role="status" aria-live="polite"><p>{{ message }}</p><button type="button" (click)="message = ''" aria-label="Cerrar aviso">×</button></div>
 </section>

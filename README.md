@@ -170,6 +170,50 @@ Cada bus se representa como una `Feature` con geometria `Point`. Las coordenadas
 
 La integracion futura prevista es: dispositivo GPS -> base de datos con `PointField` -> API que serializa a GeoJSON -> mapa. `PointField` pertenece al backend; este frontend consume la geometria. El endpoint de ubicaciones y las actualizaciones automaticas aun no estan implementados.
 
+## Dashboard: panel de conductores
+
+La ruta protegida `/conductores` adapta el diseno de Stitch al layout administrativo. Usa los registros reales de `/fleet/drivers/` y conserva registro, edicion y eliminacion.
+
+- `ConductorService.listarTodos()` carga todas las paginas para conteos, busqueda, paginacion local y exportacion coherentes.
+- Indicadores globales de total de conductores y registros con licencia, telefono y direccion. La existencia de licencia no certifica su vigencia.
+- Busqueda por nombre, ID, usuario asociado, licencia y telefono; filtro con/sin telefono y opcion de limpiar.
+- Tabla y tarjetas con cinco registros por pagina, navegacion anterior/siguiente y ficha de datos en la misma pantalla.
+- Contacto telefonico mediante enlace `tel:` solo cuando el numero tiene un formato compatible; no envia mensajes ni inicia llamadas automaticamente.
+- Exportacion CSV de todos los resultados filtrados, incluyendo los que no estan en la pagina visible; escapa comillas y neutraliza valores que pudieran interpretarse como formulas. PDF no implementado.
+- Estados de carga, error y reintento, sin registros y sin coincidencias; eliminacion confirmada, bloqueo de solicitudes duplicadas y recarga tras exito.
+- El contrato actual no contiene estado operativo, documento de identidad, turnos, rutas asignadas, categoria/vencimiento de licencia, RH, fotos ni evaluaciones. No se inventan esos campos ni se ofrecen filtros sin datos.
+
+Archivos: `src/app/pages/conductores/conductor-list.component.ts`, `conductor-list.component.html`, `conductor-list.component.css` y `src/app/core/services/conductor.service.ts`. Los estilos del formulario de conductor siguen separados.
+
+## Agregar y editar buses
+
+Las rutas protegidas `/buses/nuevo` y `/buses/editar/:id` usan el diseno de registro de unidad de Stitch: formulario de informacion general a la izquierda y previsualizacion a la derecha, dentro del layout administrativo compartido.
+
+- Placa y modelo obligatorios, con rechazo de valores en blanco y eliminacion de espacios externos antes de enviar.
+- Capacidad obligatoria, entera y mayor que cero. Estados compatibles con la API: `Active`, `Inactive` y `mantenimiento` (corregido el valor anterior `Maintenance` del selector).
+- Guarda los cuatro campos soportados mediante `BusService.crear` o `actualizar` y vuelve a `/buses` al recibir respuesta correcta. No simula registros exitosos.
+- Previsualizacion reactiva de placa, modelo, capacidad, estado y progreso de los cuatro campos obligatorios; imagen ilustrativa inicial tomada del HTML de referencia.
+- Seleccion de PNG, JPG o WEBP de hasta 5 MB con previsualizacion local, opcion de quitarla y liberacion de la URL temporal al reemplazarla o salir.
+- Wi-Fi, aire acondicionado, GPS, camaras y bano pueden seleccionarse para la previsualizacion. La pantalla indica que foto y equipamiento no se guardan: el contrato actual de la API no incluye esos campos y no se envian como datos adicionales.
+- Bloqueo de envios duplicados, errores de carga con reintento y errores de guardado. No permite sobrescribir un bus si fallo la carga de sus datos.
+
+Archivos: `src/app/pages/buses/bus-form.component.ts`, `bus-form.component.html` y `bus.component.css`. Pendiente: ampliar el backend para almacenar imagen y equipamiento; no se presupone una auditoria tecnica automatica.
+
+## Dashboard: apartado de buses
+
+La ruta protegida `/buses` adapta el diseno de tarjetas de Stitch dentro del layout administrativo existente, conservando la navegacion compartida y las acciones de crear, editar y eliminar.
+
+- Carga todos los registros mediante `BusService.listarTodos()`, incluyendo las paginas de la API `/fleet/buses/`.
+- Busqueda local por ID, placa o modelo, filtro de activos y opcion de limpiar filtros. Los indicadores se calculan sobre toda la flota cargada, sin cambiar al filtrar tarjetas.
+- Indicadores de activos, inactivos y mantenimiento; porcentaje de registros activos y total registrado. Activo no significa que un bus este en movimiento.
+- Tarjetas con ID, placa, modelo, capacidad y estado. La ocupacion se muestra sin datos; el backend aun no entrega telemetria para esta vista.
+- El enlace de mapa abre la demostracion GeoJSON existente y se etiqueta como ejemplo, sin asociar una ubicacion ficticia al registro real.
+- Se conservan los formularios `/buses/nuevo` y `/buses/editar/:id`. Eliminar requiere confirmacion, bloquea solicitudes duplicadas y recarga la flota tras el exito.
+- Estados de carga, error con reintento, flota vacia y busqueda sin resultados. Un error de eliminacion conserva las tarjetas visibles.
+- Reporte tecnico y contacto con central muestran avisos pendientes. No se inventan ocupaciones, rutas, tendencias ni valoraciones del conductor.
+
+Archivos: `src/app/pages/buses/bus-list.component.ts`, `bus-list.component.html` y `bus-list.component.css`. Los estilos del formulario de buses permanecen separados.
+
 ## Compra de tiquetes (simulacion)
 
 La ruta publica `/clientes/comprar` adapta la vista de Stitch a Angular y CSS propio, sin integrar una pasarela de pago. Se accede desde **Comprar tiquetes** en el panel y **Ver todos los viajes** en el inicio.
@@ -229,9 +273,15 @@ Archivos: `src/app/pages/registro/registro.component.ts`, `registro.component.ht
 
 ## Estado de verificacion
 
+La compilacion completa del panel de conductores paso el 21 de octubre de 2026, con advertencias de estilos y Leaflet. Se verificaron con servicios simulados los conteos, filtros, paginacion de pantalla y carga de todas las paginas de la API, enlaces telefonicos, bloqueo de eliminaciones duplicadas, conservacion de datos tras un error y exportacion CSV con escape de comillas y neutralizacion de formulas. No se eliminaron conductores reales durante las pruebas.
+
+La compilacion completa paso el 21 de octubre de 2026 con el nuevo formulario de unidades, con advertencias de estilos y Leaflet. Se comprobaron con servicios simulados creacion y edicion, datos enviados, limpieza de espacios, capacidad entera, estado de mantenimiento, validacion de tipo y tamano de imagen, liberacion de su URL, bloqueo de duplicados y errores de carga y guardado. No se crearon ni modificaron buses reales durante estas pruebas.
+
+La compilacion completa con `npm run build` finalizo correctamente el 21 de octubre de 2026 tras integrar el apartado de buses. Quedan advertencias por estilos de componentes mayores que el umbral de aviso de 4 kB (sin superar el limite de error de 8 kB) y por el formato CommonJS de Leaflet. Tambien compilo la vista de buses por separado; se comprobaron carga y reintento con servicio simulado, conteos globales, filtros, confirmacion de eliminacion, bloqueo de solicitudes duplicadas y manejo de errores. Estas comprobaciones no ejecutaron eliminaciones contra el backend.
+
 La vista de compra y el panel con su enlace compilaron por separado con comprobacion estricta de plantillas el 21 de octubre de 2026. Se verificaron el total inicial de 78.750 COP, los cupos por bus, el bloqueo de asientos ocupados o inexistentes, el reinicio de seleccion al cambiar de horario y las validaciones del pasajero y del envio simulado.
 
-El panel de informacion del pasajero y el login con su enlace de vista previa compilaron por separado con comprobacion estricta de plantillas el 21 de octubre de 2026. La compilacion general sigue afectada por los errores de conductores descritos abajo.
+El panel de informacion del pasajero y el login con su enlace de vista previa compilaron por separado con comprobacion estricta de plantillas el 21 de octubre de 2026. En esa verificacion anterior la compilacion general estaba afectada por errores de conductores; la verificacion completa mas reciente ya finaliza correctamente.
 
 El login de pasajeros y el registro compilaron por separado con comprobacion estricta de plantillas el 21 de octubre de 2026. Se verifico el cambio entre correo y documento, la validacion exclusiva del metodo activo, los identificadores invalidos y los avisos de autenticacion y recuperacion pendientes.
 
@@ -241,7 +291,7 @@ Se comprobaron las validaciones de campos obligatorios, nombres en blanco, corre
 
 En la verificacion del 21 de octubre de 2026, la vista de ubicacion compilo por separado con el compilador Angular y se validaron los tres puntos GeoJSON, sus identificadores y el orden de coordenadas.
 
-La compilacion completa con `npm run build` sigue bloqueada por inconsistencias existentes entre el modelo `Conductor` y sus formularios y plantillas: se usan campos como `full_name` y `license_number` que no estan declarados en ese modelo. Tambien afecta al selector de conductores del formulario de viajes.
+En verificaciones anteriores hubo inconsistencias del modelo `Conductor` con sus formularios y plantillas. El modelo actual incluye los campos correspondientes y ese bloqueo no aparece en la compilacion completa mas reciente.
 
 ## Mantenimiento de la documentacion
 
