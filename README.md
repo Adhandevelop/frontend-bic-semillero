@@ -200,6 +200,8 @@ La comprobacion se realizo contra el codigo del backend y pruebas HTTP simuladas
 
 ## Programar y editar viajes
 
+La interfaz usa el termino viaje en los titulos de creacion y edicion, el aviso de carga y la descripcion del formulario (actualizacion del 22 de octubre de 2026).
+
 El HTML recibido como vista de viajes corresponde al formulario de programacion. Se integra en `/viajes/nuevo` y `/viajes/editar/:id`, manteniendo el listado en `/viajes`.
 
 - Diseno de configuracion de ruta y horario a la izquierda; asignacion de bus/conductor, resumen y confirmacion a la derecha.
