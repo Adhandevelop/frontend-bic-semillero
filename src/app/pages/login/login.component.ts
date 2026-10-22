@@ -1,13 +1,12 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import {
   FormBuilder,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, AuthFailure } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -51,8 +50,15 @@ export class LoginComponent {
           this.loading = false;
         });
       },
-      error: (err: HttpErrorResponse) => {
-        if (err.status === 0) {
+      error: (err: AuthFailure) => {
+        const endpoint=err.authPhase==='profile'?'la consulta del perfil administrativo':'la solicitud del token de acceso';
+        if(err.status>=500){
+          this.error='El servidor falló durante '+endpoint+' (HTTP '+err.status+'). No se pudo iniciar sesión. La causa debe revisarse en los logs del servidor.';
+        } else if(err.status===404){
+          this.error='No se encontró el servicio para '+endpoint+' (HTTP 404).';
+        } else if(err.authPhase==='profile'&&err.status===401){
+          this.error='Se recibió el token, pero el servidor rechazó la consulta del perfil (HTTP 401).';
+        } else if (err.status === 0) {
           this.error =
             'No se pudo conectar con el servidor. Comprueba que Django esté ejecutándose.';
         } else if (err.status === 400 || err.status === 401) {
@@ -69,3 +75,4 @@ export class LoginComponent {
     });
   }
 }
+

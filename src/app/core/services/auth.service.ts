@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 import { API_BASE_URL, AUTH_LOGIN_URL } from '../config/api.config';
 
+export type AuthPhase = 'token' | 'profile';
+export type AuthFailure = HttpErrorResponse & {authPhase?:AuthPhase};
 interface LoginRequest { username: string; password: string; }
 interface LoginResponse { access: string; refresh: string; }
 interface UserProfile { id: number; username: string; role: 'client' | 'driver' | 'admin'; }
@@ -17,13 +19,15 @@ export class AuthService {
   login(credentials: LoginRequest): Observable<LoginResponse> {
     this.logout();
     return this.http.post<LoginResponse>(AUTH_LOGIN_URL, credentials).pipe(
+      catchError(error=>this.authFailure(error,'token')),
       switchMap(tokens => this.obtenerPerfil(tokens.access).pipe(
         map(profile => {
           if (profile.role !== 'admin') {
             throw new HttpErrorResponse({ status: 403, statusText: 'Acceso administrativo requerido' });
           }
           return tokens;
-        })
+        }),
+        catchError(error=>this.authFailure(error,'profile'))
       )),
       tap(tokens => {
         localStorage.setItem(this.accessTokenKey, tokens.access);
@@ -34,6 +38,13 @@ export class AuthService {
         return throwError(() => error);
       })
     );
+  }
+
+  private authFailure(error:HttpErrorResponse,phase:AuthPhase):Observable<never>{
+    console.error('[Acceso administrativo] Fallo de autenticación',{
+      phase,endpoint:phase==='token'?'POST /api/token/':'GET /api/accounts/users/:id/',httpStatus:error.status??null,
+    });
+    return throwError(()=>Object.assign(error,{authPhase:phase}));
   }
 
   verificarAdministrador(): Observable<boolean> {
@@ -83,3 +94,4 @@ export class AuthService {
     return typeof exp === 'number' && exp * 1000 > Date.now();
   }
 }
+

@@ -43,6 +43,10 @@ Las peticiones usan el mismo origen que el frontend. En producción, el servidor
 
 En desarrollo, este repositorio no incluye un proxy configurado para `ng serve`. Para conectar un Django local se debe configurar un proxy de Angular o cambiar la URL base, por ejemplo a `http://127.0.0.1:8000/api`, y permitir el origen del frontend en la configuración CORS del backend. Sin ese ajuste, las peticiones relativas a `/api` llegarán al servidor de Angular.
 
+### Diagnóstico del login administrativo
+
+El acceso distingue `POST /api/token/` de la consulta posterior del perfil. Los fallos registran en F12 → Consola `[Acceso administrativo]`, fase, endpoint y código HTTP, sin credenciales, tokens ni cuerpo de respuesta. Un 500 en `/api/token/` significa que el servidor falló antes de verificar el rol en Angular; debe revisarse el traceback del servicio de autenticación. La vista identifica ese paso y el estado HTTP. Un fallo no permite acceder ni conserva tokens de la tentativa. Se mantiene la validación administrativa por API.
+
 ### Recursos utilizados
 
 | Recurso | Endpoint |
@@ -101,6 +105,10 @@ Formularios de creación: `/buses/nuevo`, `/conductores/nuevo`, `/rutas/nueva` y
 La navegación está definida en [app.routes.ts](src/app/app.routes.ts). El acceso **Generar venta** del menú administrativo lleva a `/ventas/nueva`; programar servicios sigue disponible en Viajes.
 
 ## Comportamientos importantes
+
+### Validación al registrar conductores
+
+El formulario muestra los errores JSON por nombre, usuario asociado, licencia, dirección y teléfono al recibir HTTP 400/422, además de distinguir fallos de sesión, permisos, conexión y servidor. Conserva los datos para corregirlos. La consola identifica `[Conductores]`, la operación, HTTP y nombres de campos rechazados, sin imprimir tokens o datos personales. El ID `user` debe corresponder a una cuenta existente con rol `driver`; el motivo exacto proviene del cuerpo JSON de la API, no de los encabezados HTTP.
 
 ### Gestión administrativa
 
@@ -269,6 +277,8 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
 
 
 

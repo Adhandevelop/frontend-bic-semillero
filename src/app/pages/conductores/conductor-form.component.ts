@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -17,6 +17,7 @@ export class ConductorFormComponent implements OnInit, OnDestroy {
   loading = false;
   loadFailed = false;
   error = '';
+  fieldErrors:string[]=[];
   success = '';
   editando = false;
   conductorId?: number;
@@ -58,14 +59,28 @@ export class ConductorFormComponent implements OnInit, OnDestroy {
   guardar():void {
     if(this.loading||this.loadFailed||this.success)return;
     if(this.form.invalid){this.form.markAllAsTouched();return;}
-    this.loading=true;this.error='';
+    this.loading=true;this.error='';this.fieldErrors=[];
     const values=this.form.getRawValue();
     const driver:Conductor={full_name:values.full_name.trim(),user:Number(values.user),license_number:values.license_number.trim(),address:values.address.trim(),phone_number:values.phone_number.trim()};
     const request=this.editando&&this.conductorId?this.conductorService.actualizar(this.conductorId,driver):this.conductorService.crear(driver);
     request.subscribe({next:()=>{
       this.success=this.editando?'Conductor actualizado correctamente.':'Conductor creado correctamente.';
       this.router.navigateByUrl('/conductores').then(navigated=>{this.loading=false;if(!navigated)this.error='El conductor se guardó. Vuelve al panel para consultarlo.';}).catch(()=>{this.loading=false;this.error='El conductor se guardó. Vuelve al panel para consultarlo.';});
-    },error:()=>{this.loading=false;this.error='No se pudo guardar el conductor. Revisa los datos e inténtalo de nuevo.';}});
+    },error:(err:{status?:number;error?:unknown})=>{
+      this.loading=false;
+      this.error=err.status===400||err.status===422?'El servidor rechazó los datos del conductor (HTTP '+err.status+'). Revisa los motivos indicados.':err.status===401?'La sesión venció. Inicia sesión nuevamente.':err.status===403?'Tu cuenta no tiene permisos para guardar conductores.':err.status===0?'No se pudo conectar con la API.':err.status===404?'No se encontró el servicio o el conductor (HTTP 404).':err.status&&err.status>=500?'El servicio de conductores presentó un error interno (HTTP '+err.status+').':'No se pudo confirmar el guardado del conductor.';
+      const labels:Record<string,string>={full_name:'Nombre completo',user:'Usuario asociado',license_number:'Licencia',address:'Dirección',phone_number:'Teléfono',detail:'Detalle',non_field_errors:'Registro'};
+      this.fieldErrors=[];
+      if(err.error&&typeof err.error==='object')for(const [key,value] of Object.entries(err.error)){
+        if(!(key in labels))continue;
+        const messages=Array.isArray(value)?value:typeof value==='string'?[value]:[];
+        for(const message of messages)if(typeof message==='string')this.fieldErrors.push(labels[key]+': '+message);
+        if(key in this.form.controls)this.form.get(key)?.markAsTouched();
+      }
+      if(!this.fieldErrors.length)this.fieldErrors=['La API no devolvió un motivo de validación detallado.'];
+      console.error('[Conductores] Fallo al guardar',{operation:this.editando?'editar':'crear',httpStatus:err.status??null,invalidFields:err.error&&typeof err.error==='object'?Object.keys(err.error).filter(key=>key in labels):[]});
+    }});
   }
   ngOnDestroy():void {this.removeImage();}
 }
+
