@@ -27,6 +27,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
+      { path: 'ventas', loadComponent: () => import('./pages/ventas/venta-list.component').then(m => m.VentaListComponent) },
       { path: 'ventas/nueva', loadComponent: () => import('./pages/ventas/venta-form.component').then(m => m.VentaFormComponent) },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'clientes/nuevo', loadComponent: () => import('./pages/clientes/client-form.component').then(m => m.ClientFormComponent) },
@@ -47,5 +48,6 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' }
 ];
+
 
 

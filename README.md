@@ -153,6 +153,12 @@ El directorio de `/clientes` sigue el diseño de Stitch y consulta el recurso es
 
 Historial, reservas, categorías VIP y puntos permanecen pendientes y se identifican en pantalla. La referencia de silletería enlaza a la compra de demostración; no representa inventario real. No se asumen tipo de documento, verificación de WhatsApp ni estado de cuenta.
 
+### Panel de ventas
+
+El menú lateral incluye **Ventas**, con ruta administrativa protegida `/ventas`. Consulta todas las páginas de `GET /api/sales/sales/` y muestra cliente, documento, correo, viaje/ruta, silla, importe, método, origen, fecha, estado y factura. Incluye búsqueda, filtros por estado/origen/fecha de Colombia, siete registros por página e indicadores sobre los resultados filtrados; el total monetario suma solo ventas `paid`.
+
+**Ver detalle** consulta `/api/sales/sales/:id/` y muestra contacto, tiquetes y factura (número, CUFE, errores y enlace HTTPS). Si falla la actualización conserva los datos disponibles. Las respuestas antiguas no sustituyen la venta seleccionada después de cerrar/cambiar el detalle. Los catálogos secundarios cargan por separado: si fallan, conserva las ventas y muestra IDs. No modifica ventas ni procesa pagos; **Generar venta** abre el formulario existente.
+
 ### Venta administrativa de tiquetes
 
 `/ventas/nueva` implementa el diseño de venta en ventanilla bajo el guard administrativo. Se abre desde **Generar venta**, desde **Tiquete** en el directorio (cliente preseleccionado por ID) y después de registrar un cliente. La compra pública `/clientes/comprar` conserva su demostración independiente.
@@ -277,6 +283,7 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
 
 
 
