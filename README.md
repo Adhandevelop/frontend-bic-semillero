@@ -110,6 +110,14 @@ La navegación está definida en [app.routes.ts](src/app/app.routes.ts). El acce
 - Las exportaciones CSV incluyen los resultados filtrados, no solo la página visible. No generan manifiestos oficiales ni PDF.
 - Los catálogos secundarios que fallen se identifican en pantalla; el listado de viajes puede conservar los registros mostrando sus referencias por ID.
 
+### Eliminación de viajes
+
+El dashboard muestra el código HTTP y los motivos JSON que devuelve la API (`detail`, `message`, `reason`, errores de validación conocidos) en fallos al cargar viajes, eliminar o cambiar estado. Si la respuesta es HTML o no incluye un motivo, lo indica expresamente; no presenta una causa supuesta como diagnóstico confirmado. El botón de recuperación actualiza el listado sin repetir la eliminación.
+
+El dashboard elimina una fila únicamente tras una respuesta exitosa del DELETE. Ante errores conserva la tabla, libera el bloqueo de acciones y distingue sesión, permisos, conflicto, registro inexistente, conexión y HTTP 5xx. Una respuesta HTML de error no se muestra como detalle de usuario; un 400/409 puede mostrar `detail` devuelto por la API. Después de un resultado incierto se debe actualizar el listado antes de reintentar.
+
+En el backend local hay relaciones `PROTECT` desde ventas, tiquetes y registros operativos hacia viajes. Una excepción de eliminación protegida sin manejar puede causar HTTP 500, pero el diagnóstico de un viaje concreto requiere el traceback del servidor. El backend debe traducir el impedimento a una respuesta controlada (por ejemplo 409) y conservar el historial. Cancelar un viaje no equivale a eliminarlo ni anula automáticamente ventas o pagos. No borrar registros asociados para forzar el DELETE.
+
 ### Precio de cada viaje
 
 El formulario de creación/edición permite asignar el precio por silla en COP, obligatorio, positivo y con máximo dos decimales (hasta 21.474.836,47 COP). Convierte pesos a centavos enteros: 25000 COP → `amount_cents: 2500000`. Al editar carga la tarifa del viaje; si no existe, requiere asignarla.
@@ -254,6 +262,8 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
 
 
 

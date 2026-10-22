@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -18,6 +18,22 @@ export function tripDay(value:string):string {
 }
 @Component({selector:'app-viaje-list',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./viaje-list.component.html',styleUrl:'./viaje-list.component.css'})
 export class ViajeListComponent implements OnInit {
+  errorReasons:string[]=[];errorHttp='';
+  private explainFailure(err:{status?:number;error?:unknown}):void{
+    this.errorHttp=err.status===0?'Sin respuesta de la API':err.status?'HTTP '+err.status:'Estado no disponible';
+    const messages:string[]=[];
+    const collect=(value:unknown,label=''):void=>{
+      if(typeof value==='string'&&value.trim()&&!/<[^>]+>/.test(value))messages.push((label?label+': ':'')+value.trim());
+      else if(Array.isArray(value))value.slice(0,10).forEach(item=>collect(item,label));
+    };
+    const body=err.error;
+    if(body&&typeof body==='object'&&!Array.isArray(body)){
+      const labels:Record<string,string>={detail:'',message:'',reason:'Motivo',error:'Error',errors:'Errores',non_field_errors:'',trip:'Viaje',bus:'Bus',driver:'Conductor',route:'Ruta',trip_state:'Estado',date_time_start:'Salida',date_time_end:'Llegada'};
+      for(const [key,label] of Object.entries(labels))if(key in body)collect((body as Record<string,unknown>)[key],label);
+    }
+    this.errorReasons=[...new Set(messages)].slice(0,10);
+    if(!this.errorReasons.length)this.errorReasons=[err.status===0?'No se recibió respuesta. Revisa la conexión o la disponibilidad de la API.':'El servidor no devolvió un motivo detallado en JSON. Para conocer la causa exacta se necesita revisar su registro de errores.'];
+  }
   viajes:Viaje[]=[];buses:Bus[]=[];conductores:Conductor[]=[];rutas:Ruta[]=[];
   loading=false;loadFailed=false;error='';success='';warnings:string[]=[];
   searchValue='';selectedDate='';originFilter='';driverFilter=0;modelFilter='';stateFilter='';
@@ -51,8 +67,8 @@ export class ViajeListComponent implements OnInit {
   clearFilters():void{this.searchValue='';this.selectedDate='';this.originFilter='';this.driverFilter=0;this.modelFilter='';this.stateFilter='';this.page=1;}
   cargarViajes():void{
     if(this.loading||this.busyId!==null)return;
-    this.loading=true;this.loadFailed=false;this.error='';this.warnings=[];
-    const load=<T>(label:string,request:Observable<T>,fallback:T)=>request.pipe(catchError((error:{status?:number})=>{this.warnings.push(label+(error.status?' (HTTP '+error.status+')':''));if(label==='Viajes')this.loadFailed=true;return of(fallback);}));
+    this.loading=true;this.loadFailed=false;this.error='';this.errorReasons=[];this.errorHttp='';this.warnings=[];
+    const load=<T>(label:string,request:Observable<T>,fallback:T)=>request.pipe(catchError((error:{status?:number})=>{this.warnings.push(label+(error.status?' (HTTP '+error.status+')':''));if(label==='Viajes'){this.loadFailed=true;this.explainFailure(error);}return of(fallback);}));
     forkJoin({viajes:load('Viajes',this.viajeService.listar(),[] as Viaje[]),buses:load('Buses',this.busService.listarTodos(),[] as Bus[]),conductores:load('Conductores',this.conductorService.listarTodos(),[] as Conductor[]),rutas:load('Rutas',this.rutaService.listar(),[] as Ruta[])}).subscribe(data=>{
       this.viajes=data.viajes;this.buses=data.buses;this.conductores=data.conductores;this.rutas=data.rutas;this.loading=false;
       if(this.loadFailed)this.error='No se pudieron cargar los viajes. Revisa la conexión y los permisos de tu sesión.';
@@ -60,9 +76,13 @@ export class ViajeListComponent implements OnInit {
     });
   }
   eliminarViaje(trip:Viaje):void{
-    if(this.loading||this.busyId!==null||!trip.id||!confirm('¿Eliminar el viaje #'+trip.id+'?'))return;
-    this.busyId=trip.id;this.error='';this.success='';
-    this.viajeService.eliminar(trip.id).subscribe({next:()=>{this.viajes=this.viajes.filter(item=>item.id!==trip.id);this.busyId=null;this.page=Math.min(this.page,this.pageCount);this.success='Viaje eliminado correctamente.';},error:()=>{this.busyId=null;this.error='No se pudo eliminar el viaje.';}});
+    if(this.loading||this.busyId!==null||!trip.id||!confirm('¿Eliminar definitivamente el viaje #'+trip.id+'? Si tiene ventas, tiquetes o registros asociados, el servidor puede impedirlo. Cancelar el viaje es una acción distinta.'))return;
+    this.busyId=trip.id;this.error='';this.errorReasons=[];this.errorHttp='';this.success='';
+    this.viajeService.eliminar(trip.id).subscribe({next:()=>{this.viajes=this.viajes.filter(item=>item.id!==trip.id);this.busyId=null;this.page=Math.min(this.page,this.pageCount);this.success='Viaje eliminado correctamente.';},error:(err:{status?:number;error?:unknown})=>{
+      this.busyId=null;this.explainFailure(err);
+      const detail=err.error&&typeof err.error==='object'&&'detail' in err.error&&typeof err.error.detail==='string'?err.error.detail:'';
+      this.error=err.status===401?'La sesión venció. Inicia sesión nuevamente.':err.status===403?'Tu cuenta no tiene permisos para eliminar viajes.':err.status===400||err.status===409?(detail||'El servidor impide eliminar este viaje por sus registros asociados.'):err.status===404?'El viaje ya no existe en el servidor. Actualiza el listado.':err.status===0?'No se pudo confirmar la eliminación por un problema de conexión. Actualiza el listado antes de reintentar.':err.status!==undefined&&err.status>=500?'El servidor presentó un error al eliminar el viaje #'+trip.id+' (HTTP '+err.status+'). Puede tener ventas, tiquetes o registros protegidos; requiere revisar el backend. Actualiza el listado para confirmar su estado.':'No se pudo confirmar la eliminación. Actualiza el listado antes de reintentar.';
+    }});
   }
   iniciarViaje(trip:Viaje):void{this.cambiarEstado(trip,'iniciar');}
   finalizarViaje(trip:Viaje):void{this.cambiarEstado(trip,'finalizar');}
@@ -71,9 +91,9 @@ export class ViajeListComponent implements OnInit {
     if(this.loading||this.busyId!==null||!trip.id)return;
     if(action==='iniciar'&&trip.estado!=='programado'||action==='finalizar'&&trip.estado!=='en_curso'||action==='cancelar'&&!['programado','en_curso'].includes(trip.estado))return;
     if(action==='cancelar'&&!confirm('¿Cancelar el viaje #'+trip.id+'?'))return;
-    this.busyId=trip.id;this.error='';this.success='';
+    this.busyId=trip.id;this.error='';this.errorReasons=[];this.errorHttp='';this.success='';
     const request=action==='iniciar'?this.viajeService.iniciarViaje(trip.id):action==='finalizar'?this.viajeService.finalizarViaje(trip.id):this.viajeService.cancelarViaje(trip.id);
-    request.subscribe({next:updated=>{this.viajes=this.viajes.map(item=>item.id===trip.id?updated:item);this.busyId=null;this.page=Math.min(this.page,this.pageCount);this.success='Estado del viaje actualizado: '+this.stateLabel(updated.estado)+'.';},error:()=>{this.busyId=null;this.error='No se pudo cambiar el estado del viaje.';}});
+    request.subscribe({next:updated=>{this.viajes=this.viajes.map(item=>item.id===trip.id?updated:item);this.busyId=null;this.page=Math.min(this.page,this.pageCount);this.success='Estado del viaje actualizado: '+this.stateLabel(updated.estado)+'.';},error:(err)=>{this.busyId=null;this.explainFailure(err);this.error='No se pudo cambiar el estado del viaje.';}});
   }
   exportCsv():void{
     if(this.loading||this.loadFailed||!this.filteredTrips.length)return;
@@ -82,3 +102,5 @@ export class ViajeListComponent implements OnInit {
     const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));const link=document.createElement('a');link.href=url;link.download='viajes.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 }
+
+
