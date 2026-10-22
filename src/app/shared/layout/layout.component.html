@@ -12,11 +12,13 @@
       <a routerLink="/rutas" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌁</span>Rutas</a>
       <a routerLink="/viajes" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">↗</span>Viajes</a>
       <a routerLink="/ubicacion"><span aria-hidden="true">⌖</span>Mapa de demostración</a>
+      <a routerLink="/asientos" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▤</span>Administración de asientos</a>
     </nav>
     <div class="sidebar-note"><strong>Tu centro de operación</strong><p>Administra la flota y organiza cada trayecto.</p></div>
     <button type="button" class="sidebar-logout" (click)="cerrarSesion()">↪ Salir</button>
   </aside>
   <main class="main-content"><router-outlet></router-outlet></main>
 </div>
+
 
 

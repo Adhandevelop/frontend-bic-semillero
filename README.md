@@ -11,10 +11,10 @@ Aplicación académica de gestión de transporte desarrollada con Angular 18 y T
 | Conductores | Consulta, ficha, búsqueda, paginación, exportación CSV y gestión de registros | Guardar fotos, certificaciones y datos complementarios; verificaciones oficiales |
 | Rutas y viajes | Gestión con la API; asignación de recursos, horarios y cambios de estado de viajes | Validación de conflictos y disponibilidad horaria en el backend |
 | Clientes | Directorio, filtros, ficha, CSV y formulario administrativo de registro | Corregir validadores de registro en el backend; historial y fidelización |
-| Portal de pasajeros | Registro público, login, perfil editable e historial conectados a API; compra de demostración protegida | Compra real con Wompi, reservas y varios pasajeros |
+| Portal de pasajeros | Registro público, login, perfil editable e historial conectados a API; compra de una silla con checkout Wompi y confirmación por API | Prueba integral de sandbox y compra conjunta con varios pasajeros |
 | Ubicación | Mapa Leaflet/OpenStreetMap con tres buses estáticos en GeoJSON | Recepción de lecturas del dispositivo GPS y actualización en vivo |
 
-**Generar venta** abre la venta administrativa conectada a la API. Registra un recaudo ya realizado; no procesa cobros electrónicos. La compra pública permanece como demostración. El perfil y su historial consultan la API; la compra pública conserva datos de demostración.
+**Generar venta** abre la venta administrativa conectada a la API. Registra un recaudo ya realizado; no procesa cobros electrónicos. La compra pública usa el token de cliente y el checkout de Wompi. El perfil y su historial consultan la API.
 
 ## Requisitos e instalación
 
@@ -84,7 +84,7 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 | `/clientes/login` | Login por correo o documento con sesión propia de cliente |
 | `/registro` | Registro público por API |
 | `/clientes/panel` | Perfil propio editable e historial de compras; requiere cliente |
-| `/clientes/comprar` | Simulación de compra y selección de asiento; requiere cliente |
+| `/clientes/comprar` | Compra de una silla mediante Wompi y confirmación por API; requiere cliente |
 | `/ubicacion` | Mapa de buses estáticos de ejemplo |
 | `/login` | Acceso administrativo |
 
@@ -151,7 +151,11 @@ Archivos: `src/app/pages/rutas/ruta-list.component.*` y `ruta-map.component.ts`.
 
 El directorio de `/clientes` sigue el diseño de Stitch y consulta el recurso específico de clientes de todas las páginas de la API. Incluye indicadores de registros y clientes con contacto, búsqueda por nombre/usuario/documento/correo/teléfono, filtros de contacto, paginación de seis registros, ficha de consulta y exportación CSV de todos los resultados filtrados.
 
-Historial, reservas, categorías VIP y puntos permanecen pendientes y se identifican en pantalla. La referencia de silletería enlaza a la compra de demostración; no representa inventario real. No se asumen tipo de documento, verificación de WhatsApp ni estado de cuenta.
+Historial, reservas, categorías VIP y puntos permanecen pendientes y se identifican en pantalla. La referencia de silletería es ilustrativa y enlaza a la compra real, cuya disponibilidad se valida por API. No se asumen tipo de documento, verificación de WhatsApp ni estado de cuenta.
+
+### Administración de asientos
+
+El último acceso del menú lateral administrativo es **Administración de asientos** (`/asientos`). La ruta hereda los guards del layout administrativo y muestra únicamente el anuncio **Esta función estará disponible pronto**, con regreso al dashboard. No consulta endpoints, no presenta datos operativos ni modifica sillas. No se añade al portal del cliente.
 
 ### Panel de ventas
 
@@ -161,7 +165,7 @@ El menú lateral incluye **Ventas**, con ruta administrativa protegida `/ventas`
 
 ### Venta administrativa de tiquetes
 
-`/ventas/nueva` implementa el diseño de venta en ventanilla bajo el guard administrativo. Se abre desde **Generar venta**, desde **Tiquete** en el directorio (cliente preseleccionado por ID) y después de registrar un cliente. La compra pública `/clientes/comprar` conserva su demostración independiente.
+`/ventas/nueva` implementa el diseño de venta en ventanilla bajo el guard administrativo. Se abre desde **Generar venta**, desde **Tiquete** en el directorio (cliente preseleccionado por ID) y después de registrar un cliente. La compra pública `/clientes/comprar` es un flujo independiente de Wompi para clientes.
 
 Consulta viajes futuros programados, terminales, clientes, tarifas (`/api/trips/fares/`), sillas (`/api/fleet/seats/`) y tiquetes (`/api/sales/tickets/`), incluyendo todas las páginas. Ordena las sillas por fila/columna sin inventar pisos, categorías o un plano físico. Las sillas con tiquetes `issued` quedan bloqueadas; no hay reserva temporal ni seguimiento en vivo.
 
@@ -217,7 +221,7 @@ Login `/clientes/login` envía correo o documento como `username` a `/api/token/
 
 `passengerGuard` protege perfil y compra mediante consulta del perfil, sin aceptar una sesión administrativa. Las peticiones de cliente envían explícitamente su token; token y registro públicos no reciben el token administrativo del interceptor. El perfil carga `/accounts/me/`, permite PATCH únicamente de nombre/correo/celular y muestra documentos de solo lectura. El historial reúne todas las páginas de `/sales/sales/`, con importes históricos, estados, tiquetes y factura cuando se devuelven. No presenta puntos, membresías ni viajes ficticios. El backend debe aplicar permisos por propietario.
 
-La compra protegida sigue siendo una demostración: aún no abre Wompi, no reserva sillas ni genera cobros. Cambiar/recuperar contraseña y acceso social siguen pendientes de API. En particular, el acceso de cuentas creadas por administrativos depende del mecanismo de contraseña/activación que implemente el backend; no se asignan contraseñas desde Angular.
+La compra protegida usa el checkout real de Wompi y confirma el resultado mediante la API. Cambiar/recuperar contraseña y acceso social siguen pendientes de API. En particular, el acceso de cuentas creadas por administrativos depende del mecanismo de contraseña/activación que implemente el backend; no se asignan contraseñas desde Angular.
 
 ### Diseño del perfil de pasajero
 
@@ -225,17 +229,23 @@ La compra protegida sigue siendo una demostración: aún no abre Wompi, no reser
 
 El tiquete destacado se toma de compras `paid` con tiquetes `issued`; no se presenta como próximo viaje ni como permiso de abordaje, porque el historial no proporciona aquí la agenda detallada del viaje. Las fechas de la tabla son de compra, en hora Colombia. QR digital, notificaciones, categoría Oro, beneficios, monedero, tarjetas y recargas están pendientes; no se muestran puntos, saldos o datos personales ficticios. Los botones pendientes muestran avisos o permanecen deshabilitados. No hay seguimiento GPS en vivo.
 
-### Diseño de compra y Wompi
+### Compra real con Wompi
 
-`/clientes/comprar` conserva el diseño de horarios, asientos, formulario de pasajero y resumen lateral de Stitch. El encabezado navega solo por el portal del cliente y el botón principal dice **Pagar por Wompi**, acompañado del total de demostración y un bloque del proveedor. Se retiraron los medios de pago locales ilustrativos para no presentarlos como opciones integradas.
+`/clientes/comprar` consulta viajes futuros programados, sillas del bus, tarifas, rutas y terminales reales, usando el token de cliente en todas las páginas. Conserva el diseño de selección/resumen y elimina los horarios, pisos, descuentos y cargos ficticios. El checkout actual solo admite una silla y usa los datos del titular de la cuenta; varios pasajeros requieren ampliar el contrato. Las sillas son candidatas del catálogo, no una promesa de disponibilidad: la API verifica reservas y ventas al hacer checkout. El cliente no consulta tiquetes de otros usuarios ni estados IoT restringidos.
 
-La pantalla sigue identificada como demostración: el botón valida los campos y explica que Wompi todavía no está conectado; no abre el widget ni hace checkout con viajes, sillas o importes ficticios. La integración real requerirá reemplazar esos ejemplos por el catálogo y los IDs reales antes de enviar el checkout y confirmar el resultado mediante la API.
+El botón **Pagar por Wompi** carga `https://checkout.wompi.co/widget.js` y envía `POST /api/sales/wompi/checkout/` con únicamente `trip`, `seat`, `redirect_url`. Abre `WidgetCheckout` usando `public_key`, `reference`, `currency`, `amount_in_cents` y `signature.integrity` del servidor; nunca envía un precio, secretos ni datos de tarjeta a nuestra API. El callback solo entrega el ID para `POST /api/sales/wompi/status/`; únicamente el estado `paid` confirmado por backend permite mostrar tiquetes. La venta/factura se actualiza mediante GET de la venta. No se consulta Wompi directamente desde el navegador para verificar transacciones.
+
+La operación pendiente guarda en sessionStorage, por ID de usuario, solo referencia de venta, plazo e ID de transacción; no datos de tarjeta ni perfil. Al volver del widget a `/clientes/comprar?venta=ID&id=TRANSACCION` verifica la operación con el backend autenticado. El contador usa `expires_at` cuando existe; en otro caso muestra una aproximación conservadora de cinco minutos. El contador no acredita pago ni libera sillas: eso corresponde al servidor. Las suscripciones y el contador se limpian al salir.
+
+Bloquea nuevos checkout mientras hay una operación pendiente o incierta. Los conflictos 400/409 se muestran y permiten corregir la selección. Ante red/5xx no repite el POST automáticamente: exige revisar el historial antes de iniciar otra compra. **He cerrado Wompi** permite recuperar controles si se cierra el widget sin callback; no confirma ni cancela el pago. Tras recargar puede consultar la venta; no recrea automáticamente el widget ni genera otra venta. Los reintentos de consulta son explícitos.
+
+Referencia de integración: [Widget y Checkout Web de Wompi](https://docs.wompi.co/docs/colombia/widget-checkout-web/). Deben estar disponibles en el servidor los catálogos para clientes, tarifa, llaves públicas/firma y endpoints checkout/status. Se verificó con servicios simulados y compilación; no se hicieron pagos reales ni una prueba integral contra Wompi Sandbox en esta sesión.
 
 ### Demostraciones y servicios pendientes
 
 - La búsqueda de reservas del inicio solo abre la combinación de ejemplo Bogotá Salitre → Medellín, 24 de octubre de 2026, un adulto y solo ida. Otras selecciones muestran un aviso. Esta fecha está fijada en el código y debe revisarse al actualizar la demostración.
-- La compra permite cambiar horario, piso y asiento y recalcula el total. El inventario es local, no bloquea puestos en el servidor. Los datos están en [booking.data.ts](src/app/pages/booking/booking.data.ts).
-- El perfil usa `PassengerService` y `passengerGuard`; `client-panel.data.ts` conserva ejemplos antiguos sin utilizarse en la vista.
+- Se retiraron los archivos antiguos `booking.data.ts` y `client-panel.data.ts`, que contenían buses y posiciones de dos pisos ficticios. La compra muestra placa, modelo y capacidad de `/api/fleet/buses/`, según el bus del viaje creado en administración. No hay selector de pisos. Los precios se obtienen de las tarifas reales y el checkout devuelve el importe definitivo.
+- El perfil usa `PassengerService` y `passengerGuard`; los datos antiguos de ejemplo se retiraron.
 - Login y registro de pasajeros están conectados a API. Google, Apple y recuperación de contraseña permanecen pendientes.
 - Boletín, redes sociales, WhatsApp, documentos legales y otras acciones sin integración muestran avisos; no simulan suscripciones ni envían mensajes.
 
@@ -305,6 +315,9 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
+
 
 
 

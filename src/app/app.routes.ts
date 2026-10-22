@@ -28,6 +28,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
+      { path: 'asientos', loadComponent: () => import('./pages/asientos/asientos.component').then(m => m.AsientosComponent) },
       { path: 'ventas', loadComponent: () => import('./pages/ventas/venta-list.component').then(m => m.VentaListComponent) },
       { path: 'ventas/nueva', loadComponent: () => import('./pages/ventas/venta-form.component').then(m => m.VentaFormComponent) },
       { path: 'dashboard', component: DashboardComponent },
@@ -49,6 +50,7 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' }
 ];
+
 
 
 
