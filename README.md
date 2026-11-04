@@ -229,6 +229,12 @@ La compra protegida usa el checkout real de Wompi y confirma el resultado median
 
 El tiquete destacado se toma de compras `paid` con tiquetes `issued`; no se presenta como próximo viaje ni como permiso de abordaje, porque el historial no proporciona aquí la agenda detallada del viaje. Las fechas de la tabla son de compra, en hora Colombia. QR digital, notificaciones, categoría Oro, beneficios, monedero, tarjetas y recargas están pendientes; no se muestran puntos, saldos o datos personales ficticios. Los botones pendientes muestran avisos o permanecen deshabilitados. No hay seguimiento GPS en vivo.
 
+### Plano de selección de sillas
+
+La compra muestra un bus de un solo piso con distribución **2 + pasillo + 2**, sin cafetería, cabina de alimentos ni áreas inventadas. El plano agrupa asientos reales por `row`, posiciona `col` numérico (1–4 o 0–3) o A–D y conserva espacios de columnas faltantes. Si el catálogo tiene más de cuatro asientos en una fila, conserva todos en tramos adicionales de cuatro; no descarta IDs. La selección y el checkout siguen usando el ID real, nunca la posición visual. El botón **Quitar** limpia la selección.
+
+El asiento seleccionado se resalta en azul. No se simulan estados vendido/reservado que la API aún no proporciona al cliente; su disponibilidad sigue validándose al solicitar checkout. No cambian los importes ni la integración Wompi.
+
 ### Compra real con Wompi
 
 `/clientes/comprar` consulta viajes futuros programados, sillas del bus, tarifas, rutas y terminales reales, usando el token de cliente en todas las páginas. Conserva el diseño de selección/resumen y elimina los horarios, pisos, descuentos y cargos ficticios. El checkout actual solo admite una silla y usa los datos del titular de la cuenta; varios pasajeros requieren ampliar el contrato. Las sillas son candidatas del catálogo, no una promesa de disponibilidad: la API verifica reservas y ventas al hacer checkout. El cliente no consulta tiquetes de otros usuarios ni estados IoT restringidos.
@@ -315,6 +321,7 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
 
 
 
