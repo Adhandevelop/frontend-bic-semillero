@@ -116,6 +116,12 @@ La navegación está definida en [app.routes.ts](src/app/app.routes.ts). El acce
 
 El formulario muestra los errores JSON por nombre, usuario asociado, licencia, dirección y teléfono al recibir HTTP 400/422, además de distinguir fallos de sesión, permisos, conexión y servidor. Conserva los datos para corregirlos. La consola identifica `[Conductores]`, la operación, HTTP y nombres de campos rechazados, sin imprimir tokens o datos personales. El ID `user` debe corresponder a una cuenta existente con rol `driver`; el motivo exacto proviene del cuerpo JSON de la API, no de los encabezados HTTP.
 
+### Tipos de bus
+
+`/buses/tipos` es una pantalla administrativa accesible desde Buses. Consulta todas las páginas de `/api/fleet/bus-types/` y permite crear nombre/código/capacidad máxima, editar mediante PATCH y eliminar con confirmación. Los errores de validación y restricciones del servidor se muestran sin eliminar registros localmente tras un fallo.
+
+El formulario de buses carga el catálogo y permite asignar `bus_type` de forma opcional. Valida que `capacity` no supere `max_capacity`, muestra el límite y conserva `bus_type_detail` al editar. Buses existentes sin tipo siguen admitidos. No se envía el objeto de detalle al guardar. La validación definitiva, unicidad del código y restricciones de tipos asociados corresponden al backend. Angular no ejecuta migraciones ni modifica Django.
+
 ### Gestión administrativa
 
 - Los formularios de buses guardan placa, modelo, capacidad y estado. Los de conductores guardan nombre completo, usuario asociado, licencia, dirección y teléfono. El usuario asociado debe existir previamente.
@@ -339,6 +345,7 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
 
 
 

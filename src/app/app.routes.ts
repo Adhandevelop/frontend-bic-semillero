@@ -34,6 +34,7 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'clientes/nuevo', loadComponent: () => import('./pages/clientes/client-form.component').then(m => m.ClientFormComponent) },
       { path: 'clientes', loadComponent: () => import('./pages/clientes/client-list.component').then(m => m.ClientListComponent) },
+      { path: 'buses/tipos', loadComponent: () => import('./pages/buses/bus-types.component').then(m => m.BusTypesComponent) },
       { path: 'buses', component: BusListComponent },
       { path: 'buses/nuevo', component: BusFormComponent },
       { path: 'buses/editar/:id', component: BusFormComponent },
@@ -50,6 +51,7 @@ export const routes: Routes = [
   },
   { path: '**', redirectTo: '' }
 ];
+
 
 
 

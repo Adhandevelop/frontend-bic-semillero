@@ -1,3 +1,4 @@
+﻿import { BusType, BusTypeService } from '../../core/services/bus-type.service';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -24,15 +25,19 @@ export class BusFormComponent implements OnInit, OnDestroy {
   success = '';
   editando = false;
   busId?: number;
+  types:BusType[]=[];typesLoading=false;typesError='';private originalType:BusType|null=null;
+  get selectedType():BusType|undefined{return this.types.find(t=>t.id===this.form.controls.bus_type.value)??(this.originalType?.id===this.form.controls.bus_type.value?this.originalType:undefined);}
+  loadTypes():void{if(this.typesLoading)return;this.typesLoading=true;this.typesError='';this.typeService.list().subscribe({next:types=>{this.types=types;this.typesLoading=false;this.form.updateValueAndValidity();},error:()=>{this.typesLoading=false;this.typesError='No se pudieron cargar los tipos de bus.';this.form.updateValueAndValidity();}});}
 
   readonly form = this.fb.nonNullable.group({
+    bus_type:[null as number|null],
     plate: ['', [Validators.required, Validators.pattern(/\S/)]],
     capacity: [20, [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]],
     model: ['', [Validators.required, Validators.pattern(/\S/)]],
     state: ['Active' as Bus['state'], [Validators.required, Validators.pattern(/^(Active|Inactive|mantenimiento)$/)]]
-  });
+  },{validators:control=>{const id=control.get('bus_type')?.value;if(id===null)return null;const type=this.types.find(t=>t.id===id)??(this.originalType?.id===id?this.originalType:null);return !type?{unknownType:true}:Number(control.get('capacity')?.value)>type.max_capacity?{typeCapacity:true}:null;}});
 
-  constructor(private route: ActivatedRoute, private router: Router, private busService: BusService) {}
+  constructor(private route: ActivatedRoute, private router: Router, private busService: BusService,private typeService:BusTypeService) {}
 
   get progress(): number {
     const controls = this.form.controls;
@@ -49,6 +54,7 @@ export class BusFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.loadTypes();
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (Number.isInteger(id) && id > 0) {
       this.editando = true;
@@ -63,7 +69,7 @@ export class BusFormComponent implements OnInit, OnDestroy {
     this.loadFailed = false;
     this.error = '';
     this.busService.obtenerPorId(id).subscribe({
-      next: bus => { this.form.patchValue(bus); this.loading = false; },
+      next: bus => { this.originalType=bus.bus_type_detail??null;this.form.patchValue({...bus,bus_type:bus.bus_type??null}); this.loading = false; },
       error: () => { this.error = 'No se pudo cargar el bus.'; this.loadFailed = true; this.loading = false; }
     });
   }
@@ -97,14 +103,14 @@ export class BusFormComponent implements OnInit, OnDestroy {
   }
 
   guardar(): void {
-    if (this.loading || this.loadFailed || this.success) return;
+    if (this.loading || this.typesLoading || this.loadFailed || this.success) return;
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.loading = true;
     this.error = '';
     this.success = '';
     const values = this.form.getRawValue();
     // Only fields supported by the current API. Image/equipment are local previews.
-    const bus: Bus = { plate: values.plate.trim(), model: values.model.trim(), capacity: values.capacity, state: values.state };
+    const bus: Bus = { plate: values.plate.trim(), model: values.model.trim(), capacity: values.capacity, state: values.state,...(values.bus_type!==null||this.editando?{bus_type:values.bus_type}:{}) };
     const request = this.editando && this.busId ? this.busService.actualizar(this.busId, bus) : this.busService.crear(bus);
     request.subscribe({
       next: () => {
@@ -114,9 +120,10 @@ export class BusFormComponent implements OnInit, OnDestroy {
           if (!navigated) this.error = 'El bus se guardó, pero no se pudo abrir la lista. Usa Volver al panel de flota.';
         }).catch(() => { this.loading = false; this.error = 'El bus se guardó. Vuelve al panel de flota para consultarlo.'; });
       },
-      error: () => { this.error = 'No se pudo guardar el bus. Revisa los datos e inténtalo de nuevo.'; this.loading = false; }
+      error: (err) => {this.loading=false;const fields=['plate','capacity','model','state','bus_type','detail','non_field_errors'];const messages=err.error&&typeof err.error==='object'?Object.entries(err.error).filter(([key])=>fields.includes(key)).flatMap(([,value])=>Array.isArray(value)?value:typeof value==='string'?[value]:[]):[];this.error=messages.filter(value=>typeof value==='string').join(' ')||'No se pudo guardar el bus'+(err.status?' (HTTP '+err.status+')':'')+'.';}
     });
   }
 
   ngOnDestroy(): void { this.removeImage(); }
 }
+
