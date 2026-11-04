@@ -3,10 +3,10 @@ import { Component, NgZone, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, takeUntil, timeout } from 'rxjs';
-import { OnlineBookingService, OnlineBus, OnlineTrip, OnlineSeat, OnlineFare, OnlineRoute, OnlinePlace, CheckoutData, PaymentStatus } from '../../core/services/online-booking.service';
+import { OnlineBookingService, CheckoutPassenger, OnlineBus, OnlineTrip, OnlineSeat, OnlineFare, OnlineRoute, OnlinePlace, CheckoutData, PaymentStatus } from '../../core/services/online-booking.service';
 import { PassengerService, PassengerProfile, PassengerSale, passengerError } from '../../core/services/passenger.service';
 import { WompiWidgetService } from '../../core/services/wompi-widget.service';
-interface PendingCheckout {saleId:number|null;deadline:number;transactionId?:string;}
+interface PendingCheckout {saleId:number|null;deadline:number;transactionId?:string;idempotencyKey?:string;}
 export interface SeatPlanRow {label:string;slots:Array<OnlineSeat|null>;}
 export function buildSeatRows(seats:OnlineSeat[]):SeatPlanRow[]{
   const groups=new Map<string,OnlineSeat[]>();
@@ -29,6 +29,12 @@ export function buildSeatRows(seats:OnlineSeat[]):SeatPlanRow[]{
 export class BookingComponent implements OnInit,OnDestroy {
   private api=inject(OnlineBookingService);private session=inject(PassengerService);private widget=inject(WompiWidgetService);private route=inject(ActivatedRoute);private zone=inject(NgZone);
   private destroyed=new Subject<void>();private gone=false;private timer?:ReturnType<typeof setInterval>;private key='';
+  passengers:CheckoutPassenger[]=[];samePerson=true;seatsLoading=false;private seatRequest=0;private attemptKey='';
+  isSelected(id:number):boolean{return this.passengers.some(p=>p.seat===id);}
+  private buyer(seat:number):CheckoutPassenger{const p=this.profile!;return {seat,name:this.fullName,identification_document_code:p.identification_document_code??'',identification_number:p.identification_number,email:p.email,telephone:p.telephone??''};}
+  useBuyer(passenger:CheckoutPassenger):void{if(!this.locked)Object.assign(passenger,this.buyer(passenger.seat));}
+  get selectedSeatLabels():string{return this.passengers.map(p=>this.seats.find(s=>s.id===p.seat)?.seat_number??String(p.seat)).join(', ');}
+  get passengersValid():boolean{return this.passengers.length>0&&this.passengers.length<=10&&this.passengers.every(p=>{const v=this.samePerson?this.buyer(p.seat):p;return !!v.name.trim()&&v.name.trim().length<=150&&/^[A-Za-z0-9.-]{1,20}$/.test(v.identification_number)&&['13','22','41','12'].includes(v.identification_document_code)&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)&&/^\+?[0-9 ()-]{7,20}$/.test(v.telephone);});}
   buses:OnlineBus[]=[];
   trips:OnlineTrip[]=[];seats:OnlineSeat[]=[];fares:OnlineFare[]=[];routes:OnlineRoute[]=[];places:OnlinePlace[]=[];
   profile:PassengerProfile|null=null;tripId:number|null=null;seatId:number|null=null;terms=false;loading=false;paying=false;checking=false;message='';error='';catalogError='';
@@ -40,19 +46,34 @@ export class BookingComponent implements OnInit,OnDestroy {
   price(trip:OnlineTrip):number|null{const cents=this.fares.find(f=>f.trip===trip.id)?.amount_cents;return typeof cents==='number'&&Number.isSafeInteger(cents)&&cents>0?cents/100:null;}
   get total(){return this.trip?this.price(this.trip):null;}
   get locked(){return this.paying||this.checking||!!this.pending||!!this.receipt||!!this.payment;}
-  get canPay(){return !!this.profile&&!!this.trip&&!!this.selectedSeat&&this.total!==null&&this.terms&&!this.locked&&!this.loading;}
+  get canPay(){return !!this.profile&&!!this.trip&&this.passengersValid&&!this.seatsLoading&&this.total!==null&&this.terms&&!this.locked&&!this.loading;}
   get remaining(){return Math.floor(this.seconds/60)+':'+String(this.seconds%60).padStart(2,'0');}
   get fullName(){return this.profile?.name||[this.profile?.first_name,this.profile?.last_name].filter(Boolean).join(' ');}
-  busLabel(trip:OnlineTrip):string{const bus=this.buses.find(b=>b.id===trip.bus);return bus?[bus.plate,bus.model].filter(Boolean).join(' · '):'Bus #'+trip.bus;}
+  busLabel(trip:OnlineTrip):string{const bus=this.buses.find(b=>b.id===trip.bus);return bus?[bus.plate,bus.model].filter(Boolean).join(' · '):'Servicio intermunicipal';}
   busCapacity(trip:OnlineTrip):number|null{return this.buses.find(b=>b.id===trip.bus)?.capacity??null;}
   terminal(trip:OnlineTrip,destination=false):string{const r=this.routes.find(r=>r.id===trip.route),id=destination?r?.destination:r?.origin;return this.places.find(p=>p.id===id)?.place_name??(id?'Terminal #'+id:'Ruta #'+trip.route);}
   ngOnInit():void{
     this.session.me().pipe(takeUntil(this.destroyed)).subscribe({next:p=>{this.profile=p;this.key='bic_checkout_'+p.id;this.restore();this.load();},error:err=>this.error=passengerError(err)});
     this.timer=setInterval(()=>this.updateClock(),1000);
   }
-  load():void{if(this.loading)return;this.loading=true;this.catalogError='';this.api.catalog().pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{this.trips=data.trips.filter(t=>t.trip_state==='scheduled'&&Date.parse(t.date_time_start)>Date.now()).sort((a,b)=>Date.parse(a.date_time_start)-Date.parse(b.date_time_start));this.buses=data.buses??[];this.seats=data.seats;this.fares=data.fares;this.routes=data.routes;this.places=data.places;this.loading=false;if(!this.trips.some(t=>t.id===this.tripId)){this.tripId=null;this.seatId=null;}},error:err=>{this.loading=false;this.catalogError=passengerError(err);}});}
-  selectTrip(id:number):void{if(this.locked)return;this.tripId=id;this.seatId=null;this.terms=false;}
-  selectSeat(id:number):void{if(this.locked||!this.visibleSeats.some(s=>s.id===id))return;this.seatId=id;this.terms=false;}
+  load():void{if(this.loading)return;this.loading=true;this.catalogError='';this.api.catalog().pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{this.trips=data.trips.filter(t=>t.trip_state==='scheduled'&&Date.parse(t.date_time_start)>Date.now()).sort((a,b)=>Date.parse(a.date_time_start)-Date.parse(b.date_time_start));this.buses=data.buses??[];this.seats=data.seats;this.fares=data.fares;this.routes=data.routes;this.places=data.places;this.loading=false;if(!this.trips.some(t=>t.id===this.tripId)){this.tripId=null;this.seatId=null;this.passengers=[];}
+const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!this.tripId&&!this.pending&&this.trips.some(t=>t.id===requestedTrip))this.selectTrip(requestedTrip);},error:err=>{this.loading=false;this.catalogError=passengerError(err);}});}
+  selectTrip(id:number):void{if(this.locked)return;this.tripId=id;this.seatId=null;this.passengers=[];this.seats=[];this.terms=false;this.loadSeats();}
+  loadSeats():void{
+    if(!this.tripId||this.pending)return;const id=this.tripId,request=++this.seatRequest;this.seatsLoading=true;
+    this.api.availability(id).pipe(timeout(15000),takeUntil(this.destroyed)).subscribe({next:data=>{if(request!==this.seatRequest)return;this.seatsLoading=false;this.seats=data.seats.map(s=>({...s,bus:0}));this.passengers=this.passengers.filter(p=>this.seats.some(s=>s.id===p.seat&&s.status==='available'));this.seatId=this.passengers[0]?.seat??null;},error:err=>{if(request!==this.seatRequest)return;this.seatsLoading=false;this.error=passengerError(err);}});
+  }
+  selectSeat(id:number):void{
+    if(this.locked||this.seatsLoading)return;
+    const existing=this.passengers.findIndex(p=>p.seat===id);
+    if(existing>=0){this.passengers.splice(existing,1);}else{
+      if(!this.visibleSeats.some(s=>s.id===id&&s.status==='available'))return;
+      if(this.passengers.length>=10){this.error='Puedes comprar hasta 10 boletas por operación.';return;}
+      this.passengers.push(this.buyer(id));
+    }
+    this.seatId=this.passengers[0]?.seat??null;this.terms=false;this.attemptKey='';
+  }
+  removeSeats():void{if(this.locked)return;this.passengers=[];this.seatId=null;this.terms=false;this.attemptKey='';}
   private persist():void{try{if(this.key){if(this.pending)sessionStorage.setItem(this.key,JSON.stringify(this.pending));else sessionStorage.removeItem(this.key);}}catch{this.message='No se pudo conservar la referencia en esta pestaña. Evita recargar durante el pago.';}}
   private restore():void{
     try{const p=JSON.parse(sessionStorage.getItem(this.key)??'null');if(p&&Number.isFinite(p.deadline)&&(p.saleId===null||Number.isSafeInteger(p.saleId)&&p.saleId>0))this.pending=p;}catch{}
@@ -67,14 +88,14 @@ export class BookingComponent implements OnInit,OnDestroy {
     this.paying=true;this.error='';this.message='Cargando Wompi…';
     try{await this.widget.load();}catch{if(!this.gone){this.paying=false;this.error='No se pudo cargar Wompi. No se envió el checkout.';this.message='';}return;}
     if(this.gone)return;
-    this.pending={saleId:null,deadline:Date.now()+300000};this.persist();
-    this.api.checkout(this.tripId!,this.seatId!,location.origin+'/clientes/comprar').pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{
+    this.attemptKey=this.attemptKey||crypto.randomUUID();this.pending={saleId:null,deadline:Date.now()+300000,idempotencyKey:this.attemptKey};this.persist();
+    this.api.checkout(this.tripId!,this.passengers.map(p=>{const v=this.samePerson?this.buyer(p.seat):p;return {...v,name:v.name.trim(),email:v.email.trim().toLowerCase(),telephone:v.telephone.trim(),identification_number:v.identification_number.trim()};}),location.origin+'/clientes/comprar',this.attemptKey).pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{
       this.paying=false;this.message='';
       if(Number.isSafeInteger(data.sale_id)&&data.sale_id>0){this.pending={saleId:data.sale_id,deadline:this.pending?.deadline??Date.now()+300000};this.persist();}
       if(!Number.isSafeInteger(data.sale_id)||data.sale_id<=0||!data.reference||!data.public_key?.startsWith('pub_')||data.currency!=='COP'||!Number.isSafeInteger(data.amount_in_cents)||data.amount_in_cents<=0||!data.signature_integrity){this.error='El servidor devolvió un checkout incompleto. Revisa tus compras antes de reintentar.';return;}
-      const expiry=data.expires_at?Date.parse(data.expires_at):NaN;
-      this.pending={saleId:data.sale_id,deadline:Number.isFinite(expiry)?expiry:(this.pending?.deadline??Date.now()+300000)};this.checkoutData=data;this.persist();this.updateClock();this.openWidget();
-    },error:err=>{this.paying=false;this.message='';this.error=passengerError(err);if([400,401,403,404,409,422].includes(err.status)){this.pending=null;this.persist();}else this.error+=' No se pudo confirmar si se creó la venta. Revisa tus compras antes de reintentar.';}});
+      const expiry=data.expires_at?Date.parse(data.expires_at):NaN,server=data.server_time?Date.parse(data.server_time):NaN;const adjusted=Number.isFinite(expiry)&&Number.isFinite(server)?Date.now()+Math.max(0,expiry-server):expiry;
+      this.pending={saleId:data.sale_id,deadline:Number.isFinite(adjusted)?adjusted:(this.pending?.deadline??Date.now()+300000)};this.pending.idempotencyKey=this.attemptKey;this.checkoutData=data;this.persist();this.updateClock();this.openWidget();
+    },error:err=>{this.paying=false;this.message='';this.error=passengerError(err);if([400,401,403,404,409,422].includes(err.status)){this.pending=null;this.attemptKey='';this.persist();if(err.status===409)this.loadSeats();}else this.error+=' No se pudo confirmar si se creó la venta. Revisa tus compras antes de reintentar.';}});
   }
   openWidget():void{
     if(!this.checkoutData||!this.pending?.saleId||this.checking||this.paying||this.seconds<=0||this.payment||this.receipt?.status==='paid')return;
@@ -93,11 +114,14 @@ export class BookingComponent implements OnInit,OnDestroy {
   }
   newPurchase():void{
     if(this.paying||this.checking||!confirm('¿Ya revisaste el estado de esta operación en Mis compras? No vuelvas a pagar una compra confirmada.'))return;
-    this.pending=null;this.checkoutData=null;this.payment=null;this.receipt=null;this.seatId=null;this.terms=false;this.error='';this.message='';this.persist();this.updateClock();window.history.replaceState(window.history.state,'',location.origin+'/clientes/comprar');
+    this.passengers=[];this.attemptKey='';this.pending=null;this.checkoutData=null;this.payment=null;this.receipt=null;this.seatId=null;this.terms=false;this.error='';this.message='';this.persist();this.updateClock();window.history.replaceState(window.history.state,'',location.origin+'/clientes/comprar');
   }
   invoiceLink(value?:string):string|null{try{const url=new URL(value??'');return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;}catch{return null;}}
   ngOnDestroy():void{this.gone=true;if(this.timer)clearInterval(this.timer);this.destroyed.next();this.destroyed.complete();}
 }
+
+
+
 
 
 

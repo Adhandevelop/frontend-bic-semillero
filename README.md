@@ -11,7 +11,7 @@ Aplicación académica de gestión de transporte desarrollada con Angular 18 y T
 | Conductores | Consulta, ficha, búsqueda, paginación, exportación CSV y gestión de registros | Guardar fotos, certificaciones y datos complementarios; verificaciones oficiales |
 | Rutas y viajes | Gestión con la API; asignación de recursos, horarios y cambios de estado de viajes | Validación de conflictos y disponibilidad horaria en el backend |
 | Clientes | Directorio, filtros, ficha, CSV y formulario administrativo de registro | Corregir validadores de registro en el backend; historial y fidelización |
-| Portal de pasajeros | Registro público, login, perfil editable e historial conectados a API; compra de una silla con checkout Wompi y confirmación por API | Prueba integral de sandbox y compra conjunta con varios pasajeros |
+| Portal de pasajeros | Registro público, login, perfil editable e historial conectados a API; compra de hasta 10 boletas con Wompi; foto, carné y factura por API | Prueba integral contra el servidor y Wompi Sandbox |
 | Ubicación | Mapa Leaflet/OpenStreetMap con tres buses estáticos en GeoJSON | Recepción de lecturas del dispositivo GPS y actualización en vivo |
 
 **Generar venta** abre la venta administrativa conectada a la API. Registra un recaudo ya realizado; no procesa cobros electrónicos. La compra pública usa el token de cliente y el checkout de Wompi. El perfil y su historial consultan la API.
@@ -30,6 +30,12 @@ npm start
 ```
 
 Abrir [http://localhost:4200](http://localhost:4200). Angular CLI se instala con las dependencias; no se necesita una instalación global.
+
+## Configuración de TypeScript
+
+El proyecto utiliza TypeScript 5.5.4 declarado en `package.json`. `tsconfig.json` define `rootDir: ./src`; se retiraron `baseUrl` (no hay aliases que lo requieran) y `downlevelIteration` (innecesario con ES2022). Así no se necesitan silenciamientos `ignoreDeprecations: 6.0`, incompatibles con el compilador instalado.
+
+Si VS Code muestra diagnósticos de otra versión, ejecutar **TypeScript: Select TypeScript Version → Use Workspace Version** y reiniciar el servidor TypeScript. La configuración usada por Angular sigue siendo `tsconfig.app.json`, que hereda del archivo raíz. No se actualizó TypeScript ni Angular como parte de este ajuste.
 
 ## Configuración de la API
 
@@ -80,11 +86,11 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 
 | Ruta | Vista |
 | --- | --- |
-| `/` | Inicio, consulta de viajes y búsqueda de rutas de demostración |
+| `/` | Catálogo público de rutas y horarios reales, búsqueda por terminales y fecha |
 | `/clientes/login` | Login por correo o documento con sesión propia de cliente |
 | `/registro` | Registro público por API |
 | `/clientes/panel` | Perfil propio editable e historial de compras; requiere cliente |
-| `/clientes/comprar` | Compra de una silla mediante Wompi y confirmación por API; requiere cliente |
+| `/clientes/comprar` | Compra de hasta 10 boletas, asignación de pasajeros y Wompi; requiere cliente |
 | `/ubicacion` | Mapa de buses estáticos de ejemplo |
 | `/login` | Acceso administrativo |
 
@@ -223,33 +229,45 @@ Login `/clientes/login` envía correo o documento como `username` a `/api/token/
 
 La compra protegida usa el checkout real de Wompi y confirma el resultado mediante la API. Cambiar/recuperar contraseña y acceso social siguen pendientes de API. En particular, el acceso de cuentas creadas por administrativos depende del mecanismo de contraseña/activación que implemente el backend; no se asignan contraseñas desde Angular.
 
+### Navegación interna del cliente
+
+Los enlaces **Mis tiquetes**, **Mis compras** y **Mi información** usan `routerLink` hacia `/clientes/panel` con fragmentos `tickets`, `history` y `personal`. No usan `href="#..."`, que con el `<base href="/">` podía llevar al inicio del sitio. El Router tiene desplazamiento a anclas habilitado, también para los enlaces que vienen de compra o de una URL directa. En el propio perfil, repetir el clic desplaza y enfoca la sección aunque el fragmento ya esté seleccionado. **Comprar tiquete** conserva `/clientes/comprar` y su guard de cliente.
+
 ### Diseño del perfil de pasajero
 
 `/clientes/panel` adapta el diseño de Stitch con cabecera de cuenta e iniciales reales, tiquete destacado, historial tabular de siete compras por página y datos personales en la columna lateral. **Editar perfil / Actualizar datos** habilita la edición; cancelar recupera los valores cargados y guardar usa el PATCH de perfil existente. El detalle de compra permite consultar los tiquetes y la factura, sin enlaces administrativos.
 
-El tiquete destacado se toma de compras `paid` con tiquetes `issued`; no se presenta como próximo viaje ni como permiso de abordaje, porque el historial no proporciona aquí la agenda detallada del viaje. Las fechas de la tabla son de compra, en hora Colombia. QR digital, notificaciones, categoría Oro, beneficios, monedero, tarjetas y recargas están pendientes; no se muestran puntos, saldos o datos personales ficticios. Los botones pendientes muestran avisos o permanecen deshabilitados. No hay seguimiento GPS en vivo.
+El tiquete destacado se toma de compras `paid` con tiquetes `issued`; no se presenta como próximo viaje ni como permiso de abordaje, porque el historial no proporciona aquí la agenda detallada del viaje. Las fechas de la tabla son de compra, en hora Colombia. El carné digital y su QR están conectados a su endpoint; notificaciones, categoría Oro, beneficios, monedero, tarjetas y recargas están pendientes; no se muestran puntos, saldos o datos personales ficticios. Los botones pendientes muestran avisos o permanecen deshabilitados. No hay seguimiento GPS en vivo.
 
 ### Plano de selección de sillas
 
 La compra muestra un bus de un solo piso con distribución **2 + pasillo + 2**, sin cafetería, cabina de alimentos ni áreas inventadas. El plano agrupa asientos reales por `row`, posiciona `col` numérico (1–4 o 0–3) o A–D y conserva espacios de columnas faltantes. Si el catálogo tiene más de cuatro asientos en una fila, conserva todos en tramos adicionales de cuatro; no descarta IDs. La selección y el checkout siguen usando el ID real, nunca la posición visual. El botón **Quitar** limpia la selección.
 
-El asiento seleccionado se resalta en azul. No se simulan estados vendido/reservado que la API aún no proporciona al cliente; su disponibilidad sigue validándose al solicitar checkout. No cambian los importes ni la integración Wompi.
+Las sillas seleccionadas se resaltan en azul; `reserved` y `sold` muestran sus estados reales y bloquean la selección. `available` permite elegir; la disponibilidad vuelve a validarse al solicitar checkout.
 
-### Compra real con Wompi
+### Catálogo público y compra múltiple
 
-`/clientes/comprar` consulta viajes futuros programados, sillas del bus, tarifas, rutas y terminales reales, usando el token de cliente en todas las páginas. Conserva el diseño de selección/resumen y elimina los horarios, pisos, descuentos y cargos ficticios. El checkout actual solo admite una silla y usa los datos del titular de la cuenta; varios pasajeros requieren ampliar el contrato. Las sillas son candidatas del catálogo, no una promesa de disponibilidad: la API verifica reservas y ventas al hacer checkout. El cliente no consulta tiquetes de otros usuarios ni estados IoT restringidos.
+La página principal consulta todas las páginas de `/api/public/routes/` y `/api/public/trips/`, sin enviar el token administrativo. El buscador filtra terminales por ID y fecha de Colombia; las tarjetas muestran rutas publicadas, sin precios o duraciones inventadas. Cada horario enlaza al checkout con el ID real del viaje. Si hace falta iniciar sesión, el guard conserva el destino y el login solo admite retornos a perfil o compra del mismo sitio. Los viajes de regreso se consultan/compran por separado.
 
-El botón **Pagar por Wompi** carga `https://checkout.wompi.co/widget.js` y envía `POST /api/sales/wompi/checkout/` con únicamente `trip`, `seat`, `redirect_url`. Abre `WidgetCheckout` usando `public_key`, `reference`, `currency`, `amount_in_cents` y `signature.integrity` del servidor; nunca envía un precio, secretos ni datos de tarjeta a nuestra API. El callback solo entrega el ID para `POST /api/sales/wompi/status/`; únicamente el estado `paid` confirmado por backend permite mostrar tiquetes. La venta/factura se actualiza mediante GET de la venta. No se consulta Wompi directamente desde el navegador para verificar transacciones.
+La compra usa exclusivamente el catálogo público y `/api/trips/trips/:id/seats/`; no descarga datos privados de flota, conductores o tiquetes ajenos. Mantiene el plano de un piso 2 + pasillo + 2 y muestra estados `available`, `reserved` y `sold`. Cambiar de viaje descarta las sillas anteriores; respuestas tardías no sustituyen la disponibilidad del viaje seleccionado.
 
-La operación pendiente guarda en sessionStorage, por ID de usuario, solo referencia de venta, plazo e ID de transacción; no datos de tarjeta ni perfil. Al volver del widget a `/clientes/comprar?venta=ID&id=TRANSACCION` verifica la operación con el backend autenticado. El contador usa `expires_at` cuando existe; en otro caso muestra una aproximación conservadora de cinco minutos. El contador no acredita pago ni libera sillas: eso corresponde al servidor. Las suscripciones y el contador se limpian al salir.
+Se pueden elegir entre una y diez sillas. **Todas las boletas a mi nombre** repite los datos del comprador; al desmarcar permite completar los cinco datos de cada pasajero y usar los propios individualmente. No se crean cuentas para terceros. El checkout envía `{trip, passengers, redirect_url}` con JWT de cliente y una `Idempotency-Key` aleatoria por intento; no envía `amount_cents`, precios, descuentos ni datos de tarjeta. Muestra la tarifa unitaria; el total conjunto es el que devuelve el backend. La API reserva todo o rechaza la compra.
 
-Bloquea nuevos checkout mientras hay una operación pendiente o incierta. Los conflictos 400/409 se muestran y permiten corregir la selección. Ante red/5xx no repite el POST automáticamente: exige revisar el historial antes de iniciar otra compra. **He cerrado Wompi** permite recuperar controles si se cierra el widget sin callback; no confirma ni cancela el pago. Tras recargar puede consultar la venta; no recrea automáticamente el widget ni genera otra venta. Los reintentos de consulta son explícitos.
+Se conserva la integración con `WidgetCheckout`: llave pública, importe, referencia y firma vienen de Django. Solo `/api/sales/wompi/status/` o la consulta de venta pueden confirmar el estado pagado y habilitar tiquetes. `expires_at` y `server_time` se utilizan para el contador sin depender del reloj absoluto del navegador. El estado pendiente conserva en sessionStorage únicamente ID de venta, plazo, transacción y clave de idempotencia, por usuario; nunca datos personales de pasajeros. Redirigir/recargar recupera la consulta, sin repetir automáticamente pagos. Un resultado incierto bloquea nuevos intentos hasta revisar el historial.
 
-Referencia de integración: [Widget y Checkout Web de Wompi](https://docs.wompi.co/docs/colombia/widget-checkout-web/). Deben estar disponibles en el servidor los catálogos para clientes, tarifa, llaves públicas/firma y endpoints checkout/status. Se verificó con servicios simulados y compilación; no se hicieron pagos reales ni una prueba integral contra Wompi Sandbox en esta sesión.
+Referencia: [Widget de Wompi](https://docs.wompi.co/docs/colombia/widget-checkout-web/). Las pruebas usan respuestas simuladas; no se hicieron cobros ni se verificó una compra real en sandbox.
+
+### Foto, carné digital y factura del cliente
+
+La foto usa POST multipart a `/api/accounts/me/photo/` y DELETE sobre la misma ruta. Angular valida JPG/PNG/WEBP, máximo 5 MB y 2000 × 2000 px antes de subir; luego recarga `/accounts/me/` para mostrar `photo_url`. No envía ID de usuario y los errores no simulan éxito.
+
+**Carné Digital / QR** consulta `/api/accounts/me/card/` y presenta identidad, estado y vigencia devueltos por el servidor. Genera localmente la imagen QR con `qrcode`, cargado bajo demanda: codifica la URL de verificación del mismo origen con el token firmado recibido, nunca el JWT de sesión. No usa un generador externo. El aviso aclara que no sustituye un tiquete ni acredita una compra. El enlace apunta a `/api/accounts/cards/verify/?token=...`.
+
+Al abrir una compra se consulta `/api/sales/sales/:id/invoice/`. Muestra `pending`/`error`/`issued`, número, CUFE y enlaces HTTPS público/PDF/XML cuando existen; no inventa facturas ni reintenta su emisión desde una cuenta cliente. Respuestas antiguas no reemplazan la factura de otra compra seleccionada. La verificación de propietario corresponde al backend.
 
 ### Demostraciones y servicios pendientes
 
-- La búsqueda de reservas del inicio solo abre la combinación de ejemplo Bogotá Salitre → Medellín, 24 de octubre de 2026, un adulto y solo ida. Otras selecciones muestran un aviso. Esta fecha está fijada en el código y debe revisarse al actualizar la demostración.
+- El inicio ya no utiliza la combinación fija de octubre de 2026; los horarios y terminales provienen del catálogo público. La consulta GPS del inicio sigue pendiente y el mapa conserva posiciones de ejemplo.
 - Se retiraron los archivos antiguos `booking.data.ts` y `client-panel.data.ts`, que contenían buses y posiciones de dos pisos ficticios. La compra muestra placa, modelo y capacidad de `/api/fleet/buses/`, según el bus del viaje creado en administración. No hay selector de pisos. Los precios se obtienen de las tarifas reales y el checkout devuelve el importe definitivo.
 - El perfil usa `PassengerService` y `passengerGuard`; los datos antiguos de ejemplo se retiraron.
 - Login y registro de pasajeros están conectados a API. Google, Apple y recuperación de contraseña permanecen pendientes.
@@ -297,7 +315,7 @@ Los archivos de Docker Compose, Dockerfile y configuración Nginx pertenecen al 
 
 ## Verificación y pendientes técnicos
 
-Última compilación registrada: **22 de octubre de 2026**, correcta. Hay advertencias por tamaño del paquete inicial, estilos de componentes y Leaflet en formato CommonJS. Los límites se definen en `angular.json`.
+Última compilación registrada: **4 de noviembre de 2026**, correcta. Hay advertencias por tamaño del paquete inicial, estilos de componentes, Leaflet y QR en formato CommonJS. Los límites se definen en `angular.json`.
 
 Se realizaron comprobaciones con servicios simulados sobre filtros, paginación, contratos de API, fechas, formularios, cambios de estado, conteos de rutas, puntos GeoJSON y exportaciones CSV; no sustituyen una prueba de integración con el backend desplegado. `package.json` no configura un comando `npm test`.
 
@@ -321,6 +339,9 @@ src/app/
 ```
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
+
+
+
 
 
 
