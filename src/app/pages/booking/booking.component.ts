@@ -45,6 +45,7 @@ export class BookingComponent implements OnInit,OnDestroy {
   get seatRows():SeatPlanRow[]{return buildSeatRows(this.visibleSeats);}
   price(trip:OnlineTrip):number|null{const cents=this.fares.find(f=>f.trip===trip.id)?.amount_cents;return typeof cents==='number'&&Number.isSafeInteger(cents)&&cents>0?cents/100:null;}
   get total(){return this.trip?this.price(this.trip):null;}
+  get purchaseTotal():number|null{const unit=this.total;return unit===null?null:Math.round(unit*100)*this.passengers.length/100;}
   get locked(){return this.paying||this.checking||!!this.pending||!!this.receipt||!!this.payment;}
   get canPay(){return !!this.profile&&!!this.trip&&this.passengersValid&&!this.seatsLoading&&this.total!==null&&this.terms&&!this.locked&&!this.loading;}
   get remaining(){return Math.floor(this.seconds/60)+':'+String(this.seconds%60).padStart(2,'0');}

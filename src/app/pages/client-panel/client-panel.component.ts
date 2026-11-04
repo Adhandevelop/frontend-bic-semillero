@@ -20,7 +20,27 @@ export class ClientPanelComponent implements OnInit {
   removePhoto():void{if(this.photoBusy)return;this.photoBusy=true;this.photoError='';this.api.deletePhoto().subscribe({next:()=>{this.photoBusy=false;this.loadProfile();this.message='Foto eliminada.';},error:err=>{this.photoBusy=false;this.photoError=passengerError(err);}});}
   openCard():void{
     if(this.cardLoading)return;this.cardLoading=true;this.cardError='';this.cardQr='';
-    this.api.card().subscribe({next:async card=>{this.cardData=card;try{const url=new URL(card.qr.verification_url,location.origin);if(url.origin!==location.origin||!url.pathname.endsWith('/accounts/cards/verify/')||!card.qr.token||card.qr.token===this.api.token())throw new Error();url.searchParams.set('token',card.qr.token);const qr=await import('qrcode');this.cardQr=await qr.toDataURL(url.href,{width:240,margin:4,errorCorrectionLevel:'M'});}catch{this.cardError='No se pudo generar el QR con los datos del servidor.';}this.cardLoading=false;},error:err=>{this.cardLoading=false;this.cardError=passengerError(err);}});
+    this.api.card().subscribe({next:async card=>{
+      this.cardData=card;
+      let stage='datos';
+      try{
+        if(typeof card?.qr?.verification_url!=='string'||!card.qr.verification_url.trim()||typeof card.qr.token!=='string'||!card.qr.token.trim())throw new Error();
+        stage='url';
+        const url=new URL(card.qr.verification_url,location.origin);
+        if(url.origin!==location.origin||url.username||url.password||!url.pathname.endsWith('/accounts/cards/verify/'))throw new Error();
+        stage='token';
+        if(card.qr.token===this.api.token())throw new Error();
+        url.searchParams.set('token',card.qr.token);
+        stage='imagen';
+        const module=await import('qrcode');
+        const qr=typeof module.toDataURL==='function'?module:module.default;
+        this.cardQr=await qr.toDataURL(url.href,{width:240,margin:4,errorCorrectionLevel:'M'});
+      }catch{
+        const messages:Record<string,string>={datos:'El carné recibido no incluye qr.verification_url y qr.token válidos.',url:'La URL de verificación del carné debe pertenecer a este portal y apuntar a /api/accounts/cards/verify/.',token:'El servidor devolvió el token de sesión como token del carné. No se puede usar para generar el QR.',imagen:'No se pudo dibujar el QR en el navegador. Intenta abrir el carné nuevamente.'};
+        this.cardError=messages[stage]??'No se pudo generar el QR.';
+        console.error('[Carné digital] No se pudo generar el QR',{endpoint:'GET /api/accounts/me/card/',stage,verificationUrlPresent:typeof card?.qr?.verification_url==='string',cardTokenPresent:typeof card?.qr?.token==='string'});
+      }finally{this.cardLoading=false;}
+    },error:err=>{this.cardLoading=false;this.cardError=passengerError(err);}});
   }
   selectSale(sale:PassengerSale):void{const request=++this.invoiceRequest;this.selectedSale=sale;this.invoice=null;this.invoiceError='';this.invoiceLoading=true;this.api.invoice(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.invoice=value;this.invoiceLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.invoiceLoading=false;this.invoiceError=passengerError(err);}});}
   editing=false;page=1;readonly pageSize=7;selectedSale:PassengerSale|null=null;
