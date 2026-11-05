@@ -1,4 +1,4 @@
-import { passengerGuard } from './core/guards/passenger.guard';
+﻿import { passengerGuard } from './core/guards/passenger.guard';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { LayoutComponent } from './shared/layout/layout.component';
@@ -17,6 +17,11 @@ import { ViajeFormComponent } from './pages/viajes/viaje-form.component';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: HomeComponent },
   { path: 'login', component: LoginComponent },
+  { path:'clientes/recuperar-contrasena',data:{action:'reset-request'},loadComponent:()=>import('./pages/client-security/client-security.component').then(m=>m.ClientSecurityComponent) },
+  { path:'clientes/restablecer-contrasena',data:{action:'reset-confirm'},loadComponent:()=>import('./pages/client-security/client-security.component').then(m=>m.ClientSecurityComponent) },
+  { path:'clientes/solicitar-activacion',data:{action:'activation-request'},loadComponent:()=>import('./pages/client-security/client-security.component').then(m=>m.ClientSecurityComponent) },
+  { path:'clientes/activar-cuenta',data:{action:'activation-confirm'},loadComponent:()=>import('./pages/client-security/client-security.component').then(m=>m.ClientSecurityComponent) },
+  { path:'clientes/cambiar-contrasena',data:{action:'change'},canActivate:[passengerGuard],loadComponent:()=>import('./pages/client-security/client-security.component').then(m=>m.ClientSecurityComponent) },
   { path: 'clientes/comprar', canActivate:[passengerGuard], loadComponent: () => import('./pages/booking/booking.component').then(m => m.BookingComponent) },
   { path: 'clientes/mi-cuenta', data:{account:true}, canActivate:[passengerGuard], loadComponent: () => import('./pages/client-panel/client-panel.component').then(m => m.ClientPanelComponent) },
   { path: 'clientes/panel', canActivate:[passengerGuard], loadComponent: () => import('./pages/client-panel/client-panel.component').then(m => m.ClientPanelComponent) },

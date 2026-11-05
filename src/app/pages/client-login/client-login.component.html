@@ -18,7 +18,7 @@
         <p class="message" role="status" aria-live="polite">{{ message }}</p>
         <button class="submit" type="submit" [disabled]="loading">{{ loading ? 'Ingresando…' : 'Iniciar sesión' }} <span aria-hidden="true">→</span></button>
       </form>
-      <div class="divider"><span>O continúa con</span></div>
+      <p class="register-prompt"><a routerLink="/clientes/solicitar-activacion">¿Soporte te indicó activar una cuenta inactiva?</a></p><div class="divider"><span>O continúa con</span></div>
       <div class="social"><button type="button" disabled>G &nbsp; Google</button><button type="button" disabled>◈ &nbsp; Apple</button></div>
       <p class="coming-soon">Google y Apple estarán disponibles próximamente.</p>
       <div class="quick-trip"><span class="ticket" aria-hidden="true">▦</span><div><strong>¿Solo quieres consultar tu viaje actual?</strong><p>Consulta la ubicación de nuestros buses.</p></div><a routerLink="/ubicacion">Ver buses →</a></div>

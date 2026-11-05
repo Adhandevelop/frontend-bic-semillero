@@ -1,4 +1,4 @@
-import { PassengerService, passengerError } from '../../core/services/passenger.service';
+﻿import { PassengerService, passengerError } from '../../core/services/passenger.service';
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -49,11 +49,11 @@ export class ClientLoginComponent {
     if(this.loading)return;this.form.markAllAsTouched();
     if(this.form.invalid){this.message='Revisa los campos indicados antes de continuar.';return;}
     this.loading=true;this.message='';const v=this.form.getRawValue();
-    this.api.login(this.method==='email'?v.email:v.documentNumber,v.password,v.remember).subscribe({next:()=>{this.form.controls.password.reset();void this.router.navigateByUrl(this.returnUrl()).then(ok=>{this.loading=false;if(!ok)this.message='No se pudo abrir el perfil. Revisa tu sesión.';}).catch(()=>{this.loading=false;this.message='No se pudo abrir el perfil.';});},error:err=>{this.loading=false;this.message=passengerError(err);}});
+    this.api.login(this.method==='email'?v.email:v.documentNumber,v.password,v.remember).subscribe({next:()=>{this.form.controls.password.reset();void this.router.navigateByUrl(this.api.mustChangePassword()?'/clientes/cambiar-contrasena':this.returnUrl()).then(ok=>{this.loading=false;if(!ok)this.message='No se pudo abrir el perfil. Revisa tu sesión.';}).catch(()=>{this.loading=false;this.message='No se pudo abrir el perfil.';});},error:err=>{this.loading=false;this.message=passengerError(err);}});
   }
-  private returnUrl():string{const value=this.route.snapshot.queryParamMap.get('returnUrl');if(!value)return '/clientes/panel';try{const url=new URL(value,location.origin);return url.origin===location.origin&&['/clientes/panel','/clientes/mi-cuenta','/clientes/comprar'].includes(url.pathname)?url.pathname+url.search:'/clientes/panel';}catch{return '/clientes/panel';}}
+  private returnUrl():string{const value=this.route.snapshot.queryParamMap.get('returnUrl');if(!value)return '/clientes/panel';try{const url=new URL(value,location.origin);return url.origin===location.origin&&['/clientes/panel','/clientes/mi-cuenta','/clientes/comprar','/clientes/cambiar-contrasena'].includes(url.pathname)?url.pathname+url.search:'/clientes/panel';}catch{return '/clientes/panel';}}
   recoverPassword(): void {
-    this.message = 'La recuperación de contraseña estará disponible próximamente.';
+    void this.router.navigateByUrl('/clientes/recuperar-contrasena');
   }
 }
 

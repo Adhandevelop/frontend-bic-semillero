@@ -233,7 +233,7 @@ Login `/clientes/login` envía correo o documento como `username` a `/api/token/
 
 `passengerGuard` protege perfil y compra mediante consulta del perfil, sin aceptar una sesión administrativa. Las peticiones de cliente envían explícitamente su token; token y registro públicos no reciben el token administrativo del interceptor. El perfil carga `/accounts/me/`, permite PATCH únicamente de nombre/correo/celular y muestra documentos de solo lectura. El historial reúne todas las páginas de `/sales/sales/`, con importes históricos, estados, tiquetes y factura cuando se devuelven. No presenta puntos, membresías ni viajes ficticios. El backend debe aplicar permisos por propietario.
 
-La compra protegida usa el checkout real de Wompi y confirma el resultado mediante la API. Cambiar/recuperar contraseña y acceso social siguen pendientes de API. En particular, el acceso de cuentas creadas por administrativos depende del mecanismo de contraseña/activación que implemente el backend; no se asignan contraseñas desde Angular.
+La compra protegida usa el checkout real de Wompi y confirma el resultado mediante la API. Recuperar/restablecer contraseña, activación excepcional y cambio autenticado usan los endpoints de cuentas. El login y el perfil pueden devolver `password_change_required`; ese indicador redirige al cambio obligatorio antes de abrir panel, cuenta o compra. La aplicación no crea contraseñas provisionales. El acceso social sigue pendiente.
 
 ### Navegación interna del cliente
 
@@ -276,8 +276,8 @@ Al abrir una compra se consulta `/api/sales/sales/:id/invoice/`. Muestra `pendin
 - El inicio ya no utiliza la combinación fija de octubre de 2026; los horarios y terminales provienen del catálogo público. La consulta GPS del inicio sigue pendiente y el mapa conserva posiciones de ejemplo.
 - Se retiraron los archivos antiguos `booking.data.ts` y `client-panel.data.ts`, que contenían buses y posiciones de dos pisos ficticios. La compra muestra placa, modelo y capacidad de `/api/fleet/buses/`, según el bus del viaje creado en administración. No hay selector de pisos. Los precios se obtienen de las tarifas reales y el checkout devuelve el importe definitivo.
 - El perfil usa `PassengerService` y `passengerGuard`; los datos antiguos de ejemplo se retiraron.
-- Login y registro de pasajeros están conectados a API. Google, Apple y recuperación de contraseña permanecen pendientes.
-- Boletín, redes sociales, WhatsApp, documentos legales y otras acciones sin integración muestran avisos; no simulan suscripciones ni envían mensajes.
+- Login y registro de pasajeros están conectados a API. Google y Apple permanecen pendientes; recuperación y cambio de contraseña están conectados.
+- Boletín, redes sociales y otras acciones del inicio sin integración muestran avisos. El panel cliente obtiene contactos oficiales y políticas desde `/api/public/customer-service/`; solo ofrece los enlaces configurados.
 
 ### Mapa y GPS
 
@@ -346,51 +346,24 @@ src/app/
 
 Actualizar este README junto con cada cambio funcional, de configuración o de integración. Mantener el estado actual y las instrucciones necesarias; evitar acumular reportes repetidos de pruebas, incidentes resueltos o una descripción de cada ajuste visual. El historial de cambios se consulta en Git.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Los botones de detalle de compra del perfil desplazan el foco hasta el detalle, consultan la venta actualizada y su factura por separado, y muestran errores de cada consulta. Cerrar invalida respuestas pendientes. Los enlaces de factura solo aparecen cuando la API los devuelve.
 
 ### Descarga de boletas del cliente
 
 El detalle de compras pagadas con tiquetes emitidos incluye **Descargar boletas en PDF**. Reconsulta la venta y verifica cada tiquete en el endpoint público antes de descargar. Genera un único PDF con una página por boleta: pasajero, documento, terminales, salida/llegada en hora Colombia, silla, estado, emisión y código. El QR conserva exactamente la verification_url del servidor; nunca contiene el JWT ni se crea un token en Angular. La consulta pública no recibe Authorization. Un fallo de verificación impide descargar un archivo parcial. jsPDF y qrcode se cargan bajo demanda. El PDF no sustituye la factura electrónica ni confirma validez futura: al abordar debe verificarse el estado actual en el backend.
 
-### Ayuda después del pago y dependencias pendientes
+### Ayuda después del pago
 
 Compra y detalle muestran orientación para operaciones pendientes, pagos confirmados y fallos de facturación, con acceso al historial y a las boletas descargables. No se recomienda repetir el pago mientras su resultado sea incierto. El frontend no cancela compras ni reintenta emitir facturas desde el rol cliente.
 
-No están documentados todavía los endpoints para solicitar recuperación de contraseña, confirmar el restablecimiento, cambiar la contraseña autenticado y activar cuentas creadas por administrativos. Se necesitan los cuerpos/respuestas, tratamiento de tokens de un solo uso, vigencia y URL de retorno del cliente. Tampoco existe un canal oficial configurado, endpoint de solicitudes de soporte o políticas de cambios/cancelaciones/reembolsos. Estos flujos y el envío de confirmaciones por correo requieren el contrato/backend y los datos oficiales; Angular no simula su envío ni inventa contactos o condiciones.
-
 Diagnóstico de fotos: si el GET de /media/profile_photos/... devuelve 404, comprobar en el despliegue que el archivo exista, el almacenamiento de media sea persistente y el servidor publique /media/ desde esa misma ubicación. Un perfil con photo_url no garantiza que el archivo esté disponible. Esta configuración corresponde al servidor, no a Angular.
+
+### Recuperación, cambio de contraseña y activación
+
+Rutas públicas: /clientes/recuperar-contrasena, /clientes/restablecer-contrasena, /clientes/solicitar-activacion y /clientes/activar-cuenta. Las confirmaciones leen el token del fragmento #token=... y lo retiran de la URL; no lo guardan ni registran. Solicitudes por correo mantienen mensajes genéricos. Se valida coincidencia de contraseñas, se bloquean envíos simultáneos y se limpian los campos secretos después de la respuesta. La ruta protegida /clientes/cambiar-contrasena utiliza contraseña actual y nueva; tras el éxito se cierra únicamente la sesión cliente para volver a autenticar. El guard comprueba el indicador de cambio obligatorio recibido del login/perfil. La activación es excepcional para cuentas inactivas, conforme al contrato actual.
+
+### Soporte, condiciones y confirmaciones
+
+La sección **Ayuda** del panel reúne contactos y políticas oficiales, formulario de solicitudes, listado paginado a siete filas y detalle con estado. Consume /api/support/requests/ con JWT explícito de cliente y /api/public/customer-service/ sin credenciales. Permite asociar solo una compra del historial; no envía propietario ni estado. Los límites de 60 segundos y HTTP 429 conservan los datos. Los fallos inciertos invitan a revisar el listado antes de reintentar. Solicitar cancelación no cancela ni reembolsa la venta. El contrato actual no incluye conversaciones/respuestas del equipo, así que no se simulan.
+
+En compras pagadas, **Reenviar confirmación por correo** llama a /api/sales/sales/:id/resend-confirmation/ sin destinatario personalizado. El éxito informa solicitud de envío; email_unavailable permite seguir descargando boletas y no cambia el estado de pago. El envío automático tras el pago corresponde al backend. Solo se muestran enlaces oficiales HTTPS, correo, teléfono y WhatsApp configurados; no se inventan políticas ni contactos.

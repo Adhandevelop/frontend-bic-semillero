@@ -1,4 +1,5 @@
-﻿import { ClientTicket, TicketInfo, filterClientSales, ticketGroup, ticketLabel } from './client-purchases';
+﻿import { ClientSupportComponent } from '../client-support/client-support.component';
+import { ClientTicket, TicketInfo, filterClientSales, ticketGroup, ticketLabel } from './client-purchases';
 import { FormsModule } from '@angular/forms';
 import { Subscription, catchError, firstValueFrom, from, map, mergeMap, of, timeout } from 'rxjs';
 import { createTicketPdf, ticketVerificationUrl, PdfTicket } from '../../core/services/ticket-pdf';
@@ -7,7 +8,7 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PassengerProfile, PassengerSale, DigitalCard, PassengerInvoice, PassengerService, passengerError } from '../../core/services/passenger.service';
-@Component({selector:'app-client-panel',standalone:true,imports:[CommonModule,ReactiveFormsModule,FormsModule,RouterLink,RouterLinkActive],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
+@Component({selector:'app-client-panel',standalone:true,imports:[CommonModule,ReactiveFormsModule,FormsModule,RouterLink,RouterLinkActive,ClientSupportComponent],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
 export class ClientPanelComponent implements OnInit, OnDestroy {
   private fb=inject(FormBuilder);private api=inject(PassengerService);private router=inject(Router);
   private route=inject(ActivatedRoute);
@@ -86,9 +87,15 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
       this.pdfError=err instanceof Error?err.message:passengerError(err as {status?:number;error?:unknown});
     }finally{this.pdfBusy=false;}
   }
+  resendBusy=false;resendMessage='';resendError='';private resendVersion=0;resentSales=new Set<number>();private resendTimers:Array<ReturnType<typeof setTimeout>>=[];
+  resendEmail(sale:PassengerSale):void{
+    if(this.resendBusy||sale.status!=='paid'||this.resentSales.has(sale.id))return;
+    const version=++this.resendVersion;this.resendBusy=true;this.resendError='';this.resendMessage='';
+    this.api.resendConfirmation(sale.id).pipe(timeout(20000)).subscribe({next:()=>{if(version!==this.resendVersion)return;this.resentSales.add(sale.id);this.resendTimers.push(setTimeout(()=>this.resentSales.delete(sale.id),60000));this.resendBusy=false;this.resendMessage='Se solicitó el envío al correo registrado. Revisa también el correo no deseado.';},error:err=>{if(version!==this.resendVersion)return;this.resendBusy=false;this.resendError=err.error?.code==='email_unavailable'?'El servicio de correo no está disponible. Tu pago y tus boletas siguen vigentes; puedes descargar el PDF.':passengerError(err);}});
+  }
   detailLoading=false;detailError='';
-  closeSale():void{this.invoiceRequest++;this.selectedSale=null;this.invoiceLoading=false;this.detailLoading=false;}
-  selectSale(sale:PassengerSale):void{const request=++this.invoiceRequest;this.selectedSale=sale;this.pdfError='';this.detailError='';this.detailLoading=true;
+  closeSale():void{this.invoiceRequest++;this.selectedSale=null;this.resendVersion++;this.resendBusy=false;this.invoiceLoading=false;this.detailLoading=false;}
+  selectSale(sale:PassengerSale):void{const request=++this.invoiceRequest;this.selectedSale=sale;this.resendVersion++;this.resendBusy=false;this.resendMessage='';this.resendError='';this.pdfError='';this.detailError='';this.detailLoading=true;
     setTimeout(()=>{const target=document.getElementById('purchase-detail');target?.scrollIntoView({behavior:'smooth',block:'start'});target?.focus({preventScroll:true});});
     this.api.sale(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.selectedSale=value;this.detailLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.detailLoading=false;this.detailError=passengerError(err);}});
     this.invoice=sale.factus_invoice??null;this.invoiceError='';this.invoiceLoading=true;this.api.invoice(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.invoice=value;this.invoiceLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.invoiceLoading=false;this.invoiceError=passengerError(err);}});}
@@ -111,7 +118,7 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
       }catch{failures++;return of(null);}
     },4)).subscribe({next:value=>{if(value)this.ticketInfo={...this.ticketInfo,[value.code]:value.info};},complete:()=>{this.metadataLoading=false;if(failures)this.metadataError='No se pudieron consultar los datos de '+failures+' tiquetes. Puedes reintentar; tus compras siguen disponibles.';}});
   }
-  ngOnDestroy():void{this.metadataSubscription?.unsubscribe();this.invoiceRequest++;}
+  ngOnDestroy():void{this.metadataSubscription?.unsubscribe();this.invoiceRequest++;this.resendVersion++;for(const timer of this.resendTimers)clearTimeout(timer);}
   editing=false;page=1;readonly pageSize=7;selectedSale:PassengerSale|null=null;
   get fullName():string{return this.profile?.name||[this.profile?.first_name,this.profile?.last_name].filter(Boolean).join(' ')||'Mi cuenta';}
   get initials():string{return this.fullName.split(/\s+/).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase();}
@@ -119,7 +126,7 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
   get currentPage():number{return Math.min(this.page,this.pageCount);}
   get visibleHistory():PassengerSale[]{return this.filteredHistory.slice((this.currentPage-1)*this.pageSize,this.currentPage*this.pageSize);}
   get issuedTickets(){return this.history.filter(s=>s.status==='paid').flatMap(s=>(s.tickets??[]).filter(t=>(this.ticketInfo[t.ticket_code]?.status??t.status)==='issued').map(ticket=>({ticket,sale:s})));}
-  scrollTo(section:'tickets'|'history'|'personal'):void{
+  scrollTo(section:'tickets'|'history'|'personal'|'support'):void{
     const target=document.getElementById(section);
     if(!target)return;
     target.scrollIntoView({behavior:'smooth',block:'start'});
