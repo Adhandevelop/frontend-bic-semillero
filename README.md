@@ -416,3 +416,21 @@ Un HTTP 401 con `code: password_change_required` se distingue de una sesión ven
 ### Plano de asientos en venta administrativa
 
 El selector administrativo comparte con la compra de clientes la lógica de posiciones por fila/columna y los estilos del plano: un piso, dos sillas a cada lado de un pasillo central, frente y parte trasera identificados. Los huecos del catálogo se conservan para evitar desplazar las sillas. Cada puesto muestra su número real y si está junto a la ventana o al pasillo; los estados comercial y de selección se distinguen por color. Se mantiene la selección múltiple de hasta 10 boletas y la validación de disponibilidad en el backend.
+
+### Detalle operativo del viaje y continuidad de navegación
+
+Desde **Viajes → Ver detalles** se abre `/viajes/:id` con bus, conductor, terminales/ruta, horario colombiano, tarifa y manifiesto completo de boletas. Las consultas secundarias muestran errores parciales y permiten reintentar sin presentar datos faltantes como si fueran resultados vacíos confirmados. Los cambios de ID cancelan las consultas anteriores.
+
+Los accesos a bus, asientos y lector QR conservan el viaje. Cada pasajero incluye **Ver silla**, que abre el bus y asiento exactos de su tiquete dentro del viaje. Bus, asientos, QR y mapa ofrecen regreso al detalle operativo. El lector recibe el viaje esperado para contrastarlo con la boleta escaneada.
+
+El mapa conserva el ID del viaje de origen únicamente para la navegación y avisa que los recorridos y unidades mostrados son de demostración; no asocia una unidad ficticia a ese viaje ni presenta GPS o sensores como datos del dispositivo real. La confirmación de abordaje sigue requiriendo su endpoint específico.
+
+### Validar QR: consulta de boletas y carnés
+
+El acceso administrativo **Validar QR** (`/validar-qr`) ofrece cámara, enlace pegado o lector USB que se comporte como teclado. En USB se enfoca el campo del enlace; si el lector envía Enter, se ejecuta el formulario. También funciona el botón Consultar QR. La cámara se abre solo bajo acción del operador y se detiene al leer, cancelar o salir. La consulta no registra abordaje ni modifica tiquetes.
+
+El resultado identifica **boleta de viaje** o **carné de identificación**, muestra la hora de consulta y utiliza verde para confirmaciones, amarillo cuando falta contrastar el viaje y rojo para estados no habilitados o fallos. Las boletas muestran ruta, salida en Colombia, silla, pasajero, código y estado. Reconoce `issued`, `used`, `cancelled` y `expired` cuando ese estado es devuelto por el servidor, además de detectar discrepancia con el viaje esperado. El carné muestra estado y vigencia disponibles; nunca acredita compra o abordaje. **Leer otro QR** limpia el resultado y devuelve el foco al lector, conservando el viaje esperado.
+
+El contrato actual de verificación documenta `issued`, `used`, `cancelled` y un HTTP 404 para enlaces no válidos o registros inexistentes. Para distinguir con certeza una boleta o token vencido, el servidor debe devolver un estado explícito `expired` o un contrato de error diferenciado; Angular no lo deduce de la hora local ni convierte cualquier 404 en vencimiento. Un fallo de red no se presenta como una validación confirmada.
+
+Verificación: comprobaciones de boletas, carnés, otro viaje, vencimiento explícito, resultado 404, limpieza entre lecturas, rechazo de enlaces externos/tokens duplicados y liberación de cámara/peticiones. La cámara y el lector USB físicos deben verificarse en el equipo del operador.

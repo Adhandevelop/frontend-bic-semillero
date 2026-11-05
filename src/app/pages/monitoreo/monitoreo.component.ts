@@ -1,7 +1,7 @@
 ﻿import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import * as L from 'leaflet';
 import { ADMIN_MONITORING_DEMO } from './monitoring-demo.data';
 import { GpsSample, MonitoredTrip, gpsAt, gpsTrace, orderedGps, sampledDistanceKm, seatSnapshots } from './monitoring.model';
@@ -9,6 +9,8 @@ import { GpsSample, MonitoredTrip, gpsAt, gpsTrace, orderedGps, sampledDistanceK
 @Component({standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./monitoreo.component.html',styleUrls:['./monitoring-hud.component.css','./monitoreo.component.css','./monitoring-seats.component.css','./monitoring-map.component.css']})
 export class MonitoreoComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer',{static:true}) private mapContainer!:ElementRef<HTMLDivElement>;
+  constructor(private activatedRoute:ActivatedRoute){}
+  get contextTripId():number|null{const raw=this.activatedRoute?.snapshot.queryParamMap.get('trip');const value=Number(raw);return raw&&/^[1-9]\d*$/.test(raw)&&Number.isSafeInteger(value)?value:null;}
   readonly trips=ADMIN_MONITORING_DEMO;
   selectedId=this.trips[0].id;sampleIndex=orderedGps(this.trips[0]).length-1;selectedSeat=1;showTrace=true;tileError=false;
   private map?:L.Map;private overlays?:L.LayerGroup;private tiles?:L.TileLayer;private resizeObserver?:ResizeObserver;

@@ -1,4 +1,5 @@
 ﻿<section class="monitoring-page" aria-labelledby="monitoring-title">
+  <p *ngIf="contextTripId" class="demo-note"><a [routerLink]="['/viajes',contextTripId]">← Volver a la operación del viaje #{{ contextTripId }}</a><br>El viaje de origen se conserva para volver. El mapa muestra unidades y recorridos de demostración; no representan la ubicación real de ese viaje.</p>
   <header class="page-heading"><div><span class="eyebrow">ADMINISTRACIÓN / MONITOREO</span><h1 id="monitoring-title">Seguimiento de la flota</h1></div><a routerLink="/viajes">Gestionar viajes <span aria-hidden="true">↗</span></a></header>
   <div class="demo-banner" role="note"><span class="demo-mark" aria-hidden="true">ⓘ</span><p><strong>Vista de demostración.</strong> Recorridos y sensores de muestra del 5 de noviembre de 2026. Dispositivo en desarrollo, sin conexión en vivo.</p><span class="demo-badge">MUESTRA</span></div>
   <div class="tracking-workspace">
