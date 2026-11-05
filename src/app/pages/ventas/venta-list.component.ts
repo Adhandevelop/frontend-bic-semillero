@@ -18,7 +18,7 @@ export class VentaListComponent implements OnInit {
   invoiceLabel(sale:SaleResult):string{return ({issued:'Emitida',error:'Error',pending:'Pendiente'} as Record<string,string>)[sale.factus_invoice?.status??'']??'Sin resultado';}
   tripId(sale:SaleResult):number|undefined{return sale.trip??sale.tickets?.[0]?.trip;}
   routeLabel(sale:SaleResult):string{const t=this.trips.find(t=>t.id===this.tripId(sale)),r=this.routes.find(r=>r.id===t?.route);return r?r.origen+' → '+r.destino:'Viaje #'+(this.tripId(sale)??'—');}
-  seatLabel(sale:SaleResult):string{const id=sale.seat??sale.tickets?.[0]?.seat;return this.seats.find(s=>s.id===id)?.seat_number??(id?'ID '+id:'Sin datos');}
+  seatLabel(sale:SaleResult):string{const tickets=sale.tickets??[];if(tickets.length)return [...new Set(tickets.map(t=>t.seat_number||this.seats.find(s=>s.id===t.seat)?.seat_number||'ID '+t.seat))].join(', ');return this.seats.find(s=>s.id===sale.seat)?.seat_number||(sale.seat?'ID '+sale.seat:'Sin datos');}
   get filtered():SaleResult[]{const q=this.search.trim().toLocaleLowerCase();return this.sales.filter(s=>(!this.state||s.status===this.state)&&(!this.source||s.source===this.source)&&(!this.date||this.day(s.created_at)===this.date)&&(!q||[s.id,s.passenger_name,s.passenger_identification,s.passenger_email,this.tripId(s),this.routeLabel(s),s.factus_invoice?.number].join(' ').toLocaleLowerCase().includes(q)));}
   day(value?:string):string{const time=value?Date.parse(value):NaN;return Number.isFinite(time)?new Date(time-5*3600000).toISOString().slice(0,10):'';}
   get pageCount():number{return Math.max(1,Math.ceil(this.filtered.length/this.pageSize));}

@@ -82,51 +82,71 @@ export class VentaFormComponent implements OnInit {
   selectRegisteredClient():void{this.draftPassenger=null;this.clientNotice='';this.paid=false;}
   loading=false;saving=false;error='';uncertain=false;result:SaleResult|null=null;
   clients:Cliente[]=[];trips:SaleTrip[]=[];seats:SaleSeat[]=[];fares:SaleFare[]=[];tickets:SaleTicket[]=[];routes:Ruta[]=[];
-  tripId:number|null=null;clientId:number|null=null;seatId:number|null=null;search='';payment:AdminSalePayload['payment_method']='cash';paid=false;
+  tripId:number|null=null;clientId:number|null=null;seatIds:number[]=[];search='';payment:AdminSalePayload['payment_method']='cash';paid=false;
   constructor(private sales:VentaService,private clientsApi:ClienteService,private routesApi:RutaService,private route:ActivatedRoute){}
   ngOnInit():void{this.cargarClientes();this.cargar();}
   get locked():boolean{return this.creatingClient||this.searchingClient||this.loading||this.saving||this.uncertain||!!this.result;}
   get trip():SaleTrip|undefined{return this.trips.find(t=>t.id===this.tripId);}
   get client():Omit<Cliente,'id'|'role'>|undefined{return this.draftPassenger??this.clients.find(c=>c.id===this.clientId);}
-  get seat():SaleSeat|undefined{return this.availableSeats.find(s=>s.id===this.seatId);}
+  private attempt:{payload:AdminSalePayload;key:string}|null=null;
+  unavailableIds:number[]=[];
+  get selectedSeats():SaleSeat[]{return this.availableSeats.filter(s=>this.seatIds.includes(s.id));}
+  get selectedSeatLabels():string{return this.selectedSeats.map(s=>s.seat_number).join(', ');}
+  get total():number|null{return this.amount===null||!this.seatIds.length?null:this.amount*this.seatIds.length;}
   get amount():number|null{const fare=this.fares.find(f=>f.trip===this.tripId);return fare&&Number.isInteger(fare.amount_cents)&&fare.amount_cents>0?fare.amount_cents/100:null;}
   get availableSeats():SaleSeat[]{return this.seats.filter(s=>s.bus===this.trip?.bus).sort((a,b)=>a.row.localeCompare(b.row,undefined,{numeric:true})||a.col.localeCompare(b.col,undefined,{numeric:true}));}
   get filteredClients():Cliente[]{const q=this.search.trim().toLocaleLowerCase();return this.clients.filter(c=>!q||[this.nombre(c),c.identification_number,c.email].join(' ').toLocaleLowerCase().includes(q)).slice(0,20);}
   nombre(c:Pick<Cliente,'first_name'|'last_name'|'username'>):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
   tripLabel(t:SaleTrip):string{const r=this.routes.find(r=>r.id===t.route);return '#'+t.id+' · '+(r?r.origen+' → '+r.destino:'Ruta #'+t.route);}
-  sold(id:number):boolean{return this.tickets.some(t=>t.trip===this.tripId&&t.seat===id&&t.status==='issued');}
-  get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!!this.trip&&!!this.seat&&!this.sold(this.seatId!)&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
-  changeTrip():void{this.seatId=null;this.paid=false;}
-  selectSeat(s:SaleSeat):void{if(this.locked||this.sold(s.id))return;this.seatId=s.id;this.paid=false;}
+  sold(id:number):boolean{return this.tickets.some(t=>t.trip===this.tripId&&t.seat===id&&(t.status==='issued'||t.status==='used'));}
+  get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!!this.trip&&this.seatIds.length>=1&&this.seatIds.length<=10&&this.selectedSeats.length===this.seatIds.length&&this.seatIds.every(id=>!this.sold(id)&&!this.unavailableIds.includes(id))&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
+  changeTrip():void{this.seatIds=[];this.unavailableIds=[];this.paid=false;}
+  selectSeat(s:SaleSeat):void{
+    if(this.locked||this.sold(s.id)||this.unavailableIds.includes(s.id))return;
+    if(this.seatIds.includes(s.id))this.seatIds=this.seatIds.filter(id=>id!==s.id);
+    else{if(this.seatIds.length>=10){this.error='Puedes vender máximo 10 boletas por venta.';return;}this.seatIds=[...this.seatIds,s.id];}
+    this.error='';this.paid=false;
+  }
   cargar():void{
     if(this.locked)return;this.loading=true;this.error='';
     forkJoin({catalog:this.sales.catalogos(),routes:this.routesApi.listar()}).pipe(timeout(15000)).subscribe({next:({catalog,routes})=>{
       this.trips=catalog.trips.filter(t=>t.trip_state==='scheduled'&&new Date(t.date_time_start).getTime()>Date.now());this.seats=catalog.seats;this.fares=catalog.fares;this.tickets=catalog.tickets;this.routes=routes;
-      if(!this.trip)this.tripId=null;this.seatId=null;this.paid=false;
-      this.loading=false;
+      if(!this.trip)this.tripId=null;this.seatIds=[];this.paid=false;
+      this.unavailableIds=[];this.loading=false;
     },error:()=>{this.loading=false;this.error='No se pudieron cargar los viajes, rutas, tarifas o sillas. El directorio de clientes se carga por separado. Revisa tu sesión, permisos y la disponibilidad de la API.';this.trips=[];this.seats=[];}});
   }
   emitir():void {
     if(!this.ready)return;
     if(new Date(this.trip!.date_time_start).getTime()<=Date.now()){this.error='El viaje ya no admite ventas desde esta pantalla. Actualiza los datos.';return;}
     const c=this.client!;
-    if(!globalThis.confirm('Se registrará una venta pagada y se emitirá el tiquete. ¿Confirmas que recibiste el pago?'))return;
-    const payload:AdminSalePayload={trip:this.tripId!,seat:this.seatId!,identification_number:c.identification_number,name:this.nombre(c),email:c.email,telephone:c.telephone!,payment_method:this.payment};
-    this.saving=true;this.error='';
-    this.sales.tiquetes().subscribe({next:tickets=>{
-      this.tickets=tickets;if(this.sold(payload.seat)){this.saving=false;this.seatId=null;this.paid=false;this.error='Esta silla ya fue vendida. Selecciona otra.';return;}
-      this.sales.crear(payload).subscribe({next:result=>{this.result=result;this.saving=false;this.paid=false;},error:err=>{
-        this.saving=false;this.paid=false;
-        if(err.status===400||err.status===401||err.status===403||err.status===404||err.status===409){this.error=typeof err.error?.detail==='string'?err.error.detail:'No se pudo registrar la venta. Revisa los datos, permisos y disponibilidad de la silla.';}
-        else{this.uncertain=true;this.error='No se pudo confirmar el resultado. Verifica la venta y el tiquete en el servidor antes de intentar otra operación; podría haberse registrado.';}
-      }});
-    },error:()=>{this.saving=false;this.error='No se pudo verificar la disponibilidad de la silla. No se envió la venta.';}});
+    if(!globalThis.confirm('Se registrará una sola venta pagada con '+this.seatIds.length+' boleta(s). ¿Confirmas que recibiste el pago total?'))return;
+    this.attempt={key:crypto.randomUUID(),payload:{trip:this.tripId!,seats:[...this.seatIds],identification_number:c.identification_number,name:this.nombre(c),email:c.email,telephone:c.telephone!,payment_method:this.payment}};
+    this.sendAttempt();
+  }
+  retrySale():void{if(this.uncertain&&!this.saving&&this.attempt)this.sendAttempt();}
+  private sendAttempt():void{
+    if(!this.attempt||this.saving)return;
+    const wasUncertain=this.uncertain;this.saving=true;this.error='';
+    this.sales.crear(this.attempt.payload,this.attempt.key).pipe(timeout(30000)).subscribe({next:result=>{
+      this.saving=false;this.paid=false;
+      if(!result?.id||!Array.isArray(result.tickets)||!result.tickets.length){this.uncertain=true;this.error='El servidor devolvió un resultado incompleto. Consulta la venta o reintenta el mismo intento.';return;}
+      this.result=result;this.uncertain=false;this.attempt=null;
+    },error:err=>{
+      this.saving=false;this.paid=false;
+      const detail=typeof err.error?.detail==='string'?err.error.detail:'';
+      const unavailable=Array.isArray(err.error?.unavailable_seats)?err.error.unavailable_seats.filter((entry:unknown)=>entry&&typeof entry==='object'&&'seat' in entry&&Number.isSafeInteger(entry.seat)):[];
+      if(wasUncertain&&[400,401,403,404,422].includes(err.status)){this.uncertain=true;this.error=(detail?detail+' ':'')+'El intento anterior sigue sin confirmar. Conserva esta página y consulta la venta antes de iniciar otra operación.';return;}
+      if(err.status===409&&unavailable.length){
+        const ids=unavailable.map((seat:{seat?:number})=>seat.seat).filter((id:unknown):id is number=>typeof id==='number');
+        this.unavailableIds=[...new Set([...this.unavailableIds,...ids])];this.seatIds=this.seatIds.filter(id=>!ids.includes(id));
+        const labels=ids.map((id:number)=>this.availableSeats.find(seat=>seat.id===id)?.seat_number||'ID '+id).join(', ');
+        this.error=(detail||'No se registró la venta porque hay sillas no disponibles.')+(labels?' Sillas: '+labels+'.':'')+' Revisa la selección y confirma nuevamente el total.';
+        this.uncertain=false;this.attempt=null;
+      }else if([400,401,403,404,422].includes(err.status)){
+        this.error=detail||'No se pudo registrar la venta. Revisa los datos, permisos y disponibilidad de las sillas.';this.uncertain=false;this.attempt=null;
+      }else{
+        this.uncertain=true;this.error=(detail?detail+' ':'')+'No se pudo confirmar el resultado. Puedes consultar las ventas o reintentar con la misma clave, sin cambiar los datos de este intento. No registres otra venta hasta aclararlo.';
+      }
+    }});
   }
 }
-
-
-
-
-
-
-

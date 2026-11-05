@@ -100,7 +100,7 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 | --- | --- |
 | `/dashboard` | Resumen de operación |
 | `/clientes` | Directorio de clientes reales, filtros, ficha y exportación |
-| `/ventas/nueva` | Venta administrativa, selección de silla y emisión por API |
+| `/ventas/nueva` | Venta administrativa de 1–10 boletas, selección de sillas y emisión por API |
 | `/buses` | Gestión de buses |
 | `/conductores` | Gestión de conductores |
 | `/rutas` | Gestión de rutas |
@@ -179,11 +179,15 @@ El menú lateral incluye **Ventas**, con ruta administrativa protegida `/ventas`
 
 `/ventas/nueva` implementa el diseño de venta en ventanilla bajo el guard administrativo. Se abre desde **Generar venta**, desde **Tiquete** en el directorio (cliente preseleccionado por ID) y después de registrar un cliente. La compra pública `/clientes/comprar` es un flujo independiente de Wompi para clientes.
 
-Consulta viajes futuros programados, terminales, clientes, tarifas (`/api/trips/fares/`), sillas (`/api/fleet/seats/`) y tiquetes (`/api/sales/tickets/`), incluyendo todas las páginas. Ordena las sillas por fila/columna sin inventar pisos, categorías o un plano físico. Las sillas con tiquetes `issued` quedan bloqueadas; no hay reserva temporal ni seguimiento en vivo.
+Consulta viajes futuros programados, terminales, clientes, tarifas, sillas y tiquetes, incluyendo todas las páginas. Permite seleccionar y quitar **de 1 a 10 sillas para el mismo cliente**. Cambiar de viaje limpia la selección; cambiar sillas, cliente o método de pago obliga a confirmar nuevamente el recaudo. Se muestran los números reales de las sillas, la cantidad, la tarifa por boleta y el total estimado. Las sillas con tiquetes emitidos o utilizados no se pueden seleccionar; la disponibilidad final y las reservas vigentes las valida el backend.
 
-Para emitir exige cliente con documento/correo/teléfono, viaje, silla, tarifa positiva y confirmación de recaudo. Reconsulta tiquetes antes del POST a `/api/sales/admin-sales/`. Envía IDs de viaje/silla, datos del pasajero y método `cash`, `card` o `transfer`; el servidor calcula el importe y registra la venta pagada. No envía precios calculados en el navegador ni procesa PSE/Nequi. Muestra el número de venta y códigos de tiquete devueltos por el servidor.
+El POST a /api/sales/admin-sales/ envía seats: [ID, ...], el viaje, datos del cliente y método cash, card o transfer. No envía seat ni precios. El backend calcula el importe y crea una sola venta, pago y factura, con un tiquete por silla. La respuesta muestra el total definitivo, cantidad, tarifa unitaria cuando esté incluida, sillas y códigos de todos los tiquetes. El listado administrativo también muestra todas las sillas de cada compra.
 
-Bloquea envíos simultáneos y nuevas emisiones después del éxito. Ante un resultado ambiguo (red/error del servidor), bloquea el reintento para evitar duplicados e indica verificar la operación en el servidor. La facturación Factus depende del backend; un fallo posterior al registro requiere conciliación. No se ejecutaron ventas reales durante las comprobaciones. Concurrencia y unicidad deben garantizarse también en el backend.
+Cada intento envía una Idempotency-Key. Ante un error de red, timeout, respuesta incompleta o error del servidor, se bloquean los cambios y se ofrece **Reintentar la misma venta**, conservando exactamente la clave y el contenido. Ese intento se mantiene en memoria mientras la página siga abierta; antes de cerrarla o recargarla hay que comprobar el resultado en Ventas. Un conflicto 409 unavailable_seats informa las sillas afectadas, las bloquea y retira de la selección; exige revisar y confirmar el nuevo total. Un 409 sin esa lista no inicia otra venta automáticamente.
+
+Una factura en error no invalida la venta pagada ni sus tiquetes. Actualizar la factura solo consulta la venta y no la duplica. Los reintentos con la misma clave dependen de la idempotencia y los bloqueos transaccionales implementados por el backend. La migración correspondiente debe estar aplicada en el servidor antes de usar el nuevo flujo.
+
+Verificación: compilación de producción y comprobaciones de selección 1–10, total, confirmación de recaudo, envío sin precios, conflictos, resultado fiscal en error y reintentos con clave y datos idénticos. No se registraron ventas reales durante estas comprobaciones.
 
 ### Diagnóstico en consola de ventas
 
