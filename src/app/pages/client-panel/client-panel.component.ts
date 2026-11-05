@@ -1,12 +1,14 @@
-﻿import { firstValueFrom, timeout } from 'rxjs';
+﻿import { ClientTicket, TicketInfo, filterClientSales, ticketGroup, ticketLabel } from './client-purchases';
+import { FormsModule } from '@angular/forms';
+import { Subscription, catchError, firstValueFrom, from, map, mergeMap, of, timeout } from 'rxjs';
 import { createTicketPdf, ticketVerificationUrl, PdfTicket } from '../../core/services/ticket-pdf';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PassengerProfile, PassengerSale, DigitalCard, PassengerInvoice, PassengerService, passengerError } from '../../core/services/passenger.service';
-@Component({selector:'app-client-panel',standalone:true,imports:[CommonModule,ReactiveFormsModule,RouterLink,RouterLinkActive],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
-export class ClientPanelComponent implements OnInit {
+@Component({selector:'app-client-panel',standalone:true,imports:[CommonModule,ReactiveFormsModule,FormsModule,RouterLink,RouterLinkActive],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
+export class ClientPanelComponent implements OnInit, OnDestroy {
   private fb=inject(FormBuilder);private api=inject(PassengerService);private router=inject(Router);
   private route=inject(ActivatedRoute);
   readonly accountMode=this.route.snapshot.data['account']===true;
@@ -50,7 +52,7 @@ export class ClientPanelComponent implements OnInit {
     },error:err=>{this.cardLoading=false;this.cardError=passengerError(err);}});
   }
   pdfBusy=false;pdfError='';
-  get canDownloadTickets():boolean{return this.selectedSale?.status==='paid'&&!!this.selectedSale.tickets?.some(t=>t.status==='issued');}
+  get canDownloadTickets():boolean{return this.selectedSale?.status==='paid'&&!!this.selectedSale.tickets?.some(t=>(this.ticketInfo[t.ticket_code]?.status??t.status)==='issued');}
   async downloadTickets():Promise<void>{
     const id=this.selectedSale?.id;if(!id||this.pdfBusy||!this.canDownloadTickets)return;
     this.pdfBusy=true;this.pdfError='';
@@ -78,13 +80,33 @@ export class ClientPanelComponent implements OnInit {
     setTimeout(()=>{const target=document.getElementById('purchase-detail');target?.scrollIntoView({behavior:'smooth',block:'start'});target?.focus({preventScroll:true});});
     this.api.sale(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.selectedSale=value;this.detailLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.detailLoading=false;this.detailError=passengerError(err);}});
     this.invoice=sale.factus_invoice??null;this.invoiceError='';this.invoiceLoading=true;this.api.invoice(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.invoice=value;this.invoiceLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.invoiceLoading=false;this.invoiceError=passengerError(err);}});}
+  ticketInfo:TicketInfo={};metadataLoading=false;metadataError='';private metadataSubscription?:Subscription;
+  ticketFilter='all';historyStatus='';historyFrom='';historyTo='';historySearch='';
+  get filteredHistory(){return filterClientSales(this.history,{status:this.historyStatus,from:this.historyFrom,to:this.historyTo,search:this.historySearch},this.ticketInfo);}
+  get allTickets(){return this.history.flatMap(sale=>(sale.tickets??[]).map(ticket=>({ticket,sale})));}
+  get visibleTickets(){return this.allTickets.filter(({ticket})=>this.ticketFilter==='all'||(this.ticketFilter==='issued'?(this.ticketInfo[ticket.ticket_code]?.status??ticket.status)==='issued':ticketGroup(ticket,this.ticketInfo)===this.ticketFilter)).sort((a,b)=>{const x=Date.parse(this.ticketInfo[a.ticket.ticket_code]?.trip.date_time_start??''),y=Date.parse(this.ticketInfo[b.ticket.ticket_code]?.trip.date_time_start??'');return (Number.isFinite(x)?x:Infinity)-(Number.isFinite(y)?y:Infinity);});}
+  ticketRoute(ticket:ClientTicket):string{return ticketLabel(ticket,this.ticketInfo);}
+  ticketSeat(ticket:ClientTicket):string{return this.ticketInfo[ticket.ticket_code]?.seat.seat_number??'Sin número disponible';}
+  ticketState(ticket:ClientTicket):string{return ({issued:'Emitido',used:'Utilizado',cancelled:'Cancelado'} as Record<string,string>)[this.ticketInfo[ticket.ticket_code]?.status??ticket.status]??ticket.status;}
+  clearHistoryFilters():void{this.historyStatus='';this.historyFrom='';this.historyTo='';this.historySearch='';this.page=1;}
+  saleRoute(sale:PassengerSale):string{return sale.tickets?.[0]?this.ticketRoute(sale.tickets[0]):'Sin viaje disponible';}
+  loadTicketInfo():void{
+    this.metadataSubscription?.unsubscribe();this.metadataLoading=true;this.metadataError='';let failures=0;
+    const tickets=[...new Map(this.allTickets.map(v=>[v.ticket.ticket_code,v.ticket])).values()];
+    this.metadataSubscription=from(tickets).pipe(mergeMap(ticket=>{
+      try{const url=ticketVerificationUrl(ticket.verification_url,location.origin,this.api.token());
+        return this.api.verifyTicket(url.href).pipe(timeout(15000),map(info=>{if(info.ticket_code!==ticket.ticket_code||info.trip?.id!==ticket.trip||info.seat?.id!==ticket.seat)throw new Error();return {code:ticket.ticket_code,info};}),catchError(()=>{failures++;return of(null);}));
+      }catch{failures++;return of(null);}
+    },4)).subscribe({next:value=>{if(value)this.ticketInfo={...this.ticketInfo,[value.code]:value.info};},complete:()=>{this.metadataLoading=false;if(failures)this.metadataError='No se pudieron consultar los datos de '+failures+' tiquetes. Puedes reintentar; tus compras siguen disponibles.';}});
+  }
+  ngOnDestroy():void{this.metadataSubscription?.unsubscribe();this.invoiceRequest++;}
   editing=false;page=1;readonly pageSize=7;selectedSale:PassengerSale|null=null;
   get fullName():string{return this.profile?.name||[this.profile?.first_name,this.profile?.last_name].filter(Boolean).join(' ')||'Mi cuenta';}
   get initials():string{return this.fullName.split(/\s+/).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase();}
-  get pageCount():number{return Math.max(1,Math.ceil(this.history.length/this.pageSize));}
+  get pageCount():number{return Math.max(1,Math.ceil(this.filteredHistory.length/this.pageSize));}
   get currentPage():number{return Math.min(this.page,this.pageCount);}
-  get visibleHistory():PassengerSale[]{return this.history.slice((this.currentPage-1)*this.pageSize,this.currentPage*this.pageSize);}
-  get issuedTickets(){return this.history.filter(s=>s.status==='paid').flatMap(s=>(s.tickets??[]).filter(t=>t.status==='issued').map(ticket=>({ticket,sale:s})));}
+  get visibleHistory():PassengerSale[]{return this.filteredHistory.slice((this.currentPage-1)*this.pageSize,this.currentPage*this.pageSize);}
+  get issuedTickets(){return this.history.filter(s=>s.status==='paid').flatMap(s=>(s.tickets??[]).filter(t=>(this.ticketInfo[t.ticket_code]?.status??t.status)==='issued').map(ticket=>({ticket,sale:s})));}
   scrollTo(section:'tickets'|'history'|'personal'):void{
     const target=document.getElementById(section);
     if(!target)return;
@@ -100,7 +122,7 @@ export class ClientPanelComponent implements OnInit {
   form=this.fb.nonNullable.group({name:['',[Validators.required,Validators.pattern(/\S/),Validators.maxLength(150)]],email:['',[Validators.required,Validators.email,Validators.maxLength(50)]],telephone:['',[Validators.required,Validators.pattern(/^\+?[0-9 ()-]{7,20}$/)]]});
   ngOnInit():void{if(!this.accountMode && this.route.snapshot.fragment === 'personal'){void this.router.navigateByUrl('/clientes/mi-cuenta',{replaceUrl:true});return;}this.loadProfile();if(!this.accountMode)this.loadHistory();}
   loadProfile():void{if(this.loading)return;this.loading=true;this.error='';this.api.me().subscribe({next:p=>{this.profile=p;this.photoFailed=false;this.photoVersion=Date.now();this.form.patchValue({name:p.name??[p.first_name,p.last_name].filter(Boolean).join(' '),email:p.email,telephone:p.telephone??''});this.loading=false;},error:err=>{this.loading=false;this.error=passengerError(err);}});}
-  loadHistory():void{if(this.historyLoading)return;this.historyLoading=true;this.historyError='';this.api.history().subscribe({next:items=>{this.history=[...items].sort((a,b)=>b.id-a.id);this.historyLoading=false;this.page=Math.min(this.page,this.pageCount);if(this.selectedSale)this.selectedSale=this.history.find(s=>s.id===this.selectedSale?.id)??null;},error:err=>{this.historyLoading=false;this.historyError=passengerError(err);}});}
+  loadHistory():void{if(this.historyLoading)return;this.historyLoading=true;this.historyError='';this.api.history().subscribe({next:items=>{this.history=[...items].sort((a,b)=>b.id-a.id);this.historyLoading=false;this.loadTicketInfo();this.page=Math.min(this.page,this.pageCount);if(this.selectedSale)this.selectedSale=this.history.find(s=>s.id===this.selectedSale?.id)??null;},error:err=>{this.historyLoading=false;this.historyError=passengerError(err);}});}
   save():void{if(this.saving||this.loading||!this.profile)return;this.form.markAllAsTouched();if(this.form.invalid)return;this.saving=true;this.message='';this.error='';const v=this.form.getRawValue();this.api.update({name:v.name.trim(),email:v.email.trim().toLowerCase(),telephone:v.telephone.trim()}).subscribe({next:p=>{this.profile=p;this.saving=false;this.editing=false;this.resetForm();this.message='Información actualizada.';},error:err=>{this.saving=false;this.error=passengerError(err);}});}
   logout():void{this.api.logout();void this.router.navigateByUrl('/clientes/login');}
   status(value:string):string{return ({paid:'Pagada',pending:'Pendiente',failed:'Fallida',expired:'Expirada',cancelled:'Cancelada'} as Record<string,string>)[value]??value;}

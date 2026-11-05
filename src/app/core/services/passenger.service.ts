@@ -49,7 +49,7 @@ export class PassengerService {
     }
   }
   me():Observable<PassengerProfile>{return this.http.get<PassengerProfile>(API_BASE_URL+'/accounts/me/',this.options());}
-  allowed():Observable<boolean>{if(!this.token())return of(false);return this.me().pipe(map(p=>{this.requireClient(p);return true;}),catchError(()=>of(false)),tap(ok=>{if(!ok)this.logout();}));}
+  allowed():Observable<boolean>{if(!this.token())return of(false);return this.me().pipe(map(p=>{this.requireClient(p);return true;}),catchError(err=>{if([401,403,422].includes(err.status))this.logout();return of(false);}));}
   update(data:{name:string;email:string;telephone:string}):Observable<PassengerProfile>{return this.http.patch<PassengerProfile>(API_BASE_URL+'/accounts/me/',data,this.options());}
   uploadPhoto(file:File){const body=new FormData();body.append('photo',file);return this.http.post(API_BASE_URL+'/accounts/me/photo/',body,this.options());}
   deletePhoto(){return this.http.delete(API_BASE_URL+'/accounts/me/photo/',this.options());}

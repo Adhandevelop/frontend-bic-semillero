@@ -44,6 +44,7 @@ export class BookingComponent implements OnInit,OnDestroy {
   get visibleSeats(){return this.seats.filter(s=>s.bus===this.trip?.bus).sort((a,b)=>a.row.localeCompare(b.row,undefined,{numeric:true})||a.col.localeCompare(b.col,undefined,{numeric:true}));}
   get seatRows():SeatPlanRow[]{return buildSeatRows(this.visibleSeats);}
   price(trip:OnlineTrip):number|null{const cents=this.fares.find(f=>f.trip===trip.id)?.amount_cents;return typeof cents==='number'&&Number.isSafeInteger(cents)&&cents>0?cents/100:null;}
+  seatNumber(id:number):string{return this.seats.find(seat=>seat.id===id)?.seat_number??'Sin número disponible';}
   get total(){return this.trip?this.price(this.trip):null;}
   get purchaseTotal():number|null{const unit=this.total;return unit===null?null:Math.round(unit*100)*this.passengers.length/100;}
   get locked(){return this.paying||this.checking||!!this.pending||!!this.receipt||!!this.payment;}
