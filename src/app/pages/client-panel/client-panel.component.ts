@@ -16,6 +16,18 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
   get profilePhoto():string|null {if(this.photoFailed)return null;const value=this.photoLink(this.profile?.photo_url);if(!value)return null;const url=new URL(value);if(url.origin===location.origin)url.searchParams.set('v',String(this.photoVersion));return url.href;}
   cardData:DigitalCard|null=null;cardQr='';cardLoading=false;cardError='';photoBusy=false;photoError='';invoice:PassengerInvoice|null=null;invoiceLoading=false;invoiceError='';private invoiceRequest=0;
   photoLink(value?:string|null):string|null{try{const url=new URL(value??'',location.origin);if(!value||url.username||url.password)return null;if(url.host===location.host&&['http:','https:'].includes(url.protocol))return new URL(url.pathname+url.search,location.origin).href;return url.protocol==='https:'?url.href:null;}catch{return null;}}
+  onPhotoError():void{
+    if(this.photoFailed)return;this.photoFailed=true;
+    console.warn('[Foto de perfil] El navegador no pudo mostrar la imagen',{source:'photo_url de GET /api/accounts/me/'});
+  }
+  retryPhoto():void{this.photoVersion=Date.now();this.photoFailed=false;}
+  private photoOperationError(err:{status?:number;error?:unknown},method:'POST'|'DELETE'):void{
+    const code=err.status;
+    const specific:Record<number,string>={200:'El servidor respondió HTTP 200, pero no devolvió JSON válido para esta operación.',405:'El servicio no permite esta operación (HTTP 405).',413:'El servidor rechazó el tamaño del archivo (HTTP 413). El límite del servidor debe permitir la imagen enviada.',415:'El servidor no acepta el formato enviado (HTTP 415).'};
+    this.photoError=code&&specific[code]?specific[code]:passengerError(err);
+    if(code&&code!==200&&!this.photoError.includes('HTTP'))this.photoError+=' (HTTP '+code+').';
+    console.error('[Foto de perfil] Falló la operación',{endpoint:'/api/accounts/me/photo/',method,status:code??null,responseFormat:typeof err.error==='string'?'texto':err.error&&typeof err.error==='object'?'objeto':'sin cuerpo'});
+  }
   async uploadPhoto(event:Event):Promise<void>{
     const input=event.target as HTMLInputElement,file=input.files?.[0];input.value='';if(!file||this.photoBusy)return;this.photoError='';
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){this.photoError='Selecciona JPG, PNG o WEBP de hasta 5 MB.';return;}
@@ -23,9 +35,9 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
     try{const size=await new Promise<{w:number;h:number}>((resolve,reject)=>{const image=new Image();image.onload=()=>resolve({w:image.naturalWidth,h:image.naturalHeight});image.onerror=reject;image.src=url;});if(size.w>2000||size.h>2000)throw new Error('size');}
     catch{URL.revokeObjectURL(url);this.photoBusy=false;this.photoError='La imagen debe ser válida y no superar 2000 × 2000 píxeles.';return;}
     URL.revokeObjectURL(url);
-    this.api.uploadPhoto(file).subscribe({next:()=>{this.photoBusy=false;this.loadProfile();this.message='Foto guardada.';},error:err=>{this.photoBusy=false;this.photoError=passengerError(err);}});
+    this.api.uploadPhoto(file).subscribe({next:()=>{this.photoBusy=false;this.loadProfile();this.message='Foto guardada.';},error:err=>{this.photoBusy=false;this.photoOperationError(err,'POST');}});
   }
-  removePhoto():void{if(this.photoBusy)return;this.photoBusy=true;this.photoError='';this.api.deletePhoto().subscribe({next:()=>{this.photoBusy=false;this.loadProfile();this.message='Foto eliminada.';},error:err=>{this.photoBusy=false;this.photoError=passengerError(err);}});}
+  removePhoto():void{if(this.photoBusy)return;this.photoBusy=true;this.photoError='';this.api.deletePhoto().subscribe({next:()=>{this.photoBusy=false;this.loadProfile();this.message='Foto eliminada.';},error:err=>{this.photoBusy=false;this.photoOperationError(err,'DELETE');}});}
   openCard():void{
     if(this.cardLoading)return;this.cardLoading=true;this.cardError='';this.cardQr='';
     this.api.card().subscribe({next:async card=>{

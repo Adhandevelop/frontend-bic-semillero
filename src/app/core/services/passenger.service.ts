@@ -13,7 +13,7 @@ export function passengerError(err:{status?:number;error?:unknown}):string{
   if(err.status===403){const detail=err.error&&typeof err.error==='object'&&'detail' in err.error?err.error.detail:null;return typeof detail==='string'?detail:'El servidor denegó el acceso. Revisa los permisos de la consulta de perfil.';}
   if(err.status===404)return 'El servicio solicitado no está disponible (HTTP 404).';
   if(err.status&&err.status>=500)return 'El servidor presentó un error interno (HTTP '+err.status+').';
-  const labels:Record<string,string>={detail:'',name:'Nombre',email:'Correo',telephone:'Celular',photo:'Foto de perfil',password:'Contraseña',identification_number:'Documento',identification_document_code:'Tipo de documento',non_field_errors:''};
+  const labels:Record<string,string>={detail:'',name:'Nombre',email:'Correo',telephone:'Celular',photo:'Foto de perfil',password:'Contraseña',identification_number:'Documento',identification_document_code:'Tipo de documento',non_field_errors:'',message:'',error:''};
   const messages:string[]=[];
   if(err.error&&typeof err.error==='object')for(const [key,value] of Object.entries(err.error))if(key in labels){const texts=Array.isArray(value)?value:[value];for(const text of texts)if(typeof text==='string')messages.push((labels[key]?labels[key]+': ':'')+text);}
   return messages.join(' ')||'No se pudo completar la operación. Revisa los datos e intenta nuevamente.';
