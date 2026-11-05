@@ -1,8 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+﻿import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
-import { Bus } from '../models/bus.model';
+import { Bus, normalizeBus } from '../models/bus.model';
 
 interface PaginatedResponse<T> {
   count: number;
@@ -25,7 +25,7 @@ export class BusService {
       expand((response, index) => !Array.isArray(response) && response.next
         ? this.http.get<Bus[] | PaginatedResponse<Bus>>(this.apiUrl, { params: { page: index + 2 } })
         : EMPTY),
-      map(response => Array.isArray(response) ? response : response.results),
+      map(response => (Array.isArray(response) ? response : response.results).map(normalizeBus)),
       reduce((buses, page) => buses.concat(page), [] as Bus[])
     );
   }
@@ -35,25 +35,25 @@ export class BusService {
       .get<Bus[] | PaginatedResponse<Bus>>(this.apiUrl)
       .pipe(
         map((response) =>
-          Array.isArray(response) ? response : response.results
+          (Array.isArray(response) ? response : response.results).map(normalizeBus)
         ),
       );
   }
 
   obtenerPorId(id: number): Observable<Bus> {
-    return this.http.get<Bus>(`${this.apiUrl}${id}/`);
+    return this.http.get<Bus>(`${this.apiUrl}${id}/`).pipe(map(normalizeBus));
   }
 
   crear(bus: Bus): Observable<Bus> {
-    return this.http.post<Bus>(this.apiUrl, bus);
+    return this.http.post<Bus>(this.apiUrl, normalizeBus(bus)).pipe(map(normalizeBus));
   }
 
   actualizar(id: number, bus: Bus): Observable<Bus> {
-    return this.http.put<Bus>(`${this.apiUrl}${id}/`, bus);
+    return this.http.put<Bus>(`${this.apiUrl}${id}/`, normalizeBus(bus)).pipe(map(normalizeBus));
   }
 
   actualizarParcial(id: number, bus: Partial<Bus>): Observable<Bus> {
-    return this.http.patch<Bus>(`${this.apiUrl}${id}/`, bus);
+    return this.http.patch<Bus>(`${this.apiUrl}${id}/`, {...bus,...(bus.state ? {state:normalizeBus(bus as Bus).state} : {})}).pipe(map(normalizeBus));
   }
 
   eliminar(id: number): Observable<void> {
@@ -61,6 +61,6 @@ export class BusService {
   }
 
   listarActivos(): Observable<Bus[]> {
-    return this.http.get<Bus[]>(`${this.apiUrl}activos/`);
+    return this.http.get<Bus[]>(`${this.apiUrl}activos/`).pipe(map(buses=>buses.map(normalizeBus)));
   }
 }

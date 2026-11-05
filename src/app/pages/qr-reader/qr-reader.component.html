@@ -1,0 +1,11 @@
+﻿<header><a routerLink="/dashboard">← Administración</a><h1>Lector de QR</h1><p>Consulta la autenticidad de boletas y carnés digitales.</p></header>
+<p class="notice">Esta consulta no registra el abordaje ni marca boletas como utilizadas.</p>
+<div class="grid"><section><h2>Escanear o introducir QR</h2><label for="trip">Viaje esperado (ID, opcional)</label><input id="trip" type="number" min="1" [(ngModel)]="expectedTrip" [disabled]="busy || !!ticket"/><p>Verifica que el número corresponda al viaje en el que se realizará el abordaje.</p>
+<video #preview [hidden]="!camera" autoplay muted playsinline aria-label="Vista de cámara para leer QR"></video>
+<div class="actions"><button type="button" (click)="startCamera()" [disabled]="busy || camera">Abrir cámara</button><button *ngIf="camera" type="button" (click)="stopCamera()">Detener cámara</button></div>
+<form (ngSubmit)="verify()"><label for="qr">Enlace del QR</label><textarea id="qr" name="qr" [(ngModel)]="input" [disabled]="busy" placeholder="Pega el enlace o utiliza un lector USB" autocomplete="off"></textarea><button [disabled]="busy || !input.trim()">{{busy ? 'Consultando…' : 'Consultar QR'}}</button></form>
+</section><section aria-live="polite"><h2>Resultado de la consulta</h2><p *ngIf="error" class="error" role="alert">{{error}}</p><p *ngIf="message" class="notice" [class.success]="matches">{{message}}</p><p *ngIf="!message && !error">Escanea una boleta o un carné para consultar su estado actual en el servidor.</p>
+<ng-container *ngIf="ticket as t"><h3>{{t.trip.origin}} → {{t.trip.destination}}</h3><dl><dt>Viaje</dt><dd>#{{t.trip.id}}</dd><dt>Salida · Colombia</dt><dd>{{t.trip.date_time_start | date:'dd/MM/yyyy HH:mm':'-0500'}}</dd><dt>Silla</dt><dd>{{t.seat.seat_number}}</dd><dt>Pasajero</dt><dd>{{t.passenger.name || 'No informado'}}</dd><dt>Estado</dt><dd>{{status(t.status)}}</dd><dt>Código</dt><dd>{{t.ticket_code}}</dd></dl><p>Los datos personales pueden venir parcialmente ocultos en la consulta pública.</p><a [routerLink]="['/viajes',t.trip.id]">Ver detalle operativo del viaje →</a><button type="button" (click)="ticket=null;message=''">Consultar otra boleta</button></ng-container>
+<ng-container *ngIf="card as c"><h3>{{c.name || 'Carné digital'}}</h3><p>{{status(c.status || '')}}</p><p>{{c.card_id}}</p></ng-container>
+</section></div>
+

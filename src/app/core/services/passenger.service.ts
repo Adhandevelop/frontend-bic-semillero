@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../config/api.config';
 import { allApiPages } from './api-pagination';
 export interface PassengerProfile {id:number;role:string;password_change_required?:boolean;photo_url?:string|null;name?:string;first_name?:string;last_name?:string;email:string;telephone:string;identification_number:string;identification_document_code?:string;}
 export interface PassengerRegistration {name:string;email:string;telephone:string;identification_number:string;identification_document_code:string;password:string;}
-export interface PassengerSale {id:number;status:string;amount_cents:number;created_at?:string;trip?:number;seat?:number;tickets:Array<{ticket_code:string;trip:number;seat:number;status:string;verification_url?:string;verification_token?:string;issued_at?:string}>;factus_invoice?:{status:string;number:string;cufe:string;public_url?:string;error_message?:string;pdf_url?:string;xml_url?:string;qr_url?:string}|null;}
+export interface PassengerSale {id:number;status:string;amount_cents:number;created_at?:string;trip?:number;seat?:number;tickets:Array<{ticket_code:string;trip:number;seat:number;status:string;passenger_name?:string;passenger_identification?:string;verification_url?:string;verification_token?:string;issued_at?:string}>;factus_invoice?:{status:string;number:string;cufe:string;public_url?:string;error_message?:string;pdf_url?:string;xml_url?:string;qr_url?:string}|null;}
 export function passengerError(err:{status?:number;error?:unknown}):string{
   if(err.status===0)return 'No se pudo conectar con el servidor.';
   if(err.status===401)return 'Credenciales incorrectas o sesión vencida. Inicia sesión nuevamente.';

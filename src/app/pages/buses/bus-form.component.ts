@@ -34,7 +34,7 @@ export class BusFormComponent implements OnInit, OnDestroy {
     plate: ['', [Validators.required, Validators.pattern(/\S/)]],
     capacity: [20, [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]],
     model: ['', [Validators.required, Validators.pattern(/\S/)]],
-    state: ['Active' as Bus['state'], [Validators.required, Validators.pattern(/^(Active|Inactive|mantenimiento)$/)]]
+    state: ['Active' as Bus['state'], [Validators.required, Validators.pattern(/^(Active|Inactive|Maintenance)$/)]]
   },{validators:control=>{const id=control.get('bus_type')?.value;if(id===null)return null;const type=this.types.find(t=>t.id===id)??(this.originalType?.id===id?this.originalType:null);return !type?{unknownType:true}:Number(control.get('capacity')?.value)>type.max_capacity?{typeCapacity:true}:null;}});
 
   constructor(private route: ActivatedRoute, private router: Router, private busService: BusService,private typeService:BusTypeService) {}

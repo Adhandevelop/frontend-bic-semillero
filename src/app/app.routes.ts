@@ -1,4 +1,4 @@
-﻿import { passengerGuard } from './core/guards/passenger.guard';
+import { passengerGuard } from './core/guards/passenger.guard';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { LayoutComponent } from './shared/layout/layout.component';
@@ -34,6 +34,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
+      { path: 'validar-qr', loadComponent: () => import('./pages/qr-reader/qr-reader.component').then(m => m.QrReaderComponent) },
       { path: 'monitoreo', loadComponent: () => import('./pages/monitoreo/monitoreo.component').then(m => m.MonitoreoComponent) },
       { path: 'asientos', loadComponent: () => import('./pages/asientos/asientos.component').then(m => m.AsientosComponent) },
       { path: 'ventas', loadComponent: () => import('./pages/ventas/venta-list.component').then(m => m.VentaListComponent) },
@@ -55,14 +56,9 @@ export const routes: Routes = [
       { path: 'rutas/editar/:id', component: RutaFormComponent },
       { path: 'viajes', component: ViajeListComponent },
       { path: 'viajes/nuevo', component: ViajeFormComponent },
-      { path: 'viajes/editar/:id', component: ViajeFormComponent }
+      { path: 'viajes/editar/:id', component: ViajeFormComponent },
+      { path: 'viajes/:id', loadComponent: () => import('./pages/viajes/viaje-detail.component').then(m => m.ViajeDetailComponent) }
     ]
   },
   { path: '**', redirectTo: '' }
 ];
-
-
-
-
-
-

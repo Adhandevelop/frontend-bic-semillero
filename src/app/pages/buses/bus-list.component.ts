@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -25,7 +25,7 @@ export class BusListComponent implements OnInit {
 
   get activeCount(): number { return this.buses.filter(bus => bus.state === 'Active').length; }
   get inactiveCount(): number { return this.buses.filter(bus => bus.state === 'Inactive').length; }
-  get maintenanceCount(): number { return this.buses.filter(bus => bus.state === 'mantenimiento').length; }
+  get maintenanceCount(): number { return this.buses.filter(bus => bus.state === 'Maintenance').length; }
   get activePercentage(): number { return this.buses.length ? Math.round(this.activeCount / this.buses.length * 100) : 0; }
   get filteredBuses(): Bus[] {
     const query = this.searchValue.trim().toLocaleLowerCase();
@@ -34,7 +34,7 @@ export class BusListComponent implements OnInit {
   }
 
   stateLabel(state: Bus['state']): string {
-    return state === 'Active' ? 'Activo' : state === 'Inactive' ? 'Inactivo' : state === 'mantenimiento' ? 'Mantenimiento' : 'Sin estado';
+    return state === 'Active' ? 'Activo' : state === 'Inactive' ? 'Inactivo' : state === 'Maintenance' ? 'Mantenimiento' : 'Sin estado';
   }
 
   clearFilters(): void { this.searchValue = ''; this.onlyActive = false; }

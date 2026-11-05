@@ -6,6 +6,9 @@ export interface Bus {
   plate: string;
   capacity: number;
   model?: string;
-  state: 'Active' | 'Inactive' | 'mantenimiento';
+  state: 'Active' | 'Inactive' | 'Maintenance';
 }
 
+
+// Compatibility for older responses; administrative requests use the API value.
+export function normalizeBus(bus:Bus):Bus{return {...bus,state:(bus.state as string)==='mantenimiento'?'Maintenance':bus.state};}

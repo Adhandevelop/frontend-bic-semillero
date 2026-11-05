@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
-import { Bus } from '../../core/models/bus.model';
+import { Bus, normalizeBus } from '../../core/models/bus.model';
 import { Conductor } from '../../core/models/conductor.model';
 import { DashboardService } from '../../core/services/dashboard.service';
 
@@ -37,7 +37,7 @@ export class DashboardComponent implements OnInit {
     forkJoin({ buses: load<Bus>('fleet/buses', 'buses'), drivers: load<Conductor>('fleet/drivers', 'conductores'),
       trips: load<TripSummary>('trips/trips', 'viajes'), routes: load<RouteSummary>('routes/routes', 'rutas')
     }).subscribe(result => {
-      this.buses = result.buses ?? [];
+      this.buses = (result.buses ?? []).map(normalizeBus);
       this.drivers = result.drivers ?? [];
       this.trips = result.trips ?? [];
       this.routes = result.routes ?? [];
@@ -46,7 +46,7 @@ export class DashboardComponent implements OnInit {
     });
   }
   get activeCount(): number { return this.buses.filter(bus => bus.state === 'Active').length; }
-  get maintenanceCount(): number { return this.buses.filter(bus => bus.state === 'mantenimiento').length; }
+  get maintenanceCount(): number { return this.buses.filter(bus => bus.state === 'Maintenance').length; }
   get filteredBuses(): Bus[] {
     const query = this.searchValue.trim().toLowerCase();
     return this.buses.filter(bus => (!this.onlyActive || bus.state === 'Active') &&
@@ -57,7 +57,7 @@ export class DashboardComponent implements OnInit {
     return this.drivers.filter(driver => !query || `${driver.full_name} ${driver.license_number}`.toLowerCase().includes(query)).slice(0, 6);
   }
   stateLabel(state: Bus['state']): string {
-    return state === 'Active' ? 'Activo' : state === 'Inactive' ? 'Inactivo' : state === 'mantenimiento' ? 'Mantenimiento' : 'Sin estado';
+    return state === 'Active' ? 'Activo' : state === 'Inactive' ? 'Inactivo' : state === 'Maintenance' ? 'Mantenimiento' : 'Sin estado';
   }
   exportReport(): void {
     const rows = [['ID', 'Placa', 'Modelo', 'Estado', 'Capacidad'], ...this.filteredBuses.map(bus =>

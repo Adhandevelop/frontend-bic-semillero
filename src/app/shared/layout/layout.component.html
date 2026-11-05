@@ -1,4 +1,4 @@
-﻿<app-navbar></app-navbar>
+<app-navbar></app-navbar>
 <div class="app-shell">
   <aside class="sidebar" aria-label="Menú de operación">
     <div class="sidebar-heading"><strong>Precision Fleet</strong><span>Consola Central de Despacho</span></div>
@@ -11,6 +11,7 @@
       <a routerLink="/conductores" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">♙</span>Conductores</a>
       <a routerLink="/rutas" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌁</span>Rutas</a>
       <a routerLink="/viajes" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">↗</span>Viajes</a>
+      <a routerLink="/validar-qr" routerLinkActive="selected">Lector QR</a>
       <a routerLink="/monitoreo" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌖</span>Mapa y monitoreo</a>
       <a routerLink="/asientos" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▤</span>Administración de asientos</a>
     </nav>
@@ -19,6 +20,3 @@
   </aside>
   <main class="main-content"><router-outlet></router-outlet></main>
 </div>
-
-
-
