@@ -34,6 +34,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
+      { path: 'monitoreo', loadComponent: () => import('./pages/monitoreo/monitoreo.component').then(m => m.MonitoreoComponent) },
       { path: 'asientos', loadComponent: () => import('./pages/asientos/asientos.component').then(m => m.AsientosComponent) },
       { path: 'ventas', loadComponent: () => import('./pages/ventas/venta-list.component').then(m => m.VentaListComponent) },
       { path: 'ventas/nueva', loadComponent: () => import('./pages/ventas/venta-form.component').then(m => m.VentaFormComponent) },
@@ -42,8 +43,10 @@ export const routes: Routes = [
       { path: 'clientes', loadComponent: () => import('./pages/clientes/client-list.component').then(m => m.ClientListComponent) },
       { path: 'buses/tipos', loadComponent: () => import('./pages/buses/bus-types.component').then(m => m.BusTypesComponent) },
       { path: 'buses', component: BusListComponent },
+      { path: 'buses/:id/asientos', loadComponent: () => import('./pages/bus-seats/bus-seats.component').then(m => m.BusSeatsComponent) },
       { path: 'buses/nuevo', component: BusFormComponent },
       { path: 'buses/editar/:id', component: BusFormComponent },
+      { path: 'buses/:id', loadComponent: () => import('./pages/buses/bus-detail.component').then(m => m.BusDetailComponent) },
       { path: 'conductores', component: ConductorListComponent },
       { path: 'conductores/nuevo', component: ConductorFormComponent },
       { path: 'conductores/editar/:id', component: ConductorFormComponent },

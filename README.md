@@ -167,7 +167,7 @@ Historial, reservas, categorías VIP y puntos permanecen pendientes y se identif
 
 ### Administración de asientos
 
-El último acceso del menú lateral administrativo es **Administración de asientos** (`/asientos`). La ruta hereda los guards del layout administrativo y muestra únicamente el anuncio **Esta función estará disponible pronto**, con regreso al dashboard. No consulta endpoints, no presenta datos operativos ni modifica sillas. No se añade al portal del cliente.
+El acceso **Administración de asientos** (`/asientos`) hereda los guards del layout administrativo y consulta los buses reales para seleccionar una unidad. Su página `/buses/:id/asientos` permite consultar pasajeros de boletas, disponibilidad y registros físicos por viaje. Es de solo lectura y no modifica la configuración de sillas. No se añade al portal del cliente.
 
 ### Panel de ventas
 
@@ -279,6 +279,13 @@ Al abrir una compra se consulta `/api/sales/sales/:id/invoice/`. Muestra `pendin
 - Login y registro de pasajeros están conectados a API. Google y Apple permanecen pendientes; recuperación y cambio de contraseña están conectados.
 - Boletín, redes sociales y otras acciones del inicio sin integración muestran avisos. El panel cliente obtiene contactos oficiales y políticas desde `/api/public/customer-service/`; solo ofrece los enlaces configurados.
 
+### Mapa y monitoreo administrativo
+
+`/monitoreo` pertenece al panel protegido de administración y está separado de `/ubicacion`, que permanece como mapa público de pasajeros. Los accesos desde dashboard, buses, viajes, rutas y navegación administrativa abren el mapa administrativo; la barra superior permite entrar también desde móvil. Administración de asientos abre el listado real de buses y permite entrar a la consulta de pasajeros y sensores; crear/editar la configuración de sillas no forma parte de esa pantalla.
+
+La vista contiene tres unidades de muestra con posiciones GPS GeoJSON `Point`, recorrido `LineString` construido con muestras ordenadas por fecha y selector para explorar el historial de cada viaje. La presentación usa ficha e itinerario lateral, mapa amplio con marcadores de bus y trazado azul, y una barra flotante de ocupación. El itinerario representa lecturas GPS y su progreso dentro del registro, no paradas oficiales ni una predicción de llegada. El historial de sensores sigue disponible debajo y la tabla GPS se puede desplegar. La línea representa la unión de mediciones de ejemplo; no acredita el trazado exacto por carretera entre puntos. Los sensores muestran un bus de un piso con distribución 2 + pasillo + 2 y distinguen ocupado, libre o sin lectura. El corte temporal se aplica a todas las unidades del mapa; los sensores sin lectura o con más de dos minutos de antigüedad se muestran sin señal en esta muestra. Ese umbral es demostrativo y debe acordarse con la frecuencia de transmisión del dispositivo. Ocupación física no equivale a silla vendida o reservada y no se realizan ventas desde este módulo.
+
+Todos los datos de telemetría son demostrativos: no son lecturas reales, no se escriben en la base de datos ni hay conexión al dispositivo. Leaflet usa teselas OpenStreetMap, que requieren internet. La integración con `/api/trips/readings/`, `/api/trips/current-seat-states/` y `/api/trips/seat-state-history/` sigue pendiente; no se asume disponibilidad de filtros o tiempo real que el contrato aún no documenta. GeoJSON conserva coordenadas `[longitud, latitud]` en WGS84/SRID 4326.
 ### Mapa y GPS
 
 El mapa utiliza Leaflet 1.9 y teselas de OpenStreetMap, que requieren internet. Las tres posiciones estáticas están en [bus-locations.mock.ts](src/app/core/data/bus-locations.mock.ts).
@@ -367,3 +374,15 @@ Rutas públicas: /clientes/recuperar-contrasena, /clientes/restablecer-contrasen
 La sección **Ayuda** del panel reúne contactos y políticas oficiales, formulario de solicitudes, listado paginado a siete filas y detalle con estado. Consume /api/support/requests/ con JWT explícito de cliente y /api/public/customer-service/ sin credenciales. Permite asociar solo una compra del historial; no envía propietario ni estado. Los límites de 60 segundos y HTTP 429 conservan los datos. Los fallos inciertos invitan a revisar el listado antes de reintentar. Solicitar cancelación no cancela ni reembolsa la venta. El contrato actual no incluye conversaciones/respuestas del equipo, así que no se simulan.
 
 En compras pagadas, **Reenviar confirmación por correo** llama a /api/sales/sales/:id/resend-confirmation/ sin destinatario personalizado. El éxito informa solicitud de envío; email_unavailable permite seguir descargando boletas y no cambia el estado de pago. El envío automático tras el pago corresponde al backend. Solo se muestran enlaces oficiales HTTPS, correo, teléfono y WhatsApp configurados; no se inventan políticas ni contactos.
+
+### Revisión de seguridad
+
+Consulta [SECURITY_REVIEW.md](SECURITY_REVIEW.md) para el análisis del 4 de noviembre de 2026: alcance, hallazgos, evidencia, prioridades y validaciones pendientes. La revisión no modifica la aplicación ni Django y no equivale a una prueba de penetración. Los avisos de dependencias se separan entre producción y desarrollo.
+
+### Acceso administrativo a pasajeros y asientos
+
+Los caminos **Clientes → Ver detalles → Viaje y bus → Detalles del bus → Asientos** y **Buses → Ver detalles → Asientos** convergen en /buses/:id/asientos. /asientos permite elegir directamente un bus. Todo pertenece al layout administrativo y sus guards; no se abre la compra del portal cliente.
+
+La ficha del cliente relaciona boletas por documento de pasajero, incluso si el comprador es otra persona, y distingue las compras propias sin atribuirle todos sus asientos. Conserva cliente, viaje y asiento único en la navegación. El detalle del bus consulta la unidad real; la página de asientos valida que el viaje pertenezca a ese bus y muestra plano de un piso 2 + pasillo + 2, pasajeros de boletas emitidas/utilizadas, disponibilidad comercial, última lectura física y su historial. Los datos faltantes o errores parciales se identifican; no se sustituyen por demostraciones.
+
+Se consultan todas las páginas y se filtran los asientos por bus y registros por viaje en Angular, porque el contrato no documenta esos filtros de servidor. Se usan /api/fleet/seats/, /api/trips/trips/, /api/sales/tickets/, /api/trips/current-seat-states/, /api/trips/seat-state-history/ y la disponibilidad del viaje. El nombre del pasajero viene de la boleta; la lectura física no identifica a quien está sentado ni demuestra presencia en tiempo real. Sin dispositivo o registros se muestra **Sin lectura**. Estas pantallas son de consulta y no crean ni modifican sillas, ventas o telemetría. El monitoreo con datos simulados sigue separado en /monitoreo.

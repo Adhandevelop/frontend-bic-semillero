@@ -1,14 +1,19 @@
-﻿import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+﻿import { Subscription } from 'rxjs';
+import { ClientRelatedBusesComponent } from './client-related-buses.component';
+import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Cliente, ClienteService } from '../../core/services/cliente.service';
-@Component({selector:'app-client-list',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./client-list.component.html',styleUrl:'./client-list.component.css'})
-export class ClientListComponent implements OnInit {
+@Component({selector:'app-client-list',standalone:true,imports:[CommonModule,FormsModule,RouterLink,ClientRelatedBusesComponent],templateUrl:'./client-list.component.html',styleUrl:'./client-list.component.css'})
+export class ClientListComponent implements OnInit,OnDestroy {
   clientes:Cliente[]=[];loading=false;error='';searchValue='';page=1;readonly pageSize=6;
   contactFilter='all';selectedClient:Cliente|null=null;notice='';
-  constructor(private clienteService:ClienteService){}
-  ngOnInit():void{this.cargar();}
+  private querySubscription?:Subscription;private contextClient=0;
+  constructor(private clienteService:ClienteService,private route:ActivatedRoute){}
+  ngOnInit():void{this.querySubscription=this.route.queryParamMap.subscribe(params=>{const id=Number(params.get('cliente'));this.contextClient=Number.isSafeInteger(id)&&id>0?id:0;if(this.contextClient&&this.clientes.length){const client=this.clientes.find(c=>c.id===this.contextClient);if(client)this.viewClient(client);}});this.cargar();}
+  viewClient(client:Cliente):void{this.selectedClient=client;setTimeout(()=>{const detail=document.getElementById('admin-client-detail');detail?.scrollIntoView({behavior:'smooth',block:'start'});detail?.focus({preventScroll:true});});}
+  ngOnDestroy():void{this.querySubscription?.unsubscribe();}
   nombre(c:Cliente):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
   initials(c:Cliente):string{return this.nombre(c).split(/\s+/).slice(0,2).map(s=>s[0]).join('').toLocaleUpperCase();}
   get withContact():number{return this.clientes.filter(c=>c.email?.trim()||c.telephone?.trim()).length;}
@@ -28,6 +33,6 @@ export class ClientListComponent implements OnInit {
   }
   cargar():void{
     if(this.loading)return;this.loading=true;this.error='';this.selectedClient=null;
-    this.clienteService.listar().subscribe({next:clients=>{this.clientes=clients;this.loading=false;this.page=Math.min(this.page,this.pageCount);},error:(error:{status?:number})=>{this.loading=false;this.clientes=[];this.error=error.status===403?'Tu cuenta no tiene permisos para consultar clientes.':error.status===401?'La sesión venció. Inicia sesión nuevamente.':'No se pudieron cargar los clientes. Revisa la conexión con la API.';}});
+    this.clienteService.listar().subscribe({next:clients=>{this.clientes=clients;this.loading=false;const context=clients.find(c=>c.id===this.contextClient);if(context)this.viewClient(context);this.page=Math.min(this.page,this.pageCount);},error:(error:{status?:number})=>{this.loading=false;this.clientes=[];this.error=error.status===403?'Tu cuenta no tiene permisos para consultar clientes.':error.status===401?'La sesión venció. Inicia sesión nuevamente.':'No se pudieron cargar los clientes. Revisa la conexión con la API.';}});
   }
 }
