@@ -267,7 +267,7 @@ Referencia: [Widget de Wompi](https://docs.wompi.co/docs/colombia/widget-checkou
 
 La foto usa POST multipart a `/api/accounts/me/photo/` y DELETE sobre la misma ruta. Angular valida JPG/PNG/WEBP, máximo 5 MB y 2000 × 2000 px antes de subir; luego recarga `/accounts/me/` para mostrar `photo_url`. No envía ID de usuario y los errores no simulan éxito.
 
-**Carné Digital / QR** consulta `/api/accounts/me/card/` y presenta identidad, estado y vigencia devueltos por el servidor. Genera localmente la imagen QR con `qrcode`, cargado bajo demanda: codifica la URL de verificación del mismo origen con el token firmado recibido, nunca el JWT de sesión. No usa un generador externo. El aviso aclara que no sustituye un tiquete ni acredita una compra. El enlace apunta a `/api/accounts/cards/verify/?token=...`. Si falla, distingue datos incompletos, URL no admitida, uso incorrecto del token de sesión y fallo de renderizado. La consola registra únicamente la etapa y presencia de campos; nunca el token ni la URL firmada.
+**Carné Digital / QR** consulta `/api/accounts/me/card/` y presenta identidad, estado y vigencia devueltos por el servidor. Genera localmente la imagen QR con `qrcode`, cargado bajo demanda: codifica la URL de verificación del mismo origen con el token firmado recibido, nunca el JWT de sesión. No usa un generador externo. El aviso aclara que no sustituye un tiquete ni acredita una compra. El enlace apunta a `/api/accounts/cards/verify/?token=...`. Se reconstruye con el origen del portal cuando el servidor devuelve el mismo dominio con HTTP, sin aceptar dominios externos. Si falla, distingue datos incompletos, URL no admitida, uso incorrecto del token de sesión y fallo de renderizado. La consola registra únicamente la etapa y presencia de campos; nunca el token ni la URL firmada.
 
 Al abrir una compra se consulta `/api/sales/sales/:id/invoice/`. Muestra `pending`/`error`/`issued`, número, CUFE y enlaces HTTPS público/PDF/XML cuando existen; no inventa facturas ni reintenta su emisión desde una cuenta cliente. Respuestas antiguas no reemplazan la factura de otra compra seleccionada. La verificación de propietario corresponde al backend.
 
@@ -380,3 +380,9 @@ Actualizar este README junto con cada cambio funcional, de configuración o de i
 
 
 
+
+Los botones de detalle de compra del perfil desplazan el foco hasta el detalle, consultan la venta actualizada y su factura por separado, y muestran errores de cada consulta. Cerrar invalida respuestas pendientes. Los enlaces de factura solo aparecen cuando la API los devuelve.
+
+### Descarga de boletas del cliente
+
+El detalle de compras pagadas con tiquetes emitidos incluye **Descargar boletas en PDF**. Reconsulta la venta y verifica cada tiquete en el endpoint público antes de descargar. Genera un único PDF con una página por boleta: pasajero, documento, terminales, salida/llegada en hora Colombia, silla, estado, emisión y código. El QR conserva exactamente la verification_url del servidor; nunca contiene el JWT ni se crea un token en Angular. La consulta pública no recibe Authorization. Un fallo de verificación impide descargar un archivo parcial. jsPDF y qrcode se cargan bajo demanda. El PDF no sustituye la factura electrónica ni confirma validez futura: al abordar debe verificarse el estado actual en el backend.

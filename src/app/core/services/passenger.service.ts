@@ -1,11 +1,12 @@
-﻿import { Injectable } from '@angular/core';
+﻿import { VerifiedTicket } from './ticket-pdf';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { allApiPages } from './api-pagination';
 export interface PassengerProfile {id:number;role:string;photo_url?:string|null;name?:string;first_name?:string;last_name?:string;email:string;telephone:string;identification_number:string;identification_document_code?:string;}
 export interface PassengerRegistration {name:string;email:string;telephone:string;identification_number:string;identification_document_code:string;password:string;}
-export interface PassengerSale {id:number;status:string;amount_cents:number;created_at?:string;trip?:number;seat?:number;tickets:Array<{ticket_code:string;trip:number;seat:number;status:string}>;factus_invoice?:{status:string;number:string;cufe:string;public_url?:string;error_message?:string;pdf_url?:string;xml_url?:string;qr_url?:string}|null;}
+export interface PassengerSale {id:number;status:string;amount_cents:number;created_at?:string;trip?:number;seat?:number;tickets:Array<{ticket_code:string;trip:number;seat:number;status:string;verification_url?:string;verification_token?:string;issued_at?:string}>;factus_invoice?:{status:string;number:string;cufe:string;public_url?:string;error_message?:string;pdf_url?:string;xml_url?:string;qr_url?:string}|null;}
 export function passengerError(err:{status?:number;error?:unknown}):string{
   if(err.status===0)return 'No se pudo conectar con el servidor.';
   if(err.status===401)return 'Credenciales incorrectas o sesión vencida. Inicia sesión nuevamente.';
@@ -53,6 +54,8 @@ export class PassengerService {
   uploadPhoto(file:File){const body=new FormData();body.append('photo',file);return this.http.post(API_BASE_URL+'/accounts/me/photo/',body,this.options());}
   deletePhoto(){return this.http.delete(API_BASE_URL+'/accounts/me/photo/',this.options());}
   card(){return this.http.get<DigitalCard>(API_BASE_URL+'/accounts/me/card/',this.options());}
+  verifyTicket(url:string){return this.http.get<VerifiedTicket>(url);}
+  sale(saleId:number){return this.http.get<PassengerSale>(API_BASE_URL+'/sales/sales/'+saleId+'/',this.options());}
   invoice(saleId:number){return this.http.get<PassengerInvoice>(API_BASE_URL+'/sales/sales/'+saleId+'/invoice/',this.options());}
   history():Observable<PassengerSale[]>{
     // Explicit client header on every page; never fall back to the admin session.

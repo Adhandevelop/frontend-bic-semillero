@@ -1,4 +1,6 @@
-﻿import { CommonModule } from '@angular/common';
+﻿import { firstValueFrom, timeout } from 'rxjs';
+import { createTicketPdf, ticketVerificationUrl, PdfTicket } from '../../core/services/ticket-pdf';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -27,14 +29,15 @@ export class ClientPanelComponent implements OnInit {
         if(typeof card?.qr?.verification_url!=='string'||!card.qr.verification_url.trim()||typeof card.qr.token!=='string'||!card.qr.token.trim())throw new Error();
         stage='url';
         const url=new URL(card.qr.verification_url,location.origin);
-        if(url.origin!==location.origin||url.username||url.password||!url.pathname.endsWith('/accounts/cards/verify/'))throw new Error();
+        if(!['http:','https:'].includes(url.protocol)||url.host!==location.host||url.username||url.password||url.pathname.replace(/\/$/,'')!=='/api/accounts/cards/verify')throw new Error();
         stage='token';
         if(card.qr.token===this.api.token())throw new Error();
-        url.searchParams.set('token',card.qr.token);
+        const verification=new URL('/api/accounts/cards/verify/',location.origin);
+        verification.searchParams.set('token',card.qr.token);
         stage='imagen';
         const module=await import('qrcode');
         const qr=typeof module.toDataURL==='function'?module:module.default;
-        this.cardQr=await qr.toDataURL(url.href,{width:240,margin:4,errorCorrectionLevel:'M'});
+        this.cardQr=await qr.toDataURL(verification.href,{width:240,margin:4,errorCorrectionLevel:'M'});
       }catch{
         const messages:Record<string,string>={datos:'El carné recibido no incluye qr.verification_url y qr.token válidos.',url:'La URL de verificación del carné debe pertenecer a este portal y apuntar a /api/accounts/cards/verify/.',token:'El servidor devolvió el token de sesión como token del carné. No se puede usar para generar el QR.',imagen:'No se pudo dibujar el QR en el navegador. Intenta abrir el carné nuevamente.'};
         this.cardError=messages[stage]??'No se pudo generar el QR.';
@@ -42,7 +45,35 @@ export class ClientPanelComponent implements OnInit {
       }finally{this.cardLoading=false;}
     },error:err=>{this.cardLoading=false;this.cardError=passengerError(err);}});
   }
-  selectSale(sale:PassengerSale):void{const request=++this.invoiceRequest;this.selectedSale=sale;this.invoice=null;this.invoiceError='';this.invoiceLoading=true;this.api.invoice(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.invoice=value;this.invoiceLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.invoiceLoading=false;this.invoiceError=passengerError(err);}});}
+  pdfBusy=false;pdfError='';
+  get canDownloadTickets():boolean{return this.selectedSale?.status==='paid'&&!!this.selectedSale.tickets?.some(t=>t.status==='issued');}
+  async downloadTickets():Promise<void>{
+    const id=this.selectedSale?.id;if(!id||this.pdfBusy||!this.canDownloadTickets)return;
+    this.pdfBusy=true;this.pdfError='';
+    try{
+      const sale=await firstValueFrom(this.api.sale(id).pipe(timeout(20000)));
+      if(sale.status!=='paid')throw new Error('La compra todavía no está pagada.');
+      const tickets=sale.tickets?.filter(t=>t.status==='issued')??[];
+      if(!tickets.length)throw new Error('Esta compra ya no tiene boletas emitidas.');
+      const entries:PdfTicket[]=await Promise.all(tickets.map(async ticket=>{
+        const url=ticketVerificationUrl(ticket.verification_url,location.origin,this.api.token());
+        const verified=await firstValueFrom(this.api.verifyTicket(url.href).pipe(timeout(15000)));
+        if(!verified.valid||verified.status!=='issued'||verified.ticket_code!==ticket.ticket_code||verified.trip?.id!==ticket.trip||verified.seat?.id!==ticket.seat)throw new Error('Una boleta ya no está emitida o su verificación no coincide. Actualiza la compra.');
+        if(!verified.passenger?.name||!verified.trip.origin||!verified.trip.destination||!verified.trip.date_time_start||!verified.seat.seat_number)throw new Error('El servidor devolvió datos incompletos para imprimir una boleta.');
+        return {ticket:verified,verificationUrl:ticket.verification_url!,issuedAt:ticket.issued_at};
+      }));
+      const pdf=await createTicketPdf(id,entries);
+      pdf.save(`boletas-compra-${id}.pdf`);
+    }catch(err){
+      this.pdfError=err instanceof Error?err.message:passengerError(err as {status?:number;error?:unknown});
+    }finally{this.pdfBusy=false;}
+  }
+  detailLoading=false;detailError='';
+  closeSale():void{this.invoiceRequest++;this.selectedSale=null;this.invoiceLoading=false;this.detailLoading=false;}
+  selectSale(sale:PassengerSale):void{const request=++this.invoiceRequest;this.selectedSale=sale;this.pdfError='';this.detailError='';this.detailLoading=true;
+    setTimeout(()=>{const target=document.getElementById('purchase-detail');target?.scrollIntoView({behavior:'smooth',block:'start'});target?.focus({preventScroll:true});});
+    this.api.sale(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.selectedSale=value;this.detailLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.detailLoading=false;this.detailError=passengerError(err);}});
+    this.invoice=sale.factus_invoice??null;this.invoiceError='';this.invoiceLoading=true;this.api.invoice(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.invoice=value;this.invoiceLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.invoiceLoading=false;this.invoiceError=passengerError(err);}});}
   editing=false;page=1;readonly pageSize=7;selectedSale:PassengerSale|null=null;
   get fullName():string{return this.profile?.name||[this.profile?.first_name,this.profile?.last_name].filter(Boolean).join(' ')||'Mi cuenta';}
   get initials():string{return this.fullName.split(/\s+/).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase();}

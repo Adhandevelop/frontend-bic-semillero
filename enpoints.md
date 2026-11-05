@@ -345,6 +345,34 @@ PATCH  /api/fleet/buses/{id}/
 DELETE /api/fleet/buses/{id}/
 ```
 
+### Tipos de bus
+
+Los tipos de bus son administrables y tienen una capacidad máxima. Todos los
+métodos de lectura requieren autenticación; crear, editar y eliminar tipos
+requiere administrador.
+
+```text
+GET    /api/fleet/bus-types/
+POST   /api/fleet/bus-types/
+GET    /api/fleet/bus-types/{id}/
+PUT    /api/fleet/bus-types/{id}/
+PATCH  /api/fleet/bus-types/{id}/
+DELETE /api/fleet/bus-types/{id}/
+```
+
+Crear un tipo:
+
+```json
+{
+  "name": "Bus urbano",
+  "code": "bus-urbano",
+  "max_capacity": 60
+}
+```
+
+Se pueden crear, por ejemplo, los tipos `Bus urbano`, `Buseta` y `Microbús`.
+La capacidad máxima debe definirse según la configuración real de la flota.
+
 Crear un bus:
 
 ```json
@@ -352,9 +380,14 @@ Crear un bus:
   "plate": "ABC123",
   "capacity": 40,
   "model": "2024",
+  "bus_type": 1,
   "state": "Active"
 }
 ```
+
+`bus_type` es opcional para conservar los buses existentes. Cuando se envía,
+`capacity` no puede superar `max_capacity` del tipo seleccionado. La respuesta
+del bus incluye también `bus_type_detail`.
 
 Estados de bus: `Active`, `Inactive`, `Maintenance`.
 
@@ -672,6 +705,50 @@ GET /api/sales/tickets/{id}/
 
 Un administrador puede consultar todos los tiquetes. Un cliente solo puede
 consultar los tiquetes de sus propias ventas. Los tiquetes son de solo lectura.
+
+Cada tiquete incluye `verification_token` y `verification_url`. Angular puede
+usar `verification_url` como contenido del QR al generar el PDF.
+
+Para descargar las boletas, el frontend debe generar un PDF desde el detalle
+de la compra, con una página por tiquete. Cada página debe mostrar el viaje,
+terminales, horario, pasajero, silla, `ticket_code` y el QR.
+
+El QR no debe contener el JWT ni confiar únicamente en `ticket_code`.
+
+### Verificar un tiquete
+
+```http
+GET /api/sales/tickets/verify/?token=VERIFICATION_TOKEN
+```
+
+No requiere autenticación. La respuesta confirma si el tiquete existe y
+devuelve su estado: `issued`, `used` o `cancelled`.
+
+```json
+{
+  "valid": true,
+  "status": "issued",
+  "ticket_code": "uuid-del-tiquete",
+  "trip": {
+    "id": 15,
+    "origin": "Terminal Norte",
+    "destination": "Terminal Sur",
+    "date_time_start": "2026-11-04T20:00:00-05:00",
+    "date_time_end": null
+  },
+  "passenger": {
+    "name": "Ana Pérez",
+    "identification_number": "100000001"
+  },
+  "seat": {
+    "id": 5,
+    "seat_number": "01"
+  }
+}
+```
+
+`valid` solo es `true` para tiquetes `issued`. Un tiquete `used` o
+`cancelled` continúa identificándose, pero no es válido para abordar.
 
 ### Venta administrativa
 
