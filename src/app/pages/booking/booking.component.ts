@@ -7,24 +7,9 @@ import { OnlineBookingService, CheckoutPassenger, OnlineBus, OnlineTrip, OnlineS
 import { PassengerService, PassengerProfile, PassengerSale, passengerError } from '../../core/services/passenger.service';
 import { WompiWidgetService } from '../../core/services/wompi-widget.service';
 interface PendingCheckout {saleId:number|null;deadline:number;transactionId?:string;idempotencyKey?:string;}
-export interface SeatPlanRow {label:string;slots:Array<OnlineSeat|null>;}
-export function buildSeatRows(seats:OnlineSeat[]):SeatPlanRow[]{
-  const groups=new Map<string,OnlineSeat[]>();
-  for(const seat of seats){const row=String(seat.row??'').trim()||'Sin fila';groups.set(row,[...(groups.get(row)??[]),seat]);}
-  const columns=[...new Set(seats.map(s=>String(s.col??'').trim().toUpperCase()))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
-  const zeroBased=columns.includes('0');
-  const position=(seat:OnlineSeat):number=>{const col=String(seat.col??'').trim().toUpperCase();if(/^[A-D]$/.test(col))return col.charCodeAt(0)-65;if(/^\d+$/.test(col)){const value=Number(col)-(zeroBased?0:1);if(value>=0&&value<4)return value;}return columns.indexOf(col);};
-  const result:SeatPlanRow[]=[];
-  for(const [label,group] of [...groups].sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true}))){
-    let slots:Array<OnlineSeat|null>=[null,null,null,null],part=1;
-    for(const seat of group.sort((a,b)=>String(a.col).localeCompare(String(b.col),undefined,{numeric:true}))){
-      if(slots.every(Boolean)){result.push({label:part===1?label:label+' · '+part,slots});slots=[null,null,null,null];part++;}
-      const preferred=position(seat),slot=preferred>=0&&preferred<4&&!slots[preferred]?preferred:slots.findIndex(s=>s===null);slots[slot]=seat;
-    }
-    result.push({label:part===1?label:label+' · '+part,slots});
-  }
-  return result;
-}
+import { buildSeatRows, SeatPlanRow } from '../../core/utils/seat-plan';
+export { buildSeatRows } from '../../core/utils/seat-plan';
+
 @Component({selector:'app-booking',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./booking.component.html',styleUrls:['./booking.component.css','./booking-payment.component.css','./booking-seats.component.css']})
 export class BookingComponent implements OnInit,OnDestroy {
   private api=inject(OnlineBookingService);private session=inject(PassengerService);private widget=inject(WompiWidgetService);private route=inject(ActivatedRoute);private zone=inject(NgZone);
@@ -42,7 +27,7 @@ export class BookingComponent implements OnInit,OnDestroy {
   get trip(){return this.trips.find(t=>t.id===this.tripId);}
   get selectedSeat(){return this.seats.find(s=>s.id===this.seatId&&s.bus===this.trip?.bus);}
   get visibleSeats(){return this.seats.filter(s=>s.bus===this.trip?.bus).sort((a,b)=>a.row.localeCompare(b.row,undefined,{numeric:true})||a.col.localeCompare(b.col,undefined,{numeric:true}));}
-  get seatRows():SeatPlanRow[]{return buildSeatRows(this.visibleSeats);}
+  get seatRows():SeatPlanRow<OnlineSeat>[]{return buildSeatRows(this.visibleSeats);}
   price(trip:OnlineTrip):number|null{const cents=this.fares.find(f=>f.trip===trip.id)?.amount_cents;return typeof cents==='number'&&Number.isSafeInteger(cents)&&cents>0?cents/100:null;}
   seatNumber(id:number):string{return this.seats.find(seat=>seat.id===id)?.seat_number??'Sin número disponible';}
   get total(){return this.trip?this.price(this.trip):null;}

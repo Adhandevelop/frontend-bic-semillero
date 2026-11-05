@@ -412,3 +412,7 @@ Verificación de este bloque: compilación de producción y comprobaciones de na
 Cuando el backend devuelve `password_change_required: true` en el login o el perfil, el cliente se dirige a `/clientes/cambiar-contrasena`. Mientras esté pendiente puede abrir `/clientes/mi-cuenta` para consultar su perfil, foto y carné, cambiar su contraseña y cerrar sesión; las rutas de compra y panel permanecen restringidas. La cuenta ya está activa y puede iniciar sesión con correo o documento.
 
 Un HTTP 401 con `code: password_change_required` se distingue de una sesión vencida: no intenta renovar el token, conserva la sesión para permitir el cambio y dirige a la pantalla correspondiente. El cambio usa `POST /api/accounts/me/password/` con `current_password` y `new_password`. Al completarse elimina acceso, renovación y la marca de contraseña provisional de ambos almacenamientos del cliente, y solicita iniciar sesión con la nueva contraseña. La sesión administrativa es independiente.
+
+### Plano de asientos en venta administrativa
+
+El selector administrativo comparte con la compra de clientes la lógica de posiciones por fila/columna y los estilos del plano: un piso, dos sillas a cada lado de un pasillo central, frente y parte trasera identificados. Los huecos del catálogo se conservan para evitar desplazar las sillas. Cada puesto muestra su número real y si está junto a la ventana o al pasillo; los estados comercial y de selección se distinguen por color. Se mantiene la selección múltiple de hasta 10 boletas y la validación de disponibilidad en el backend.

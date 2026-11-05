@@ -1,3 +1,4 @@
+import { buildSeatRows, SeatPlanRow } from '../../core/utils/seat-plan';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -7,7 +8,7 @@ import { Cliente, ClienteService } from '../../core/services/cliente.service';
 import { RutaService } from '../../core/services/ruta.service';
 import { Ruta } from '../../core/models/ruta.model';
 import { VentaService, SaleTrip, SaleSeat, SaleFare, SaleTicket, SaleResult, AdminSalePayload } from '../../core/services/venta.service';
-@Component({selector:'app-venta-form',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./venta-form.component.html',styleUrl:'./venta-form.component.css'})
+@Component({selector:'app-venta-form',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./venta-form.component.html',styleUrls:['./venta-form.component.css','../booking/booking-seats.component.css']})
 export class VentaFormComponent implements OnInit {
   get passengerLocked():boolean{return this.creatingClient||this.searchingClient||this.saving||this.uncertain||!!this.result;}
   clientsLoading=false;clientsError='';
@@ -90,6 +91,7 @@ export class VentaFormComponent implements OnInit {
   get client():Omit<Cliente,'id'|'role'>|undefined{return this.draftPassenger??this.clients.find(c=>c.id===this.clientId);}
   private attempt:{payload:AdminSalePayload;key:string}|null=null;
   unavailableIds:number[]=[];
+  get seatRows():SeatPlanRow<SaleSeat>[]{return buildSeatRows(this.availableSeats);}
   get selectedSeats():SaleSeat[]{return this.availableSeats.filter(s=>this.seatIds.includes(s.id));}
   get selectedSeatLabels():string{return this.selectedSeats.map(s=>s.seat_number).join(', ');}
   get total():number|null{return this.amount===null||!this.seatIds.length?null:this.amount*this.seatIds.length;}
