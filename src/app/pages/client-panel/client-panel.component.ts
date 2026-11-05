@@ -1,4 +1,4 @@
-﻿import { ClientSupportComponent } from '../client-support/client-support.component';
+import { ClientSupportComponent } from '../client-support/client-support.component';
 import { ClientTicket, TicketInfo, filterClientSales, ticketGroup, ticketLabel } from './client-purchases';
 import { FormsModule } from '@angular/forms';
 import { Subscription, catchError, firstValueFrom, from, map, mergeMap, of, timeout } from 'rxjs';
@@ -138,7 +138,7 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
     target.setAttribute('tabindex','-1');target.focus({preventScroll:true});
   }
   changePage(delta:number):void{this.page=Math.max(1,Math.min(this.pageCount,this.currentPage+delta));}
-  editProfile():void{if(!this.profile||this.loading||this.saving)return;this.editing=true;this.resetForm();}
+  editProfile():void{if(this.passwordChangeRequired)return;if(!this.profile||this.loading||this.saving)return;this.editing=true;this.resetForm();}
   cancelEdit():void{if(this.saving)return;this.editing=false;this.resetForm();}
   private resetForm():void{const p=this.profile;if(p)this.form.reset({name:p.name??[p.first_name,p.last_name].filter(Boolean).join(' '),email:p.email,telephone:p.telephone??''});}
   pending(action:string):void{this.message=action+': integración pendiente.';}
@@ -147,13 +147,9 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
   ngOnInit():void{if(!this.accountMode && this.route.snapshot.fragment === 'personal'){void this.router.navigateByUrl('/clientes/mi-cuenta',{replaceUrl:true});return;}this.loadProfile();if(!this.accountMode)this.loadHistory();}
   loadProfile():void{if(this.loading)return;this.loading=true;this.error='';this.api.me().subscribe({next:p=>{this.profile=p;this.photoFailed=false;this.photoVersion=Date.now();this.form.patchValue({name:p.name??[p.first_name,p.last_name].filter(Boolean).join(' '),email:p.email,telephone:p.telephone??''});this.loading=false;},error:err=>{this.loading=false;this.error=passengerError(err);}});}
   loadHistory():void{if(this.historyLoading)return;this.historyLoading=true;this.historyError='';this.api.history().subscribe({next:items=>{this.history=[...items].sort((a,b)=>b.id-a.id);this.historyLoading=false;this.loadTicketInfo();this.page=Math.min(this.page,this.pageCount);if(this.selectedSale)this.selectedSale=this.history.find(s=>s.id===this.selectedSale?.id)??null;},error:err=>{this.historyLoading=false;this.historyError=passengerError(err);}});}
-  save():void{if(this.saving||this.loading||!this.profile)return;this.form.markAllAsTouched();if(this.form.invalid)return;this.saving=true;this.message='';this.error='';const v=this.form.getRawValue();this.api.update({name:v.name.trim(),email:v.email.trim().toLowerCase(),telephone:v.telephone.trim()}).subscribe({next:p=>{this.profile=p;this.saving=false;this.editing=false;this.resetForm();this.message='Información actualizada.';},error:err=>{this.saving=false;this.error=passengerError(err);}});}
+  get passwordChangeRequired():boolean{return this.api.mustChangePassword();}
+  save():void{if(this.passwordChangeRequired)return;if(this.saving||this.loading||!this.profile)return;this.form.markAllAsTouched();if(this.form.invalid)return;this.saving=true;this.message='';this.error='';const v=this.form.getRawValue();this.api.update({name:v.name.trim(),email:v.email.trim().toLowerCase(),telephone:v.telephone.trim()}).subscribe({next:p=>{this.profile=p;this.saving=false;this.editing=false;this.resetForm();this.message='Información actualizada.';},error:err=>{this.saving=false;this.error=passengerError(err);}});}
   logout():void{this.api.logout();void this.router.navigateByUrl('/clientes/login');}
   status(value:string):string{return ({paid:'Pagada',pending:'Pendiente',failed:'Fallida',expired:'Expirada',cancelled:'Cancelada'} as Record<string,string>)[value]??value;}
   link(value?:string):string|null{try{const url=new URL(value??'');return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;}catch{return null;}}
 }
-
-
-
-
-

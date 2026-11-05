@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { ClientSessionService } from '../services/client-session.service';
 import { HttpInterceptorFn } from '@angular/common/http';
@@ -12,7 +13,9 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const explicit=request.headers.get('Authorization');
   const clientToken=client.token();
   if(clientToken&&explicit==='Bearer '+clientToken&&request.url.startsWith(`${API_BASE_URL}/`)){
+    const router=inject(Router);
     return next(request).pipe(catchError(err=>{
+      if(err.status===401&&err.error?.code==='password_change_required'){client.requirePasswordChange();void router.navigateByUrl('/clientes/cambiar-contrasena');return throwError(()=>err);}
       if(err.status!==401)return throwError(()=>err);
       return client.renew(clientToken).pipe(switchMap(access=>next(request.clone({setHeaders:{Authorization:'Bearer '+access}}))));
     }));

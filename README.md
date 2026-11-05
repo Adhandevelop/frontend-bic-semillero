@@ -402,3 +402,9 @@ El estado de mantenimiento de buses se envía como `Maintenance`, de acuerdo con
 La descarga de boletas en PDF utiliza la identidad del pasajero obtenida en el detalle autenticado de la venta. La verificación pública comprueba autenticidad y estado; no reemplaza esos datos por la identidad del comprador ni por documentos parcialmente ocultos. Si faltan datos completos o la verificación no coincide, se detiene la descarga antes de crear un PDF parcial.
 
 Verificación de este bloque: compilación de producción y comprobaciones de navegación, identidad de PDF, detalle operativo y lector QR. La lectura con cámara física debe comprobarse en el navegador del dispositivo de operación. Se mantienen avisos existentes de tamaño de bundles y dependencias CommonJS, sin ampliar presupuestos.
+
+### Contraseña provisional de clientes
+
+Cuando el backend devuelve `password_change_required: true` en el login o el perfil, el cliente se dirige a `/clientes/cambiar-contrasena`. Mientras esté pendiente puede abrir `/clientes/mi-cuenta` para consultar su perfil, foto y carné, cambiar su contraseña y cerrar sesión; las rutas de compra y panel permanecen restringidas. La cuenta ya está activa y puede iniciar sesión con correo o documento.
+
+Un HTTP 401 con `code: password_change_required` se distingue de una sesión vencida: no intenta renovar el token, conserva la sesión para permitir el cambio y dirige a la pantalla correspondiente. El cambio usa `POST /api/accounts/me/password/` con `current_password` y `new_password`. Al completarse elimina acceso, renovación y la marca de contraseña provisional de ambos almacenamientos del cliente, y solicita iniciar sesión con la nueva contraseña. La sesión administrativa es independiente.

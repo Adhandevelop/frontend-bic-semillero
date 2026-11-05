@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpBackend, HttpClient } from '@angular/common/http';
 import { Observable, catchError, finalize, map, of, shareReplay, throwError, timeout } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
@@ -8,6 +8,7 @@ export class ClientSessionService {
   private http:HttpClient;private renewal?:Observable<string>;
   constructor(backend:HttpBackend){this.http=new HttpClient(backend);}
   token():string|null{return sessionStorage.getItem(this.accessKey)||localStorage.getItem(this.accessKey);}
+  requirePasswordChange():void{const storage=sessionStorage.getItem(this.accessKey)?sessionStorage:localStorage;if(this.token())storage.setItem('bic_passenger_password_change_required','true');}
   renew(failedToken:string):Observable<string>{
     const current=this.token();if(current&&current!==failedToken)return of(current);
     if(this.renewal)return this.renewal;

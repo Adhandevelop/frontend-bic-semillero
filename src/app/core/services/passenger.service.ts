@@ -1,4 +1,4 @@
-﻿import { VerifiedTicket } from './ticket-pdf';
+import { VerifiedTicket } from './ticket-pdf';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
@@ -8,6 +8,7 @@ export interface PassengerProfile {id:number;role:string;password_change_require
 export interface PassengerRegistration {name:string;email:string;telephone:string;identification_number:string;identification_document_code:string;password:string;}
 export interface PassengerSale {id:number;status:string;amount_cents:number;created_at?:string;trip?:number;seat?:number;tickets:Array<{ticket_code:string;trip:number;seat:number;status:string;passenger_name?:string;passenger_identification?:string;verification_url?:string;verification_token?:string;issued_at?:string}>;factus_invoice?:{status:string;number:string;cufe:string;public_url?:string;error_message?:string;pdf_url?:string;xml_url?:string;qr_url?:string}|null;}
 export function passengerError(err:{status?:number;error?:unknown}):string{
+  if(err.error&&typeof err.error==='object'&&'code' in err.error&&err.error.code==='password_change_required')return 'Debes cambiar tu contraseña antes de continuar.';
   if(err.status===0)return 'No se pudo conectar con el servidor.';
   if(err.status===401)return 'Credenciales incorrectas o sesión vencida. Inicia sesión nuevamente.';
   if(err.status===403){const detail=err.error&&typeof err.error==='object'&&'detail' in err.error?err.error.detail:null;return typeof detail==='string'?detail:'El servidor denegó el acceso. Revisa los permisos de la consulta de perfil.';}
@@ -44,7 +45,7 @@ export class PassengerService {
   confirmReset(token:string,new_password:string){return this.http.post<{detail:string}>(API_BASE_URL+'/accounts/password/reset/confirm/',{token,new_password});}
   requestActivation(email:string){return this.http.post<{detail:string}>(API_BASE_URL+'/accounts/activation/request/',{email});}
   confirmActivation(token:string,new_password:string){return this.http.post<{detail:string}>(API_BASE_URL+'/accounts/activation/confirm/',{token,new_password});}
-  changePassword(current_password:string,new_password:string){return this.http.post<{detail:string;reauthentication_required:boolean}>(API_BASE_URL+'/accounts/me/password/',{current_password,new_password},this.options());}
+  changePassword(current_password:string,new_password:string){return this.http.post<{detail:string;reauthentication_required:boolean}>(API_BASE_URL+'/accounts/me/password/',{current_password,new_password},this.options()).pipe(tap(()=>this.logout()));}
   resendConfirmation(saleId:number){return this.http.post<{detail:string}>(API_BASE_URL+'/sales/sales/'+saleId+'/resend-confirmation/',{},this.options());}
   private requireClient(profile:PassengerProfile):void{
     if(!profile||typeof profile.role!=='string'||!profile.role.trim()){
@@ -71,6 +72,3 @@ export class PassengerService {
     return allApiPages<PassengerSale>(http as HttpClient,API_BASE_URL+'/sales/sales/');
   }
 }
-
-
-
