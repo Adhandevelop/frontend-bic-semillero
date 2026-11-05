@@ -1,4 +1,4 @@
-﻿import { passengerGuard } from './core/guards/passenger.guard';
+import { passengerGuard } from './core/guards/passenger.guard';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { LayoutComponent } from './shared/layout/layout.component';
@@ -18,6 +18,7 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', component: HomeComponent },
   { path: 'login', component: LoginComponent },
   { path: 'clientes/comprar', canActivate:[passengerGuard], loadComponent: () => import('./pages/booking/booking.component').then(m => m.BookingComponent) },
+  { path: 'clientes/mi-cuenta', data:{account:true}, canActivate:[passengerGuard], loadComponent: () => import('./pages/client-panel/client-panel.component').then(m => m.ClientPanelComponent) },
   { path: 'clientes/panel', canActivate:[passengerGuard], loadComponent: () => import('./pages/client-panel/client-panel.component').then(m => m.ClientPanelComponent) },
   { path: 'clientes/login', loadComponent: () => import('./pages/client-login/client-login.component').then(m => m.ClientLoginComponent) },
   { path: 'registro', loadComponent: () => import('./pages/registro/registro.component').then(m => m.RegistroComponent) },

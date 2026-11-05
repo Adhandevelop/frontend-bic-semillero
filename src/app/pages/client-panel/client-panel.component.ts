@@ -3,13 +3,17 @@ import { createTicketPdf, ticketVerificationUrl, PdfTicket } from '../../core/se
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PassengerProfile, PassengerSale, DigitalCard, PassengerInvoice, PassengerService, passengerError } from '../../core/services/passenger.service';
-@Component({selector:'app-client-panel',standalone:true,imports:[CommonModule,ReactiveFormsModule,RouterLink],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
+@Component({selector:'app-client-panel',standalone:true,imports:[CommonModule,ReactiveFormsModule,RouterLink,RouterLinkActive],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
 export class ClientPanelComponent implements OnInit {
   private fb=inject(FormBuilder);private api=inject(PassengerService);private router=inject(Router);
+  private route=inject(ActivatedRoute);
+  readonly accountMode=this.route.snapshot.data['account']===true;
+  photoFailed=false;private photoVersion=Date.now();
+  get profilePhoto():string|null {if(this.photoFailed)return null;const value=this.photoLink(this.profile?.photo_url);if(!value)return null;const url=new URL(value);if(url.origin===location.origin)url.searchParams.set('v',String(this.photoVersion));return url.href;}
   cardData:DigitalCard|null=null;cardQr='';cardLoading=false;cardError='';photoBusy=false;photoError='';invoice:PassengerInvoice|null=null;invoiceLoading=false;invoiceError='';private invoiceRequest=0;
-  photoLink(value?:string|null):string|null{try{const url=new URL(value??'',location.origin);return value&&(url.origin===location.origin||url.protocol==='https:')?url.href:null;}catch{return null;}}
+  photoLink(value?:string|null):string|null{try{const url=new URL(value??'',location.origin);if(!value||url.username||url.password)return null;if(url.host===location.host&&['http:','https:'].includes(url.protocol))return new URL(url.pathname+url.search,location.origin).href;return url.protocol==='https:'?url.href:null;}catch{return null;}}
   async uploadPhoto(event:Event):Promise<void>{
     const input=event.target as HTMLInputElement,file=input.files?.[0];input.value='';if(!file||this.photoBusy)return;this.photoError='';
     if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){this.photoError='Selecciona JPG, PNG o WEBP de hasta 5 MB.';return;}
@@ -94,8 +98,8 @@ export class ClientPanelComponent implements OnInit {
   pending(action:string):void{this.message=action+': integración pendiente.';}
   profile:PassengerProfile|null=null;history:PassengerSale[]=[];loading=false;saving=false;historyLoading=false;error='';historyError='';message='';
   form=this.fb.nonNullable.group({name:['',[Validators.required,Validators.pattern(/\S/),Validators.maxLength(150)]],email:['',[Validators.required,Validators.email,Validators.maxLength(50)]],telephone:['',[Validators.required,Validators.pattern(/^\+?[0-9 ()-]{7,20}$/)]]});
-  ngOnInit():void{this.loadProfile();this.loadHistory();}
-  loadProfile():void{if(this.loading)return;this.loading=true;this.error='';this.api.me().subscribe({next:p=>{this.profile=p;this.form.patchValue({name:p.name??[p.first_name,p.last_name].filter(Boolean).join(' '),email:p.email,telephone:p.telephone??''});this.loading=false;},error:err=>{this.loading=false;this.error=passengerError(err);}});}
+  ngOnInit():void{if(!this.accountMode && this.route.snapshot.fragment === 'personal'){void this.router.navigateByUrl('/clientes/mi-cuenta',{replaceUrl:true});return;}this.loadProfile();if(!this.accountMode)this.loadHistory();}
+  loadProfile():void{if(this.loading)return;this.loading=true;this.error='';this.api.me().subscribe({next:p=>{this.profile=p;this.photoFailed=false;this.photoVersion=Date.now();this.form.patchValue({name:p.name??[p.first_name,p.last_name].filter(Boolean).join(' '),email:p.email,telephone:p.telephone??''});this.loading=false;},error:err=>{this.loading=false;this.error=passengerError(err);}});}
   loadHistory():void{if(this.historyLoading)return;this.historyLoading=true;this.historyError='';this.api.history().subscribe({next:items=>{this.history=[...items].sort((a,b)=>b.id-a.id);this.historyLoading=false;this.page=Math.min(this.page,this.pageCount);if(this.selectedSale)this.selectedSale=this.history.find(s=>s.id===this.selectedSale?.id)??null;},error:err=>{this.historyLoading=false;this.historyError=passengerError(err);}});}
   save():void{if(this.saving||this.loading||!this.profile)return;this.form.markAllAsTouched();if(this.form.invalid)return;this.saving=true;this.message='';this.error='';const v=this.form.getRawValue();this.api.update({name:v.name.trim(),email:v.email.trim().toLowerCase(),telephone:v.telephone.trim()}).subscribe({next:p=>{this.profile=p;this.saving=false;this.editing=false;this.resetForm();this.message='Información actualizada.';},error:err=>{this.saving=false;this.error=passengerError(err);}});}
   logout():void{this.api.logout();void this.router.navigateByUrl('/clientes/login');}
