@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { Subscription } from 'rxjs';
 import { ClientRelatedBusesComponent } from './client-related-buses.component';
 import { CommonModule } from '@angular/common';
@@ -5,8 +7,9 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Cliente, ClienteService } from '../../core/services/cliente.service';
-@Component({selector:'app-client-list',standalone:true,imports:[CommonModule,FormsModule,RouterLink,ClientRelatedBusesComponent],templateUrl:'./client-list.component.html',styleUrl:'./client-list.component.css'})
+@Component({selector:'app-client-list',standalone:true,imports:[ListOrderComponent,CommonModule,FormsModule,RouterLink,ClientRelatedBusesComponent],templateUrl:'./client-list.component.html',styleUrl:'./client-list.component.css'})
 export class ClientListComponent implements OnInit,OnDestroy {
+  listOrder:ListOrder='desc';
   clientes:Cliente[]=[];loading=false;error='';searchValue='';page=1;readonly pageSize=6;
   contactFilter='all';selectedClient:Cliente|null=null;notice='';
   private querySubscription?:Subscription;private contextClient=0;
@@ -17,7 +20,7 @@ export class ClientListComponent implements OnInit,OnDestroy {
   nombre(c:Cliente):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
   initials(c:Cliente):string{return this.nombre(c).split(/\s+/).slice(0,2).map(s=>s[0]).join('').toLocaleUpperCase();}
   get withContact():number{return this.clientes.filter(c=>c.email?.trim()||c.telephone?.trim()).length;}
-  get filteredClients():Cliente[]{const q=this.searchValue.trim().toLocaleLowerCase();return this.clientes.filter(c=>(this.contactFilter==='all'||(this.contactFilter==='email'?!!c.email?.trim():this.contactFilter==='phone'?!!c.telephone?.trim():!c.email?.trim()&&!c.telephone?.trim()))&&(!q||[this.nombre(c),c.username,c.identification_number,c.email,c.telephone].join(' ').toLocaleLowerCase().includes(q)));}
+  get filteredClients():Cliente[]{const q=this.searchValue.trim().toLocaleLowerCase();return orderRecords(this.clientes.filter(c=>(this.contactFilter==='all'||(this.contactFilter==='email'?!!c.email?.trim():this.contactFilter==='phone'?!!c.telephone?.trim():!c.email?.trim()&&!c.telephone?.trim()))&&(!q||[this.nombre(c),c.username,c.identification_number,c.email,c.telephone].join(' ').toLocaleLowerCase().includes(q))),this.listOrder);}
   get pageCount():number{return Math.max(1,Math.ceil(this.filteredClients.length/this.pageSize));}
   get currentPage():number{return Math.min(this.page,this.pageCount);}
   get visibleClients():Cliente[]{return this.filteredClients.slice((this.currentPage-1)*this.pageSize,this.currentPage*this.pageSize);}

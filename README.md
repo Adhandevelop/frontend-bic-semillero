@@ -472,3 +472,13 @@ El servidor del frontend debe servir `index.html` al abrir directamente `/verifi
 El panel de ventas muestra `factus_invoice.error_message` debajo de Error/Sin número, y vuelve a mostrarlo con su etiqueta en el detalle. Si falta, informa que el backend no devolvió el motivo. Las consultas de venta y sus errores fiscales registran el mismo campo en F12 → Consola como `errorMessage`, junto al ID de venta y estado; no se imprime `raw_response` ni el payload de la venta.
 
 El mensaje procede de `GET /api/sales/sales/:id/` o de la respuesta de creación; Angular no llama directamente a Factus ni solicita sus credenciales. Si el backend responde solo «Factus no pudo validar la factura», ese es todo el detalle disponible para Angular y hay que ampliar el diagnóstico en backend. Mostrar o actualizar el error no reintenta una factura ni crea otra venta.
+
+### Orden de los listados
+
+Los listados de buses, conductores, rutas, viajes, clientes, ventas, tipos de bus, selección de unidades para asientos y boletas del detalle operativo muestran los registros más recientes primero. El dashboard incorpora el mismo criterio para buses y conductores, ordenando antes de limitar sus tarjetas. El historial de compras y las solicitudes del cliente también disponen del control compartido **Orden: Más recientes / Más antiguos**.
+
+El botón invierte el orden y, en listas paginadas, vuelve a la primera página. El orden se aplica después de filtrar y antes de paginar, incluyendo las exportaciones que usan el conjunto filtrado. No modifica los arreglos originales ni los registros del servidor. Cuando todos los registros consultados incluyen una fecha `created_at` válida se usa esa fecha, con ID como desempate; en catálogos sin esa fecha o con fechas incompletas se utiliza el ID como referencia del orden de registro. No se confunde fecha de salida con fecha de creación.
+
+Se conservan los órdenes operativos del plano físico de sillas, paradas y próximas salidas. La API debe mantener un orden estable al paginar para evitar duplicados u omisiones entre sus páginas; el orden visual de Angular se aplica a los registros recuperados y no corrige esas inconsistencias del servidor.
+
+Verificación: compilación de producción y comprobaciones de orden descendente/ascendente, fechas coincidentes o inválidas, ausencia de mutación y orden previo a paginación.

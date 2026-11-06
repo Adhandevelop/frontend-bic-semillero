@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -16,8 +18,9 @@ export function tripDay(value:string):string {
   const time=Date.parse(value);
   return Number.isFinite(time)?new Date(time-5*3600000).toISOString().slice(0,10):'';
 }
-@Component({selector:'app-viaje-list',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./viaje-list.component.html',styleUrl:'./viaje-list.component.css'})
+@Component({selector:'app-viaje-list',standalone:true,imports:[ListOrderComponent,CommonModule,FormsModule,RouterLink],templateUrl:'./viaje-list.component.html',styleUrl:'./viaje-list.component.css'})
 export class ViajeListComponent implements OnInit {
+  listOrder:ListOrder='desc';
   errorReasons:string[]=[];errorHttp='';
   private explainFailure(err:{status?:number;error?:unknown}):void{
     this.errorHttp=err.status===0?'Sin respuesta de la API':err.status?'HTTP '+err.status:'Estado no disponible';
@@ -54,7 +57,7 @@ export class ViajeListComponent implements OnInit {
   get models():string[]{return [...new Set(this.buses.map(bus=>bus.model).filter((model):model is string=>Boolean(model)))].sort();}
   get filteredTrips():Viaje[]{
     const query=this.searchValue.trim().toLocaleLowerCase();
-    return this.dateTrips.filter(trip=>(!this.stateFilter||trip.estado===this.stateFilter)&&(!this.driverFilter||trip.conductor===Number(this.driverFilter))&&(!this.originFilter||this.rutas.find(route=>route.id===trip.ruta)?.origen===this.originFilter)&&(!this.modelFilter||this.buses.find(bus=>bus.id===trip.bus)?.model===this.modelFilter)&&(!query||[trip.id,this.nombreRuta(trip),this.nombreBus(trip),this.nombreConductor(trip)].join(' ').toLocaleLowerCase().includes(query)));
+    return orderRecords(this.dateTrips.filter(trip=>(!this.stateFilter||trip.estado===this.stateFilter)&&(!this.driverFilter||trip.conductor===Number(this.driverFilter))&&(!this.originFilter||this.rutas.find(route=>route.id===trip.ruta)?.origen===this.originFilter)&&(!this.modelFilter||this.buses.find(bus=>bus.id===trip.bus)?.model===this.modelFilter)&&(!query||[trip.id,this.nombreRuta(trip),this.nombreBus(trip),this.nombreConductor(trip)].join(' ').toLocaleLowerCase().includes(query))),this.listOrder);
   }
   get pageCount():number{return Math.max(1,Math.ceil(this.filteredTrips.length/this.pageSize));}
   get currentPage():number{return Math.min(this.page,this.pageCount);}

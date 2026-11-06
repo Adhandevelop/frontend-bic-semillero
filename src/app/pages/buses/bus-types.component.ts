@@ -1,10 +1,14 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BusType, BusTypeService } from '../../core/services/bus-type.service';
-@Component({selector:'app-bus-types',standalone:true,imports:[CommonModule,ReactiveFormsModule,RouterLink],templateUrl:'./bus-types.component.html',styleUrl:'./bus-types.component.css'})
+@Component({selector:'app-bus-types',standalone:true,imports:[ListOrderComponent,CommonModule,ReactiveFormsModule,RouterLink],templateUrl:'./bus-types.component.html',styleUrl:'./bus-types.component.css'})
 export class BusTypesComponent implements OnInit {
+  listOrder:ListOrder='desc';
+  get orderedRecords(){return orderRecords(this.types,this.listOrder);}
   private api=inject(BusTypeService);private fb=inject(FormBuilder);
   types:BusType[]=[];loading=false;saving=false;deletingId:number|null=null;editingId:number|null=null;error='';success='';
   form=this.fb.nonNullable.group({name:['',[Validators.required,Validators.pattern(/\S/)]],code:['',[Validators.required,Validators.pattern(/\S/)]],max_capacity:[1,[Validators.required,Validators.min(1),Validators.pattern(/^\d+$/)]]});

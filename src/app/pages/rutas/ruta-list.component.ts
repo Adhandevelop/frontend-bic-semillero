@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -5,8 +7,9 @@ import { RouterLink } from '@angular/router';
 import { Ruta } from '../../core/models/ruta.model';
 import { RutaService } from '../../core/services/ruta.service';
 import { RutaMapComponent } from './ruta-map.component';
-@Component({selector:'app-ruta-list',standalone:true,imports:[CommonModule,FormsModule,RouterLink,RutaMapComponent],templateUrl:'./ruta-list.component.html',styleUrl:'./ruta-list.component.css'})
+@Component({selector:'app-ruta-list',standalone:true,imports:[ListOrderComponent,CommonModule,FormsModule,RouterLink,RutaMapComponent],templateUrl:'./ruta-list.component.html',styleUrl:'./ruta-list.component.css'})
 export class RutaListComponent implements OnInit {
+  listOrder:ListOrder='desc';
   rutas:Ruta[]=[];loading=false;loadFailed=false;error='';success='';
   searchValue='';originFilter='';distanceFilter='';page=1;readonly pageSize=9;deletingId:number|null=null;
   selectedRoute:Ruta|null=null;notice='';updatedAt:Date|null=null;
@@ -19,7 +22,7 @@ export class RutaListComponent implements OnInit {
   get origins():string[]{return [...new Set(this.rutas.map(route=>route.origen))].sort();}
   get filteredRoutes():Ruta[]{
     const query=this.searchValue.trim().toLocaleLowerCase();
-    return this.rutas.filter(route=>(!query||[route.id,route.origen,route.destino].join(' ').toLocaleLowerCase().includes(query))&&(!this.originFilter||route.origen===this.originFilter)&&(!this.distanceFilter||(this.distanceFilter==='unknown'?!this.hasDistance(route):this.hasDistance(route)&&(this.distanceFilter==='short'?route.distancia_km!<200:this.distanceFilter==='medium'?route.distancia_km!>=200&&route.distancia_km!<500:route.distancia_km!>=500))));
+    return orderRecords(this.rutas.filter(route=>(!query||[route.id,route.origen,route.destino].join(' ').toLocaleLowerCase().includes(query))&&(!this.originFilter||route.origen===this.originFilter)&&(!this.distanceFilter||(this.distanceFilter==='unknown'?!this.hasDistance(route):this.hasDistance(route)&&(this.distanceFilter==='short'?route.distancia_km!<200:this.distanceFilter==='medium'?route.distancia_km!>=200&&route.distancia_km!<500:route.distancia_km!>=500)))),this.listOrder);
   }
   get pageCount():number{return Math.max(1,Math.ceil(this.filteredRoutes.length/this.pageSize));}
   get currentPage():number{return Math.min(this.page,this.pageCount);}

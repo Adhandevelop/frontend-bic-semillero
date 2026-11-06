@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -8,11 +10,12 @@ import { BusService } from '../../core/services/bus.service';
 @Component({
   selector: 'app-bus-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports:[ListOrderComponent,CommonModule, FormsModule, RouterLink],
   templateUrl: './bus-list.component.html',
   styleUrl: './bus-list.component.css'
 })
 export class BusListComponent implements OnInit {
+  listOrder:ListOrder='desc';
   buses: Bus[] = [];
   loading = false;
   error = '';
@@ -29,8 +32,8 @@ export class BusListComponent implements OnInit {
   get activePercentage(): number { return this.buses.length ? Math.round(this.activeCount / this.buses.length * 100) : 0; }
   get filteredBuses(): Bus[] {
     const query = this.searchValue.trim().toLocaleLowerCase();
-    return this.buses.filter(bus => (!this.onlyActive || bus.state === 'Active') &&
-      (!query || `${bus.id ?? ''} ${bus.plate} ${bus.model ?? ''}`.toLocaleLowerCase().includes(query)));
+    return orderRecords(this.buses.filter(bus => (!this.onlyActive || bus.state === 'Active') &&
+      (!query || `${bus.id ?? ''} ${bus.plate} ${bus.model ?? ''}`.toLocaleLowerCase().includes(query))),this.listOrder);
   }
 
   stateLabel(state: Bus['state']): string {

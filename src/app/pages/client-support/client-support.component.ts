@@ -1,17 +1,20 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject, takeUntil, timeout } from 'rxjs';
 import { CustomerSupportService, CustomerServiceInfo, SupportRequest } from '../../core/services/customer-support.service';
 import { PassengerSale, passengerError } from '../../core/services/passenger.service';
-@Component({selector:'app-client-support',standalone:true,imports:[CommonModule,ReactiveFormsModule],templateUrl:'./client-support.component.html',styleUrl:'./client-support.component.css'})
+@Component({selector:'app-client-support',standalone:true,imports:[ListOrderComponent,CommonModule,ReactiveFormsModule],templateUrl:'./client-support.component.html',styleUrl:'./client-support.component.css'})
 export class ClientSupportComponent implements OnInit, OnDestroy {
+  listOrder:ListOrder='desc';
   @Input() sales:PassengerSale[]=[];
   private api=inject(CustomerSupportService);private fb=inject(FormBuilder);private destroyed=new Subject<void>();private timer?:ReturnType<typeof setInterval>;private detailVersion=0;
   contact:CustomerServiceInfo|null=null;contactError='';contactLoading=false;requests:SupportRequest[]=[];loading=false;saving=false;error='';success='';cooldown=0;page=1;selected:SupportRequest|null=null;detailLoading=false;detailError='';
   readonly categories=[{code:'payment',name:'Pago'},{code:'invoice',name:'Factura'},{code:'ticket',name:'Tiquete'},{code:'change',name:'Cambio de viaje'},{code:'cancellation',name:'Cancelación'},{code:'account',name:'Mi cuenta'},{code:'other',name:'Otro'}];
   form=this.fb.nonNullable.group({category:['payment',Validators.required],sale:[null as number|null],subject:['',[Validators.required,Validators.pattern(/\S/),Validators.maxLength(150)]],message:['',[Validators.required,Validators.pattern(/\S/),Validators.maxLength(5000)]]});
-  get pageCount(){return Math.max(1,Math.ceil(this.requests.length/7));}get currentPage(){return Math.min(this.page,this.pageCount);}get visibleRequests(){return this.requests.slice((this.currentPage-1)*7,this.currentPage*7);}
+  get pageCount(){return Math.max(1,Math.ceil(this.requests.length/7));}get currentPage(){return Math.min(this.page,this.pageCount);}get visibleRequests(){return orderRecords(this.requests,this.listOrder).slice((this.currentPage-1)*7,this.currentPage*7);}
   ngOnInit():void{this.loadContact();this.load();}
   loadContact():void{if(this.contactLoading)return;this.contactLoading=true;this.contactError='';this.api.contact().pipe(timeout(15000),takeUntil(this.destroyed)).subscribe({next:value=>{this.contact=value;this.contactLoading=false;},error:err=>{this.contactLoading=false;this.contactError=passengerError(err);}});}
   load():void{if(this.loading)return;this.loading=true;this.error='';this.api.list().pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:values=>{this.requests=values;this.loading=false;this.page=Math.min(this.page,this.pageCount);},error:err=>{this.loading=false;this.error=passengerError(err);}});}

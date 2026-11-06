@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 import { publicVerificationUrl } from '../../core/utils/verification-link';
 import { ClientSupportComponent } from '../client-support/client-support.component';
 import { ClientTicket, TicketInfo, filterClientSales, ticketGroup, ticketLabel } from './client-purchases';
@@ -9,8 +11,9 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { PassengerProfile, PassengerSale, DigitalCard, PassengerInvoice, PassengerService, passengerError } from '../../core/services/passenger.service';
-@Component({selector:'app-client-panel',standalone:true,imports:[CommonModule,ReactiveFormsModule,FormsModule,RouterLink,RouterLinkActive,ClientSupportComponent],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
+@Component({selector:'app-client-panel',standalone:true,imports:[ListOrderComponent,CommonModule,ReactiveFormsModule,FormsModule,RouterLink,RouterLinkActive,ClientSupportComponent],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
 export class ClientPanelComponent implements OnInit, OnDestroy {
+  listOrder:ListOrder='desc';
   private fb=inject(FormBuilder);private api=inject(PassengerService);private router=inject(Router);
   private route=inject(ActivatedRoute);
   readonly accountMode=this.route.snapshot.data['account']===true;
@@ -107,7 +110,7 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
     this.invoice=sale.factus_invoice??null;this.invoiceError='';this.invoiceLoading=true;this.api.invoice(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.invoice=value;this.invoiceLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.invoiceLoading=false;this.invoiceError=passengerError(err);}});}
   ticketInfo:TicketInfo={};metadataLoading=false;metadataError='';private metadataSubscription?:Subscription;
   ticketFilter='all';historyStatus='';historyFrom='';historyTo='';historySearch='';
-  get filteredHistory(){return filterClientSales(this.history,{status:this.historyStatus,from:this.historyFrom,to:this.historyTo,search:this.historySearch},this.ticketInfo);}
+  get filteredHistory(){return orderRecords(filterClientSales(this.history,{status:this.historyStatus,from:this.historyFrom,to:this.historyTo,search:this.historySearch},this.ticketInfo),this.listOrder);}
   get allTickets(){return this.history.flatMap(sale=>(sale.tickets??[]).map(ticket=>({ticket,sale})));}
   get visibleTickets(){return this.allTickets.filter(({ticket})=>this.ticketFilter==='all'||(this.ticketFilter==='issued'?(this.ticketInfo[ticket.ticket_code]?.status??ticket.status)==='issued':ticketGroup(ticket,this.ticketInfo)===this.ticketFilter)).sort((a,b)=>{const x=Date.parse(this.ticketInfo[a.ticket.ticket_code]?.trip.date_time_start??''),y=Date.parse(this.ticketInfo[b.ticket.ticket_code]?.trip.date_time_start??'');return (Number.isFinite(x)?x:Infinity)-(Number.isFinite(y)?y:Infinity);});}
   ticketRoute(ticket:ClientTicket):string{return ticketLabel(ticket,this.ticketInfo);}

@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -6,8 +8,9 @@ import { forkJoin, catchError, of, timeout } from 'rxjs';
 import { SaleResult, SaleSeat, SaleTrip, VentaService } from '../../core/services/venta.service';
 import { RutaService } from '../../core/services/ruta.service';
 import { Ruta } from '../../core/models/ruta.model';
-@Component({selector:'app-venta-list',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./venta-list.component.html',styleUrl:'./venta-list.component.css'})
+@Component({selector:'app-venta-list',standalone:true,imports:[ListOrderComponent,CommonModule,FormsModule,RouterLink],templateUrl:'./venta-list.component.html',styleUrl:'./venta-list.component.css'})
 export class VentaListComponent implements OnInit {
+  listOrder:ListOrder='desc';
   sales:SaleResult[]=[];trips:SaleTrip[]=[];seats:SaleSeat[]=[];routes:Ruta[]=[];
   loading=false;error='';warnings:string[]=[];search='';state='';source='';date='';page=1;readonly pageSize=7;
   selected:SaleResult|null=null;detailLoading=false;detailError='';private detailRequest=0;
@@ -19,7 +22,7 @@ export class VentaListComponent implements OnInit {
   tripId(sale:SaleResult):number|undefined{return sale.trip??sale.tickets?.[0]?.trip;}
   routeLabel(sale:SaleResult):string{const t=this.trips.find(t=>t.id===this.tripId(sale)),r=this.routes.find(r=>r.id===t?.route);return r?r.origen+' → '+r.destino:'Viaje #'+(this.tripId(sale)??'—');}
   seatLabel(sale:SaleResult):string{const tickets=sale.tickets??[];if(tickets.length)return [...new Set(tickets.map(t=>t.seat_number||this.seats.find(s=>s.id===t.seat)?.seat_number||'ID '+t.seat))].join(', ');return this.seats.find(s=>s.id===sale.seat)?.seat_number||(sale.seat?'ID '+sale.seat:'Sin datos');}
-  get filtered():SaleResult[]{const q=this.search.trim().toLocaleLowerCase();return this.sales.filter(s=>(!this.state||s.status===this.state)&&(!this.source||s.source===this.source)&&(!this.date||this.day(s.created_at)===this.date)&&(!q||[s.id,s.passenger_name,s.passenger_identification,s.passenger_email,this.tripId(s),this.routeLabel(s),s.factus_invoice?.number].join(' ').toLocaleLowerCase().includes(q)));}
+  get filtered():SaleResult[]{const q=this.search.trim().toLocaleLowerCase();return orderRecords(this.sales.filter(s=>(!this.state||s.status===this.state)&&(!this.source||s.source===this.source)&&(!this.date||this.day(s.created_at)===this.date)&&(!q||[s.id,s.passenger_name,s.passenger_identification,s.passenger_email,this.tripId(s),this.routeLabel(s),s.factus_invoice?.number].join(' ').toLocaleLowerCase().includes(q))),this.listOrder);}
   day(value?:string):string{const time=value?Date.parse(value):NaN;return Number.isFinite(time)?new Date(time-5*3600000).toISOString().slice(0,10):'';}
   get pageCount():number{return Math.max(1,Math.ceil(this.filtered.length/this.pageSize));}
   get currentPage():number{return Math.min(this.page,this.pageCount);}

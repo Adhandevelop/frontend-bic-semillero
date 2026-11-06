@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -7,10 +9,11 @@ import { ConductorService } from '../../core/services/conductor.service';
 
 @Component({
   selector: 'app-conductor-list', standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports:[ListOrderComponent,CommonModule, FormsModule, RouterLink],
   templateUrl: './conductor-list.component.html', styleUrl: './conductor-list.component.css'
 })
 export class ConductorListComponent implements OnInit {
+  listOrder:ListOrder='desc';
   conductores: Conductor[] = [];
   loading = false;
   loadFailed = false;
@@ -31,8 +34,8 @@ export class ConductorListComponent implements OnInit {
   get withAddress(): number { return this.conductores.filter(driver => driver.address?.trim()).length; }
   get filteredDrivers(): Conductor[] {
     const query = this.searchValue.trim().toLocaleLowerCase();
-    return this.conductores.filter(driver => (!query || [driver.full_name, driver.license_number, driver.id, driver.user, driver.phone_number].join(' ').toLocaleLowerCase().includes(query)) &&
-      (!this.contactFilter || (this.contactFilter === 'with' ? Boolean(driver.phone_number?.trim()) : !driver.phone_number?.trim())));
+    return orderRecords(this.conductores.filter(driver => (!query || [driver.full_name, driver.license_number, driver.id, driver.user, driver.phone_number].join(' ').toLocaleLowerCase().includes(query)) &&
+      (!this.contactFilter || (this.contactFilter === 'with' ? Boolean(driver.phone_number?.trim()) : !driver.phone_number?.trim()))),this.listOrder);
   }
   get pageCount(): number { return Math.max(1, Math.ceil(this.filteredDrivers.length / this.pageSize)); }
   get currentPage(): number { return Math.min(this.page, this.pageCount); }

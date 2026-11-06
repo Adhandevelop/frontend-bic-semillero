@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -11,10 +13,11 @@ interface TripSummary { id: number; bus: number; driver: number; route: number; 
 interface RouteSummary { id: number; }
 @Component({
   selector: 'app-dashboard', standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports:[ListOrderComponent,CommonModule, FormsModule, RouterLink],
   templateUrl: './dashboard.component.html', styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent implements OnInit {
+  listOrder:ListOrder='desc';
   readonly currentYear = new Date().getFullYear();
   loading = true;
   errors: string[] = [];
@@ -49,12 +52,12 @@ export class DashboardComponent implements OnInit {
   get maintenanceCount(): number { return this.buses.filter(bus => bus.state === 'Maintenance').length; }
   get filteredBuses(): Bus[] {
     const query = this.searchValue.trim().toLowerCase();
-    return this.buses.filter(bus => (!this.onlyActive || bus.state === 'Active') &&
-      (!query || `${bus.id} ${bus.plate} ${bus.model ?? ''}`.toLowerCase().includes(query)));
+    return orderRecords(this.buses.filter(bus => (!this.onlyActive || bus.state === 'Active') &&
+      (!query || `${bus.id} ${bus.plate} ${bus.model ?? ''}`.toLowerCase().includes(query))),this.listOrder);
   }
   get filteredDrivers(): Conductor[] {
     const query = this.searchValue.trim().toLowerCase();
-    return this.drivers.filter(driver => !query || `${driver.full_name} ${driver.license_number}`.toLowerCase().includes(query)).slice(0, 6);
+    return orderRecords(this.drivers.filter(driver => !query || `${driver.full_name} ${driver.license_number}`.toLowerCase().includes(query)),this.listOrder).slice(0, 6);
   }
   stateLabel(state: Bus['state']): string {
     return state === 'Active' ? 'Activo' : state === 'Inactive' ? 'Inactivo' : state === 'Maintenance' ? 'Mantenimiento' : 'Sin estado';

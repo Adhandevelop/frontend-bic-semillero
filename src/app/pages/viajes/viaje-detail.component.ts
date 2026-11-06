@@ -1,3 +1,5 @@
+import { ListOrder, orderRecords } from '../../core/utils/list-order';
+import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -12,8 +14,10 @@ import { RutaService } from '../../core/services/ruta.service';
 import { TripFare, ViajeService } from '../../core/services/viaje.service';
 import { AdminSeat, AdminSeatTicket, AdminSeatsService } from '../../core/services/admin-seats.service';
 interface PartialResult<T>{data:T|null;error:string;}
-@Component({standalone:true,imports:[CommonModule,RouterLink],templateUrl:'./viaje-detail.component.html',styleUrl:'./viaje-detail.component.css'})
+@Component({standalone:true,imports:[ListOrderComponent,CommonModule,RouterLink],templateUrl:'./viaje-detail.component.html',styleUrl:'./viaje-detail.component.css'})
 export class ViajeDetailComponent implements OnInit,OnDestroy {
+  listOrder:ListOrder='desc';
+  get orderedRecords(){return orderRecords(this.tickets,this.listOrder);}
   private activatedRoute=inject(ActivatedRoute);private tripApi=inject(ViajeService);private busApi=inject(BusService);private driverApi=inject(ConductorService);private routeApi=inject(RutaService);private seatsApi=inject(AdminSeatsService);
   private destroyed=new Subject<void>();private refresh=new Subject<void>();
   trip:Viaje|null=null;bus:Bus|null=null;driver:Conductor|null=null;route:Ruta|null=null;fare:TripFare|null=null;seats:AdminSeat[]=[];tickets:AdminSeatTicket[]=[];
