@@ -17,6 +17,8 @@ import { ViajeFormComponent } from './pages/viajes/viaje-form.component';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: HomeComponent },
   { path: 'login', component: LoginComponent },
+  { path:'verificar/boleta',data:{kind:'ticket'},loadComponent:()=>import('./pages/public-verification/public-verification.component').then(m=>m.PublicVerificationComponent) },
+  { path:'verificar/carne',data:{kind:'card'},loadComponent:()=>import('./pages/public-verification/public-verification.component').then(m=>m.PublicVerificationComponent) },
   { path:'clientes/recuperar-contrasena',data:{action:'reset-request'},loadComponent:()=>import('./pages/client-security/client-security.component').then(m=>m.ClientSecurityComponent) },
   { path:'clientes/restablecer-contrasena',data:{action:'reset-confirm'},loadComponent:()=>import('./pages/client-security/client-security.component').then(m=>m.ClientSecurityComponent) },
   { path:'clientes/solicitar-activacion',data:{action:'activation-request'},loadComponent:()=>import('./pages/client-security/client-security.component').then(m=>m.ClientSecurityComponent) },

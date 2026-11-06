@@ -1,3 +1,4 @@
+import { parseVerificationLink } from '../../core/utils/verification-link';
 import { TicketCheckInService, CheckInResult } from '../../core/services/ticket-check-in.service';
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, NgZone, OnDestroy, ViewChild, inject } from '@angular/core';
@@ -8,14 +9,8 @@ import { Subject, takeUntil, timeout } from 'rxjs';
 import { VerifiedTicket } from '../../core/services/ticket-pdf';
 
 interface VerifiedCard {valid:boolean;name?:string;status:string;card_id?:string;valid_until?:string|null;validity?:string;}
-export function parseVerificationQr(value:string,origin:string):{path:string;token:string;kind:'ticket'|'card'} {
-  if(value.length>4096)throw new Error('El QR es demasiado largo.');
-  let url:URL;try{url=new URL(value.trim(),origin);}catch{throw new Error('Introduce un enlace de verificación válido.');}
-  const kind=url.pathname==='/api/sales/tickets/verify/'?'ticket':url.pathname==='/api/accounts/cards/verify/'?'card':null;
-  const token=url.searchParams.get('token');
-  if(!kind||url.origin!==new URL(origin).origin||url.username||url.password||url.hash||!token?.trim()||url.searchParams.getAll('token').length!==1)throw new Error('El QR debe ser un enlace de verificación de este portal.');
-  return {path:url.pathname,token,kind};
-}
+export const parseVerificationQr=parseVerificationLink;
+
 @Component({standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./qr-reader.component.html',styleUrl:'./qr-reader.component.css'})
 export class QrReaderComponent implements OnDestroy {
   private http=inject(HttpClient);private zone=inject(NgZone);private route=inject(ActivatedRoute);private destroyed=new Subject<void>();

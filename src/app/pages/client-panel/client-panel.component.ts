@@ -1,3 +1,4 @@
+import { publicVerificationUrl } from '../../core/utils/verification-link';
 import { ClientSupportComponent } from '../client-support/client-support.component';
 import { ClientTicket, TicketInfo, filterClientSales, ticketGroup, ticketLabel } from './client-purchases';
 import { FormsModule } from '@angular/forms';
@@ -56,7 +57,7 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
         stage='imagen';
         const module=await import('qrcode');
         const qr=typeof module.toDataURL==='function'?module:module.default;
-        this.cardQr=await qr.toDataURL(verification.href,{width:240,margin:4,errorCorrectionLevel:'M'});
+        this.cardQr=await qr.toDataURL(publicVerificationUrl(verification.href,location.origin,this.api.token()),{width:240,margin:4,errorCorrectionLevel:'M'});
       }catch{
         const messages:Record<string,string>={datos:'El carné recibido no incluye qr.verification_url y qr.token válidos.',url:'La URL de verificación del carné debe pertenecer a este portal y apuntar a /api/accounts/cards/verify/.',token:'El servidor devolvió el token de sesión como token del carné. No se puede usar para generar el QR.',imagen:'No se pudo dibujar el QR en el navegador. Intenta abrir el carné nuevamente.'};
         this.cardError=messages[stage]??'No se pudo generar el QR.';
@@ -84,7 +85,7 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
         if(!passengerName||!passengerIdentification||passengerIdentification.includes('*'))throw new Error('El tiquete autenticado no incluye el nombre y documento completos del pasajero. Actualiza la compra antes de descargar.');
         if(!verified.trip.origin||!verified.trip.destination||!verified.trip.date_time_start||!verified.seat.seat_number)throw new Error('El servidor devolvió datos incompletos del viaje o asiento para imprimir una boleta.');
         // The public verification intentionally masks identity; print only the authenticated ticket data.
-        return {ticket:{...verified,passenger:{name:passengerName,identification_number:passengerIdentification}},verificationUrl:ticket.verification_url!,issuedAt:ticket.issued_at};
+        return {ticket:{...verified,passenger:{name:passengerName,identification_number:passengerIdentification}},verificationUrl:publicVerificationUrl(ticket.verification_url!,location.origin,this.api.token()),issuedAt:ticket.issued_at};
       }));
       const pdf=await createTicketPdf(id,entries);
       pdf.save(`boletas-compra-${id}.pdf`);
