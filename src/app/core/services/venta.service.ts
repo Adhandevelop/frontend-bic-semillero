@@ -21,7 +21,7 @@ export class VentaService {
   private logInvoice(sale:SaleResult):void{
     const invoice=sale.factus_invoice;
     if(!invoice){console.warn('[Factus] La venta no incluye resultado de facturación',{saleId:sale.id,saleStatus:sale.status,invoiceStatus:'not_returned',nextStep:'Consultar el estado de factura; no registrar otra venta.'});return;}
-    if(invoice.status==='error')console.error('[Factus] El backend informa un error de facturación',{saleId:sale.id,invoiceStatus:invoice.status,hasErrorMessage:!!invoice.error_message,nextStep:'Revisar el mensaje mostrado en la vista y los logs del backend.'});
+    if(invoice.status==='error')console.error('[Factus] El backend informa un error de facturación',{saleId:sale.id,invoiceStatus:invoice.status,hasErrorMessage:!!invoice.error_message,errorMessage:typeof invoice.error_message==='string'&&invoice.error_message.trim()?invoice.error_message:'El backend no devolvió el motivo de facturación.',nextStep:'Revisar errorMessage. No registrar otra venta para corregir la factura.'});
     else if(invoice.status!=='issued')console.warn('[Factus] Facturación pendiente',{saleId:sale.id,invoiceStatus:invoice.status,nextStep:'Consultar nuevamente el estado de factura.'});
   }
   catalogos(){return forkJoin({trips:allApiPages<SaleTrip>(this.http,API_BASE_URL+'/trips/trips/'),seats:allApiPages<SaleSeat>(this.http,API_BASE_URL+'/fleet/seats/'),fares:allApiPages<SaleFare>(this.http,API_BASE_URL+'/trips/fares/'),tickets:this.tiquetes()});}

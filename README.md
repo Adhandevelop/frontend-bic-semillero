@@ -191,7 +191,7 @@ Verificación: compilación de producción y comprobaciones de selección 1–10
 
 ### Diagnóstico en consola de ventas
 
-En F12 → Consola, filtrar por `[Ventas]` o `[Factus]`. Los fallos de registrar venta y consultar venta/factura usan `console.error` con operación, endpoint, HTTP y motivo general. Una venta sin `factus_invoice` o con factura pendiente genera `console.warn`; una factura con estado `error` genera `console.error`, aunque el HTTP sea exitoso. No se imprime el cuerpo completo, datos del pasajero, tokens, credenciales, CUFE ni códigos de tiquete. Los errores originales siguen llegando a la vista y el registro no genera reintentos ni solicitudes adicionales.
+En F12 → Consola, filtrar por `[Ventas]` o `[Factus]`. Los fallos de registrar venta y consultar venta/factura usan `console.error` con operación, endpoint, HTTP y motivo general. Una venta sin `factus_invoice` o con factura pendiente genera `console.warn`; una factura con estado `error` genera `console.error`, aunque el HTTP sea exitoso. En errores fiscales se imprime `errorMessage`, el texto exacto de `factus_invoice.error_message` recibido del backend. No se imprime el cuerpo completo de la respuesta, el payload de la venta, cabeceras de autorización, tokens ni credenciales. Los errores originales siguen llegando a la vista y el registro no genera reintentos ni solicitudes adicionales.
 
 La consola del navegador solo conoce lo que devuelve la API. Un HTTP 500 sin detalle exige revisar los logs de Django; estos registros no exponen excepciones internas del servidor.
 
@@ -466,3 +466,9 @@ Para ofrecer esta presentación, el QR ahora contiene la ruta pública del porta
 El lector administrativo acepta tanto estos enlaces visuales como los enlaces anteriores a `/api/.../verify/`, y mantiene la confirmación de abordaje protegida. Para obtener los enlaces visuales hay que abrir nuevamente el carné o descargar un PDF nuevo después de desplegar Angular. Los PDF/QR impresos anteriores siguen abriendo Django al escanearlos con la cámara general; cambiar ese comportamiento requiere una redirección del servidor y no se modificó Django ni el proxy.
 
 El servidor del frontend debe servir `index.html` al abrir directamente `/verificar/boleta` o `/verificar/carne`, igual que para el resto de rutas Angular. Verificación: compilación, preservación del token firmado, consulta anónima, estados públicos, cancelación de peticiones y regresión de identidad PDF/abordaje.
+
+### Motivo del fallo de factura en administración
+
+El panel de ventas muestra `factus_invoice.error_message` debajo de Error/Sin número, y vuelve a mostrarlo con su etiqueta en el detalle. Si falta, informa que el backend no devolvió el motivo. Las consultas de venta y sus errores fiscales registran el mismo campo en F12 → Consola como `errorMessage`, junto al ID de venta y estado; no se imprime `raw_response` ni el payload de la venta.
+
+El mensaje procede de `GET /api/sales/sales/:id/` o de la respuesta de creación; Angular no llama directamente a Factus ni solicita sus credenciales. Si el backend responde solo «Factus no pudo validar la factura», ese es todo el detalle disponible para Angular y hay que ampliar el diagnóstico en backend. Mostrar o actualizar el error no reintenta una factura ni crea otra venta.
