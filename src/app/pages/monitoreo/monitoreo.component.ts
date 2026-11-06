@@ -1,4 +1,4 @@
-﻿import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -11,6 +11,14 @@ export class MonitoreoComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mapContainer',{static:true}) private mapContainer!:ElementRef<HTMLDivElement>;
   constructor(private activatedRoute:ActivatedRoute){}
   get contextTripId():number|null{const raw=this.activatedRoute?.snapshot.queryParamMap.get('trip');const value=Number(raw);return raw&&/^[1-9]\d*$/.test(raw)&&Number.isSafeInteger(value)?value:null;}
+  playing=false;private playbackTimer?:ReturnType<typeof setInterval>;
+  private contextId(key:string):number|null{const raw=this.activatedRoute?.snapshot.queryParamMap.get(key),id=Number(raw);return raw&&/^[1-9]\d*$/.test(raw)&&Number.isSafeInteger(id)?id:null;}
+  get returnCommands():(string|number)[]{if(this.activatedRoute?.snapshot.queryParamMap.get('origen')==='asientos'){const bus=this.contextId('bus');return bus?['/buses',bus,'asientos']:['/asientos'];}return ['/monitoreo'];}
+  get returnParams():Record<string,number>{const params:Record<string,number>={};for(const key of ['trip','cliente','asiento']){const id=this.contextId(key);if(id)params[key]=id;}return params;}
+  @HostListener('document:visibilitychange') onVisibilityChange():void{if(document.hidden)this.pause();}
+  play():void{if(this.playing||this.samples.length<2)return;if(this.sampleIndex>=this.samples.length-1){this.sampleIndex=0;this.redraw();}this.playing=true;this.playbackTimer=setInterval(()=>{if(this.sampleIndex<this.samples.length-1){this.sampleIndex++;this.redraw();}if(this.sampleIndex>=this.samples.length-1)this.pause();},1000);}
+  pause():void{if(this.playbackTimer)clearInterval(this.playbackTimer);this.playbackTimer=undefined;this.playing=false;}
+  restart():void{this.pause();this.sampleIndex=0;this.redraw();}
   readonly trips=ADMIN_MONITORING_DEMO;
   selectedId=this.trips[0].id;sampleIndex=orderedGps(this.trips[0]).length-1;selectedSeat=1;showTrace=true;tileError=false;
   private map?:L.Map;private overlays?:L.LayerGroup;private tiles?:L.TileLayer;private resizeObserver?:ResizeObserver;
@@ -37,8 +45,8 @@ export class MonitoreoComponent implements AfterViewInit, OnDestroy {
     this.overlays=L.layerGroup().addTo(this.map);this.redraw();this.fitRoute();
     this.resizeObserver=new ResizeObserver(()=>this.map?.invalidateSize());this.resizeObserver.observe(this.mapContainer.nativeElement);
   }
-  selectTrip(id:string):void{if(!this.trips.some(t=>t.id===id))return;this.selectedId=id;this.sampleIndex=this.samples.length-1;this.selectedSeat=1;this.redraw();this.fitRoute();}
-  setSample(value:number|string):void{const index=Number(value);if(!Number.isInteger(index))return;this.sampleIndex=Math.max(0,Math.min(index,this.samples.length-1));this.redraw();}
+  selectTrip(id:string):void{if(!this.trips.some(t=>t.id===id))return;this.pause();this.selectedId=id;this.sampleIndex=this.samples.length-1;this.selectedSeat=1;this.redraw();this.fitRoute();}
+  setSample(value:number|string):void{this.pause();const index=Number(value);if(!Number.isInteger(index))return;this.sampleIndex=Math.max(0,Math.min(index,this.samples.length-1));this.redraw();}
   selectSeat(number:number):void{if(number>=1&&number<=this.trip.capacity)this.selectedSeat=number;}
   traceChanged():void{this.redraw();}
   private busIcon(selected:boolean):L.DivIcon{
@@ -69,5 +77,5 @@ export class MonitoreoComponent implements AfterViewInit, OnDestroy {
   fitRoute():void{if(!this.map)return;const points=this.visibleSamples.map(point=>L.latLng(point.geometry.coordinates[1],point.geometry.coordinates[0]));if(points.length)this.map.fitBounds(L.latLngBounds(points),{paddingTopLeft:[45,100],paddingBottomRight:[55,105],maxZoom:14});}
   fitFleet():void{if(!this.map)return;const points=this.trips.map(trip=>gpsAt(trip,this.current.properties.time_stamp)).filter((p):p is GpsSample=>!!p).map(p=>L.latLng(p.geometry.coordinates[1],p.geometry.coordinates[0]));this.map.fitBounds(L.latLngBounds(points),{paddingTopLeft:[45,100],paddingBottomRight:[55,105],maxZoom:13});}
   retryTiles():void{this.tileError=false;this.tiles?.redraw();}
-  ngOnDestroy():void{this.resizeObserver?.disconnect();this.map?.remove();}
+  ngOnDestroy():void{this.pause();this.resizeObserver?.disconnect();this.map?.remove();}
 }

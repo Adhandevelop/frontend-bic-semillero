@@ -1,4 +1,4 @@
-﻿<section class="fleet-page" aria-labelledby="fleet-title">
+﻿<section class="fleet-page" aria-labelledby="fleet-title" [attr.aria-busy]="loading">
   <div class="fleet-heading"><div><span class="eyebrow">Administración de flota</span><h1 id="fleet-title">Panel de control de buses</h1><p>Consulta y gestiona los vehículos registrados.</p></div><div class="heading-actions"><button type="button" (click)="cargarBuses()" [disabled]="loading || deletingId !== null">{{ loading ? 'Actualizando...' : 'Actualizar' }}</button><a class="primary" routerLink="/buses/nuevo">+ Nuevo bus</a></div></div>
   <a routerLink="/buses/tipos">Administrar tipos de bus →</a><div class="fleet-toolbar"><div class="search"><label for="fleet-search" class="sr-only">Buscar bus por ID, placa o modelo</label><span aria-hidden="true">⌕</span><input id="fleet-search" type="search" [(ngModel)]="searchValue" placeholder="Buscar bus por ID, placa o modelo..."></div><button type="button" [class.filter-active]="onlyActive" [attr.aria-pressed]="onlyActive" (click)="onlyActive = !onlyActive">{{ onlyActive ? '✓ Solo activos' : 'Filtrar activos' }}</button><button type="button" class="text-button" *ngIf="onlyActive || searchValue" (click)="clearFilters()">Limpiar filtros</button></div>
   <div class="feedback error" *ngIf="error" role="alert">{{ error }} <button type="button" (click)="cargarBuses()" [disabled]="loading">Reintentar</button></div><p class="feedback success" *ngIf="success" role="status">{{ success }}</p>
@@ -13,4 +13,3 @@
   </ng-container>
   <div class="notice" *ngIf="message" role="status" aria-live="polite"><p>{{ message }}</p><button type="button" (click)="message = ''" aria-label="Cerrar aviso">×</button></div>
 </section>
-

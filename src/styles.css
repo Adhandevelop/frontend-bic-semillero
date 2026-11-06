@@ -317,3 +317,24 @@ select:focus {
     flex-direction: column;
   }
 }
+
+/* Shared entry and playback controls for explicitly simulated telemetry. */
+.projected-demo-entry{display:inline-flex;align-items:center;justify-content:center;min-height:44px;max-width:100%;margin:12px 0 18px;padding:11px 16px;border:1px solid #bfd4ef;border-radius:8px;background:#edf4ff;color:#0759b7;font-size:12px;font-weight:600;text-decoration:none;white-space:normal;text-align:center}
+.projected-demo-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px;margin:15px 0 22px;border:1px solid #cbdcf3;border-radius:10px;background:white}.projected-demo-controls button,.projected-demo-controls a{min-height:44px;padding:11px 14px;border:1px solid #c5d9f3;border-radius:8px;background:#edf4ff;color:#0759b7;font:inherit;font-size:12px;text-decoration:none}.projected-demo-controls button:disabled{opacity:.5;cursor:default}.projected-demo-controls a{margin-left:auto}.projected-demo-controls p{flex-basis:100%;margin:0;font-size:11px;color:#617b99;line-height:1.7}
+@media(max-width:600px){.projected-demo-controls a{margin-left:0;flex-basis:100%;text-align:center}.projected-demo-entry{width:100%;box-sizing:border-box}}
+
+/* Mobile guardrails shared by forms, long feedback and administrative tables. */
+.main-content :is(section,form,fieldset,.panel,.card,.filters,.toolbar){min-inline-size:0;max-inline-size:100%}
+.main-content :is(.table-scroll,.history-scroll){max-inline-size:100%;overflow-x:auto;overscroll-behavior-x:contain}
+:is(.error,.api-error,.error-panel,.delivery-error,.warning,.success,.delivery-success){overflow-wrap:anywhere}
+.monitoring-page .demo-banner{position:sticky;top:0;z-index:10}
+@media(max-width:640px){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px}
+  .main-content :is(.toolbar,.filters,.panel-heading,.section-heading,.detail-heading,.actions){flex-wrap:wrap;gap:12px}
+  .main-content button:not(.seat):not(.boarding-seat){min-height:44px}
+  .main-content :is(.breadcrumb,.context,.trip-note){overflow-wrap:anywhere;flex-wrap:wrap}
+  .main-content :is(.table-scroll,.history-scroll){-webkit-overflow-scrolling:touch}
+  .main-content :is(input,select,textarea){max-width:100%;min-width:0}
+  .main-content .table-scroll:focus-visible{outline:3px solid #438bdd;outline-offset:3px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}

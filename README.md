@@ -1,4 +1,4 @@
-﻿# Buses Universal — Frontend
+# Buses Universal — Frontend
 
 Aplicación académica de gestión de transporte desarrollada con Angular 18 y TypeScript. Consume una API de Django REST Framework y reúne un panel administrativo y un portal de pasajeros basado en diseños de Stitch.
 
@@ -287,10 +287,10 @@ Al abrir una compra se consulta `/api/sales/sales/:id/invoice/`. Muestra `pendin
 
 `/monitoreo` pertenece al panel protegido de administración y está separado de `/ubicacion`, que permanece como mapa público de pasajeros. Los accesos desde dashboard, buses, viajes, rutas y navegación administrativa abren el mapa administrativo; la barra superior permite entrar también desde móvil. Administración de asientos abre el listado real de buses y permite entrar a la consulta de pasajeros y sensores; crear/editar la configuración de sillas no forma parte de esa pantalla.
 
-La vista contiene tres unidades de muestra con posiciones GPS GeoJSON `Point`, recorrido `LineString` construido con muestras ordenadas por fecha y selector para explorar el historial de cada viaje. La presentación usa ficha e itinerario lateral, mapa amplio con marcadores de bus y trazado azul, y una barra flotante de ocupación. El itinerario representa lecturas GPS y su progreso dentro del registro, no paradas oficiales ni una predicción de llegada. El historial de sensores sigue disponible debajo y la tabla GPS se puede desplegar. La línea representa la unión de mediciones de ejemplo; no acredita el trazado exacto por carretera entre puntos. Los sensores muestran un bus de un piso con distribución 2 + pasillo + 2 y distinguen ocupado, libre o sin lectura. El corte temporal se aplica a todas las unidades del mapa; los sensores sin lectura o con más de dos minutos de antigüedad se muestran sin señal en esta muestra. Ese umbral es demostrativo y debe acordarse con la frecuencia de transmisión del dispositivo. Ocupación física no equivale a silla vendida o reservada y no se realizan ventas desde este módulo.
+La vista separada `/monitoreo/demostracion` contiene tres unidades de muestra con posiciones GPS GeoJSON `Point`, recorrido `LineString` construido con muestras ordenadas por fecha y selector para explorar el historial de cada viaje. La presentación usa ficha e itinerario lateral, mapa amplio con marcadores de bus y trazado azul, y una barra flotante de ocupación. El itinerario representa lecturas GPS y su progreso dentro del registro, no paradas oficiales ni una predicción de llegada. El historial de sensores sigue disponible debajo y la tabla GPS se puede desplegar. La línea representa la unión de mediciones de ejemplo; no acredita el trazado exacto por carretera entre puntos. Los sensores muestran un bus de un piso con distribución 2 + pasillo + 2 y distinguen ocupado, libre o sin lectura. El corte temporal se aplica a todas las unidades del mapa; los sensores sin lectura o con más de dos minutos de antigüedad se muestran sin señal en esta muestra. Ese umbral es demostrativo y debe acordarse con la frecuencia de transmisión del dispositivo. Ocupación física no equivale a silla vendida o reservada y no se realizan ventas desde este módulo.
 
-Todos los datos de telemetría son demostrativos: no son lecturas reales, no se escriben en la base de datos ni hay conexión al dispositivo. Leaflet usa teselas OpenStreetMap, que requieren internet. La integración con `/api/trips/readings/`, `/api/trips/current-seat-states/` y `/api/trips/seat-state-history/` sigue pendiente; no se asume disponibilidad de filtros o tiempo real que el contrato aún no documenta. GeoJSON conserva coordenadas `[longitud, latitud]` en WGS84/SRID 4326.
-### Mapa y GPS
+Los datos de `/monitoreo/demostracion` son simulados y no se escriben en la base de datos. `/monitoreo` abre por defecto los viajes y registros de `/api/trips/readings/`, sin sustituir una ausencia de lecturas por muestras. Las lecturas físicas de asientos se consultan en su propia gestión. Leaflet usa teselas OpenStreetMap, que requieren internet. GeoJSON conserva coordenadas `[longitud, latitud]` en WGS84/SRID 4326.
+### Mapa público de pasajeros (/ubicacion)
 
 El mapa utiliza Leaflet 1.9 y teselas de OpenStreetMap, que requieren internet. Las tres posiciones estáticas están en [bus-locations.mock.ts](src/app/core/data/bus-locations.mock.ts).
 
@@ -389,7 +389,7 @@ Los caminos **Clientes → Ver detalles → Viaje y bus → Detalles del bus →
 
 La ficha del cliente relaciona boletas por documento de pasajero, incluso si el comprador es otra persona, y distingue las compras propias sin atribuirle todos sus asientos. Conserva cliente, viaje y asiento único en la navegación. El detalle del bus consulta la unidad real; la página de asientos valida que el viaje pertenezca a ese bus y muestra plano de un piso 2 + pasillo + 2, pasajeros de boletas emitidas/utilizadas, disponibilidad comercial, última lectura física y su historial. Los datos faltantes o errores parciales se identifican; no se sustituyen por demostraciones.
 
-Se consultan todas las páginas y se filtran los asientos por bus y registros por viaje en Angular, porque el contrato no documenta esos filtros de servidor. Se usan /api/fleet/seats/, /api/trips/trips/, /api/sales/tickets/, /api/trips/current-seat-states/, /api/trips/seat-state-history/ y la disponibilidad del viaje. El nombre del pasajero viene de la boleta; la lectura física no identifica a quien está sentado ni demuestra presencia en tiempo real. Sin dispositivo o registros se muestra **Sin lectura**. Estas pantallas son de consulta y no crean ni modifican sillas, ventas o telemetría. El monitoreo con datos simulados sigue separado en /monitoreo.
+Se consultan todas las páginas y se filtran los asientos por bus y registros por viaje en Angular, porque el contrato no documenta esos filtros de servidor. Se usan /api/fleet/seats/, /api/trips/trips/, /api/sales/tickets/, /api/trips/current-seat-states/, /api/trips/seat-state-history/ y la disponibilidad del viaje. El nombre del pasajero viene de la boleta; la lectura física no identifica a quien está sentado ni demuestra presencia en tiempo real. Sin dispositivo o registros se muestra **Sin lectura**. Estas pantallas son de consulta y no crean ni modifican sillas, ventas o telemetría. El monitoreo con datos simulados está separado en /monitoreo/demostracion.
 
 ## Operación administrativa: viajes y consulta QR
 
@@ -399,7 +399,7 @@ El menú administrativo incorpora todas las secciones y una navegación desplega
 - **Lector QR** (`/validar-qr`): permite abrir la cámara tras una acción del operador, pegar un enlace o introducirlo mediante un lector USB que funcione como teclado. La cámara se detiene al obtener una lectura, detenerla o abandonar la vista. Requiere HTTPS y permiso del navegador para usar cámara; la entrada manual funciona sin ese permiso.
 - Solo se aceptan enlaces del mismo origen a `/api/sales/tickets/verify/` y `/api/accounts/cards/verify/`. La consulta pública no añade el JWT administrativo, no guarda el token del QR y no abre enlaces externos. El resultado distingue boleta emitida, utilizada, cancelada, viaje diferente y error de conexión. Los carnés identifican al cliente y no sustituyen una boleta.
 - El ID de viaje esperado permite comprobar la correspondencia. Sin ese contexto la consulta no confirma a qué salida se permitirá abordar. **Consultar no registra abordaje ni cambia el estado de un tiquete**: esa operación necesita un contrato de backend de check-in con permisos y control de duplicados.
-- GPS y sensores continúan en **demostración**. El acceso desde un viaje al mapa abre las unidades de muestra, sin afirmar que sean el bus de esa salida. La gestión real de asientos conserva la distinción entre boleta y lectura física.
+- GPS y sensores continúan en **demostración**. El acceso desde un viaje al mapa conserva el viaje y abre sus datos API; las unidades simuladas solo aparecen tras abrir Ver demostración proyectada. La gestión real de asientos conserva la distinción entre boleta y lectura física.
 
 El estado de mantenimiento de buses se envía como `Maintenance`, de acuerdo con el contrato de la API. Las respuestas antiguas con `mantenimiento` se normalizan al leer para conservar la compatibilidad con registros existentes.
 
@@ -423,7 +423,7 @@ Desde **Viajes → Ver detalles** se abre `/viajes/:id` con bus, conductor, term
 
 Los accesos a bus, asientos y lector QR conservan el viaje. Cada pasajero incluye **Ver silla**, que abre el bus y asiento exactos de su tiquete dentro del viaje. Bus, asientos, QR y mapa ofrecen regreso al detalle operativo. El lector recibe el viaje esperado para contrastarlo con la boleta escaneada.
 
-El mapa conserva el ID del viaje de origen únicamente para la navegación y avisa que los recorridos y unidades mostrados son de demostración; no asocia una unidad ficticia a ese viaje ni presenta GPS o sensores como datos del dispositivo real. La confirmación de abordaje sigue requiriendo su endpoint específico.
+El mapa conserva el ID del viaje de origen para consultar sus lecturas API. La demostración se abre de forma explícita y conserva ese contexto para regresar; no asocia una unidad ficticia al viaje ni presenta muestras como datos del dispositivo real. La confirmación de abordaje sigue requiriendo su endpoint específico.
 
 ### Validar QR: consulta de boletas y carnés
 
@@ -514,3 +514,18 @@ El widget envía la pareja `signature_integrity_with_expiration` / `expiration_t
 `refund_required` se presenta como **Pago recibido · Requiere atención** en compra online, historial y administración, con el mensaje de reubicación/devolución. No se muestran boletas ni factura, no se habilita entrega/reenvío fiscal y no se reabre el widget para ese pago. No se promete una devolución automática: el equipo debe resolverla por su procedimiento correspondiente.
 
 Verificación: firma nueva y vencimiento sin reformatear, rechazo de pareja incompleta, contador con desfase de reloj, flujo `refund_required`, disponibilidad real de sillas, datos inválidos/duplicados, consultas limitadas, cancelación al cambiar de página y errores parciales. La prueba integral de pago aprobado y expiración tras 10 minutos debe completarse contra Wompi Sandbox; no se realizaron pagos reales durante estas comprobaciones.
+
+
+### Demostración proyectada y regreso a datos API
+
+Mapa y monitoreo abre `/monitoreo`, con selector de viajes, consulta paginada a `/api/trips/readings/`, puntos GeoJSON validados, recorrido cronológico y tabla de lecturas. Las respuestas se filtran por el viaje solicitado y se cancelan al cambiar de selección o salir. Errores de conexión/permisos se distinguen de ausencia de datos; las coordenadas inválidas o duplicadas se descartan e informan. No se afirma que existan lecturas del dispositivo ni una conexión en vivo: el hardware continúa en desarrollo y la API puede contener pruebas. Para un volumen grande de telemetría será necesario documentar filtros de viaje/tiempo en backend; el contrato actual obliga a recuperar páginas y filtrar en Angular.
+
+**Ver demostración proyectada** está disponible en mapa, selección de buses para asientos y detalle de asientos de un bus. Abre `/monitoreo/demostracion`, con tres unidades de ejemplo, banner permanente de datos simulados, reproducción a una muestra por segundo, pausa y reinicio. El mismo corte avanza GPS y sensores. Seleccionar un punto o unidad pausa la reproducción; termina al alcanzar la última muestra y se detiene al abandonar la página o esconder la pestaña. No envía lecturas, modifica ventas ni registra abordajes.
+
+**Volver a datos reales** regresa a mapa o asientos conservando bus, viaje, cliente y silla cuando forman parte del contexto. La ruta de regreso se construye con destinos internos y IDs válidos; no acepta URLs externas. La ocupación de muestra sigue usando un piso con 2 + pasillo + 2.
+
+### Revisión de presentación móvil y mensajes
+
+Se revisaron 33 plantillas y los estilos de las vistas. Se añadieron estados accesibles de carga (`aria-busy` / `role=status`) y errores (`role=alert`) donde faltaban, ajuste de anchos mínimos de formularios, controles táctiles de al menos 44 px en administración, entradas móviles de 16 px y desplazamiento horizontal confinado a tablas. Los mensajes largos pueden partir línea, el banner de demostración permanece visible y se respeta reducción de movimiento. Las nuevas pantallas ofrecen estados explícitos de carga, vacío, error y reintento, conservando los datos de contexto.
+
+Verificación: compilación de producción, paginación/filtrado/validación del GPS API, errores parciales, cancelación de solicitudes, reproducción/pausa/reinicio/fin, liberación de mapa/timers y retorno al bus/viaje/asiento. No se realizaron escrituras en telemetría. La revisión visual en navegador móvil sigue pendiente porque esta sesión no dispone de navegador conectado; no se afirma una validación visual completa en dispositivos físicos.

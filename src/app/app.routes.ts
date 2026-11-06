@@ -37,7 +37,8 @@ export const routes: Routes = [
     canActivateChild: [authGuard],
     children: [
       { path: 'validar-qr', loadComponent: () => import('./pages/qr-reader/qr-reader.component').then(m => m.QrReaderComponent) },
-      { path: 'monitoreo', loadComponent: () => import('./pages/monitoreo/monitoreo.component').then(m => m.MonitoreoComponent) },
+      { path: 'monitoreo/demostracion', loadComponent: () => import('./pages/monitoreo/monitoreo.component').then(m => m.MonitoreoComponent) },
+      { path: 'monitoreo', loadComponent: () => import('./pages/monitoreo-api/monitoreo-api.component').then(m => m.MonitoreoApiComponent) },
       { path: 'asientos', loadComponent: () => import('./pages/asientos/asientos.component').then(m => m.AsientosComponent) },
       { path: 'ventas', loadComponent: () => import('./pages/ventas/venta-list.component').then(m => m.VentaListComponent) },
       { path: 'ventas/nueva', loadComponent: () => import('./pages/ventas/venta-form.component').then(m => m.VentaFormComponent) },
