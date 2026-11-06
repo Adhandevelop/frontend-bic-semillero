@@ -32,6 +32,6 @@ export class ClientSecurityComponent implements OnDestroy {
       else{this.token='';this.api.logout();this.success=this.action==='activation-confirm'?'Tu cuenta está habilitada. Inicia sesión.':'Contraseña actualizada. Inicia sesión con tu nueva contraseña.';}
     },error:err=>{this.busy=false;this.form.controls.current.reset();this.form.controls.password.reset();this.form.controls.confirm.reset();this.error=err.error?.code==='invalid_or_expired_token'?'El enlace no es válido o ha vencido. Solicita uno nuevo.':passengerError(err);}});
   }
-  logout():void{this.api.logout();window.location.assign('/clientes/login');}
+  logout():void{if(this.busy)return;this.busy=true;this.api.signOut().subscribe(()=>{if(!this.api.token())window.location.assign('/clientes/login');});}
   ngOnDestroy():void{this.destroyed.next();this.destroyed.complete();if(this.timer)clearInterval(this.timer);this.token='';this.form.reset();}
 }

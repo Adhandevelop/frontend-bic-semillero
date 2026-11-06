@@ -13,7 +13,7 @@
     <a routerLink="/monitoreo" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Mapa y monitoreo</a>
     <a routerLink="/asientos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Administración de asientos</a>
     <a routerLink="/validar-qr" routerLinkActive="active" (click)="closeMenu()">Validar QR</a>
-    <button type="button" class="logout-btn" (click)="cerrarSesion()">Salir</button>
+    <button type="button" class="logout-btn" (click)="cerrarSesion()" [disabled]="signingOut">{{signingOut ? 'Cerrando sesión…' : 'Salir'}}</button>
   </div>
   <span class="admin-avatar" aria-label="Panel administrativo">AD</span>
 </nav>

@@ -1,7 +1,7 @@
 import { VerifiedTicket } from './ticket-pdf';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, tap, throwError, timeout } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { allApiPages } from './api-pagination';
 export interface PassengerProfile {id:number;role:string;password_change_required?:boolean;photo_url?:string|null;name?:string;first_name?:string;last_name?:string;email:string;telephone:string;identification_number:string;identification_document_code?:string;}
@@ -29,6 +29,11 @@ export class PassengerService {
   token():string|null{return sessionStorage.getItem(this.key)||localStorage.getItem(this.key);}
   private options(){return {headers:new HttpHeaders({Authorization:'Bearer '+(this.token()??'')})};}
   logout():void{for(const storage of [sessionStorage,localStorage]){storage.removeItem(this.key);storage.removeItem(this.refreshKey);storage.removeItem(this.passwordFlag);}}
+  signOut():Observable<void>{
+    const access=this.token(),storage=sessionStorage.getItem(this.key)?sessionStorage:localStorage,refresh=storage.getItem(this.refreshKey);this.logout();
+    if(!access||!refresh)return of(undefined);
+    return this.http.post<void>(API_BASE_URL+'/accounts/logout/',{refresh},{headers:new HttpHeaders({Authorization:'Bearer '+access})}).pipe(timeout(8000),catchError(()=>{console.warn('[Sesión cliente] Se cerró la sesión local; no se pudo confirmar la revocación en el servidor.');return of(undefined);}));
+  }
   register(data:PassengerRegistration):Observable<unknown>{return this.http.post(API_BASE_URL+'/accounts/register/',data);}
   login(username:string,password:string,remember:boolean):Observable<PassengerProfile>{
     this.logout();

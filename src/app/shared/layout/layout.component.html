@@ -16,7 +16,7 @@
       <a routerLink="/asientos" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▤</span>Administración de asientos</a>
     </nav>
     <div class="sidebar-note"><strong>Tu centro de operación</strong><p>Administra la flota y organiza cada trayecto.</p></div>
-    <button type="button" class="sidebar-logout" (click)="cerrarSesion()">↪ Salir</button>
+    <button type="button" class="sidebar-logout" (click)="cerrarSesion()" [disabled]="signingOut">{{signingOut ? 'Cerrando sesión…' : '↪ Salir'}}</button>
   </aside>
   <main class="main-content"><router-outlet></router-outlet></main>
 </div>

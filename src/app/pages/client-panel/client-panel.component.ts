@@ -156,7 +156,8 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
   loadHistory():void{if(this.historyLoading)return;this.historyLoading=true;this.historyError='';this.api.history().subscribe({next:items=>{this.history=[...items].sort((a,b)=>b.id-a.id);this.historyLoading=false;this.loadTicketInfo();this.page=Math.min(this.page,this.pageCount);if(this.selectedSale)this.selectedSale=this.history.find(s=>s.id===this.selectedSale?.id)??null;},error:err=>{this.historyLoading=false;this.historyError=passengerError(err);}});}
   get passwordChangeRequired():boolean{return this.api.mustChangePassword();}
   save():void{if(this.passwordChangeRequired)return;if(this.saving||this.loading||!this.profile)return;this.form.markAllAsTouched();if(this.form.invalid)return;this.saving=true;this.message='';this.error='';const v=this.form.getRawValue();this.api.update({name:v.name.trim(),email:v.email.trim().toLowerCase(),telephone:v.telephone.trim()}).subscribe({next:p=>{this.profile=p;this.saving=false;this.editing=false;this.resetForm();this.message='Información actualizada.';},error:err=>{this.saving=false;this.error=passengerError(err);}});}
-  logout():void{this.api.logout();void this.router.navigateByUrl('/clientes/login');}
+  loggingOut=false;
+  logout():void{if(this.loggingOut)return;this.loggingOut=true;this.api.signOut().subscribe(()=>{if(!this.api.token())void this.router.navigateByUrl('/clientes/login');});}
   status(value:string):string{return ({refund_required:'Pago recibido · Requiere atención',paid:'Pagada',pending:'Pendiente',failed:'Fallida',expired:'Expirada',cancelled:'Cancelada'} as Record<string,string>)[value]??value;}
   link(value?:string):string|null{try{const url=new URL(value??'');return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;}catch{return null;}}
 }

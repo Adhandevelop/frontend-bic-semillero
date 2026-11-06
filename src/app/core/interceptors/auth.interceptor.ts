@@ -15,7 +15,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   if(clientToken&&explicit==='Bearer '+clientToken&&request.url.startsWith(`${API_BASE_URL}/`)){
     const router=inject(Router);
     return next(request).pipe(catchError(err=>{
-      if(err.status===401&&err.error?.code==='password_change_required'){client.requirePasswordChange();void router.navigateByUrl('/clientes/cambiar-contrasena');return throwError(()=>err);}
+      if([401,403].includes(err.status)&&err.error?.code==='password_change_required'){client.requirePasswordChange();void router.navigateByUrl('/clientes/cambiar-contrasena');return throwError(()=>err);}
       if(err.status!==401)return throwError(()=>err);
       return client.renew(clientToken).pipe(switchMap(access=>next(request.clone({setHeaders:{Authorization:'Bearer '+access}}))));
     }));

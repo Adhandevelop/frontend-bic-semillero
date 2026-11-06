@@ -1,5 +1,5 @@
 import type { TicketCheckIn } from './ticket-check-in.service';
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
@@ -12,7 +12,7 @@ export interface AdminAvailability {trip:number;server_time:string;seats:Array<{
 @Injectable({providedIn:'root'})
 export class AdminSeatsService {
   constructor(private http:HttpClient){}
-  seats(bus:number){return allApiPages<AdminSeat>(this.http,API_BASE_URL+'/fleet/seats/').pipe(map(seats=>seats.filter(seat=>seat.bus===bus)));}
+  seats(bus:number){return allApiPages<AdminSeat>(this.http,API_BASE_URL+'/fleet/seats/?bus='+bus).pipe(map(seats=>seats.filter(seat=>seat.bus===bus)));}
   current(trip:number){return allApiPages<AdminSeatReading>(this.http,API_BASE_URL+'/trips/current-seat-states/').pipe(map(rows=>rows.filter(row=>row.trip===trip)));}
   history(trip:number){return allApiPages<AdminSeatReading>(this.http,API_BASE_URL+'/trips/seat-state-history/').pipe(map(rows=>rows.filter(row=>row.trip===trip)));}
   tickets(trip:number){return allApiPages<AdminSeatTicket>(this.http,API_BASE_URL+'/sales/tickets/').pipe(map(rows=>rows.filter(row=>row.trip===trip)));}

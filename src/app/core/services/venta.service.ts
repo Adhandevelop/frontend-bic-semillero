@@ -1,10 +1,11 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, tap } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { allApiPages } from './api-pagination';
 export interface SaleTrip {id:number;bus:number;route:number;date_time_start:string;trip_state:string;}
 export interface SaleSeat {id:number;bus:number;seat_number:string;row:string;col:string;}
+export interface SaleAvailability {trip:number;server_time:string;seats:Array<Omit<SaleSeat,'bus'> & {status:'available'|'reserved'|'sold'}>;}
 export interface SaleFare {trip:number;amount_cents:number;}
 export interface SaleTicket {passenger_name?:string;passenger_identification?:string;passenger_email?:string;passenger_telephone?:string;issued_at?:string;verification_url?:string;seat_number?:string;id:number;trip:number;seat:number;status:string;ticket_code:string;}
 export interface AdminSalePayload {trip:number;seats:number[];identification_number:string;name:string;email:string;telephone:string;payment_method:'cash'|'card'|'transfer';}
@@ -25,6 +26,7 @@ export class VentaService {
     else if(invoice.status!=='issued')console.warn('[Factus] Facturación pendiente',{saleId:sale.id,invoiceStatus:invoice.status,nextStep:'Consultar nuevamente el estado de factura.'});
   }
   catalogos(){return forkJoin({trips:allApiPages<SaleTrip>(this.http,API_BASE_URL+'/trips/trips/'),seats:allApiPages<SaleSeat>(this.http,API_BASE_URL+'/fleet/seats/'),fares:allApiPages<SaleFare>(this.http,API_BASE_URL+'/trips/fares/'),tickets:this.tiquetes()});}
+  availability(trip:number){return this.http.get<SaleAvailability>(API_BASE_URL+'/trips/trips/'+trip+'/seats/');}
   tiquetes():Observable<SaleTicket[]>{return allApiPages<SaleTicket>(this.http,API_BASE_URL+'/sales/tickets/');}
   listar():Observable<SaleResult[]>{return allApiPages<SaleResult>(this.http,API_BASE_URL+'/sales/sales/');}
   consultar(id:number):Observable<SaleResult>{return this.http.get<SaleResult>(API_BASE_URL+'/sales/sales/'+id+'/').pipe(tap({next:sale=>this.logInvoice(sale),error:err=>this.logFailure('Consultar venta/factura','GET /api/sales/sales/:id/',err,id)}));}

@@ -1,15 +1,27 @@
 import { buildSeatRows, SeatPlanRow } from '../../core/utils/seat-plan';
-﻿import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin, timeout } from 'rxjs';
+import { forkJoin, Subject, takeUntil, timeout } from 'rxjs';
 import { Cliente, ClienteService } from '../../core/services/cliente.service';
 import { RutaService } from '../../core/services/ruta.service';
 import { Ruta } from '../../core/models/ruta.model';
 import { VentaService, SaleTrip, SaleSeat, SaleFare, SaleTicket, SaleResult, AdminSalePayload } from '../../core/services/venta.service';
 @Component({selector:'app-venta-form',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./venta-form.component.html',styleUrls:['./venta-form.component.css','../booking/booking-seats.component.css']})
-export class VentaFormComponent implements OnInit {
+export class VentaFormComponent implements OnInit,OnDestroy {
+  seatLoading=false;seatError='';seatStates:Record<number,string>={};private seatSelection=new Subject<void>();private destroyed=new Subject<void>();
+  ngOnDestroy():void{this.seatSelection.next();this.seatSelection.complete();this.destroyed.next();this.destroyed.complete();}
+  loadTripSeats():void{
+    if(this.saving||this.uncertain||this.result)return;this.seatSelection.next();this.seats=[];this.seatStates={};this.seatIds=[];this.unavailableIds=[];this.paid=false;this.seatError='';this.seatLoading=false;
+    const trip=this.trip;if(!trip)return;this.seatLoading=true;
+    this.sales.availability(trip.id).pipe(timeout(15000),takeUntil(this.seatSelection),takeUntil(this.destroyed)).subscribe({next:data=>{
+      this.seatLoading=false;const ids=new Set<number>();
+      if(data?.trip!==trip.id||!Array.isArray(data.seats)||!data.seats.every(seat=>Number.isSafeInteger(seat.id)&&seat.id>0&&!ids.has(seat.id)&&!!String(seat.seat_number??'').trim()&&!!String(seat.row??'').trim()&&!!String(seat.col??'').trim()&&['available','reserved','sold'].includes(seat.status)&&!!ids.add(seat.id))){this.seatError='La API devolvió un plano incompleto o de otro viaje. Actualiza las sillas antes de vender.';return;}
+      this.seats=data.seats.map(seat=>({...seat,bus:trip.bus,row:String(seat.row),col:String(seat.col),seat_number:String(seat.seat_number)}));
+      this.seatStates=Object.fromEntries(data.seats.map(seat=>[seat.id,seat.status]));this.unavailableIds=data.seats.filter(seat=>seat.status!=='available').map(seat=>seat.id);
+    },error:err=>{this.seatLoading=false;this.seatError=err.status===401?'La sesión venció.':err.status===403?'No tienes permiso para consultar las sillas.':'No se pudo confirmar la disponibilidad'+(err.status?' (HTTP '+err.status+').':'. Revisa la conexión.');}});
+  }
   get passengerLocked():boolean{return this.creatingClient||this.searchingClient||this.saving||this.uncertain||!!this.result;}
   clientsLoading=false;clientsError='';
   cargarClientes():void{
@@ -86,7 +98,7 @@ export class VentaFormComponent implements OnInit {
   tripId:number|null=null;clientId:number|null=null;seatIds:number[]=[];search='';payment:AdminSalePayload['payment_method']='cash';paid=false;
   constructor(private sales:VentaService,private clientsApi:ClienteService,private routesApi:RutaService,private route:ActivatedRoute){}
   ngOnInit():void{this.cargarClientes();this.cargar();}
-  get locked():boolean{return this.creatingClient||this.searchingClient||this.loading||this.saving||this.uncertain||!!this.result;}
+  get locked():boolean{return this.creatingClient||this.searchingClient||this.loading||this.seatLoading||this.saving||this.uncertain||!!this.result;}
   get trip():SaleTrip|undefined{return this.trips.find(t=>t.id===this.tripId);}
   get client():Omit<Cliente,'id'|'role'>|undefined{return this.draftPassenger??this.clients.find(c=>c.id===this.clientId);}
   private attempt:{payload:AdminSalePayload;key:string}|null=null;
@@ -100,9 +112,9 @@ export class VentaFormComponent implements OnInit {
   get filteredClients():Cliente[]{const q=this.search.trim().toLocaleLowerCase();return this.clients.filter(c=>!q||[this.nombre(c),c.identification_number,c.email].join(' ').toLocaleLowerCase().includes(q)).slice(0,20);}
   nombre(c:Pick<Cliente,'first_name'|'last_name'|'username'>):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
   tripLabel(t:SaleTrip):string{const r=this.routes.find(r=>r.id===t.route);return '#'+t.id+' · '+(r?r.origen+' → '+r.destino:'Ruta #'+t.route);}
-  sold(id:number):boolean{return this.tickets.some(t=>t.trip===this.tripId&&t.seat===id&&(t.status==='issued'||t.status==='used'));}
+  sold(id:number):boolean{return this.seatStates[id]!==undefined?this.seatStates[id]==='sold':this.tickets.some(t=>t.trip===this.tripId&&t.seat===id&&(t.status==='issued'||t.status==='used'));}
   get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!!this.trip&&this.seatIds.length>=1&&this.seatIds.length<=10&&this.selectedSeats.length===this.seatIds.length&&this.seatIds.every(id=>!this.sold(id)&&!this.unavailableIds.includes(id))&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
-  changeTrip():void{this.seatIds=[];this.unavailableIds=[];this.paid=false;}
+  changeTrip():void{this.loadTripSeats();}
   selectSeat(s:SaleSeat):void{
     if(this.locked||this.sold(s.id)||this.unavailableIds.includes(s.id))return;
     if(this.seatIds.includes(s.id))this.seatIds=this.seatIds.filter(id=>id!==s.id);
@@ -114,7 +126,7 @@ export class VentaFormComponent implements OnInit {
     forkJoin({catalog:this.sales.catalogos(),routes:this.routesApi.listar()}).pipe(timeout(15000)).subscribe({next:({catalog,routes})=>{
       this.trips=catalog.trips.filter(t=>t.trip_state==='scheduled'&&new Date(t.date_time_start).getTime()>Date.now());this.seats=catalog.seats;this.fares=catalog.fares;this.tickets=catalog.tickets;this.routes=routes;
       if(!this.trip)this.tripId=null;this.seatIds=[];this.paid=false;
-      this.unavailableIds=[];this.loading=false;
+      this.unavailableIds=[];this.loading=false;if(this.trip)this.loadTripSeats();
     },error:()=>{this.loading=false;this.error='No se pudieron cargar los viajes, rutas, tarifas o sillas. El directorio de clientes se carga por separado. Revisa tu sesión, permisos y la disponibilidad de la API.';this.trips=[];this.seats=[];}});
   }
   emitir():void {

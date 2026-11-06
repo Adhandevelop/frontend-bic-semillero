@@ -1,6 +1,6 @@
 ﻿import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, tap, throwError, timeout } from 'rxjs';
 import { API_BASE_URL, AUTH_LOGIN_URL } from '../config/api.config';
 
 export type AuthPhase = 'token' | 'profile';
@@ -85,6 +85,10 @@ export class AuthService {
     localStorage.removeItem(this.refreshTokenKey);
   }
 
+  signOut():Observable<void>{
+    const access=this.getToken(),refresh=this.getRefreshToken();this.logout();if(!access||!refresh)return of(undefined);
+    return this.http.post<void>(API_BASE_URL+'/accounts/logout/',{refresh},{headers:{Authorization:'Bearer '+access}}).pipe(timeout(8000),catchError(()=>{console.warn('[Sesión administrativa] Sesión local eliminada; revocación remota sin confirmar.');return of(undefined);}));
+  }
   getToken(): string | null { return localStorage.getItem(this.accessTokenKey); }
   getRefreshToken(): string | null { return localStorage.getItem(this.refreshTokenKey); }
 
@@ -94,4 +98,3 @@ export class AuthService {
     return typeof exp === 'number' && exp * 1000 > Date.now();
   }
 }
-

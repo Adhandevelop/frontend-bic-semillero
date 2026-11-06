@@ -11,9 +11,10 @@ import { NavbarComponent } from '../navbar/navbar.component';
   styleUrl: './layout.component.css'
 })
 export class LayoutComponent {
+  signingOut=false;
   constructor(private authService: AuthService, private router: Router) {}
   cerrarSesion(): void {
-    this.authService.logout();
-    this.router.navigateByUrl('/login');
+    if(this.signingOut)return;this.signingOut=true;
+    this.authService.signOut().subscribe(()=>{if(!this.authService.getToken())void this.router.navigateByUrl('/login');});
   }
 }
