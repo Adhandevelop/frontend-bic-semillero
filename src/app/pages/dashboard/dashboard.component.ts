@@ -1,22 +1,29 @@
+import { TripControlComponent } from './trip-control/trip-control.component';
+import { RutaService } from '../../core/services/ruta.service';
+import { Ruta } from '../../core/models/ruta.model';
 import { ListOrder, orderRecords } from '../../core/utils/list-order';
 import { ListOrderComponent } from '../../shared/list-order/list-order.component';
-﻿import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, of, Subject, takeUntil, timeout } from 'rxjs';
 import { Bus, normalizeBus } from '../../core/models/bus.model';
 import { Conductor } from '../../core/models/conductor.model';
 import { DashboardService } from '../../core/services/dashboard.service';
 
 interface TripSummary { id: number; bus: number; driver: number; route: number; date_time_start: string; trip_state: string; }
-interface RouteSummary { id: number; }
+type RouteSummary=Ruta;
 @Component({
   selector: 'app-dashboard', standalone: true,
-  imports:[ListOrderComponent,CommonModule, FormsModule, RouterLink],
-  templateUrl: './dashboard.component.html', styleUrl: './dashboard.component.css'
+  imports:[TripControlComponent,ListOrderComponent,CommonModule, FormsModule, RouterLink],
+  templateUrl: './dashboard.component.html', styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit,OnDestroy {
+  private routeApi=inject(RutaService);private destroyed=new Subject<void>();private refresh=new Subject<void>();
+  sales:Array<{id:number;status:string}>=[];
+  get refundCount():number{return this.sales.filter(sale=>sale.status==='refund_required').length;}
+  ngOnDestroy():void{this.refresh.next();this.refresh.complete();this.destroyed.next();this.destroyed.complete();}
   listOrder:ListOrder='desc';
   readonly currentYear = new Date().getFullYear();
   loading = true;
@@ -32,18 +39,18 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void { this.cargarResumen(); }
   cargarResumen(): void {
     if (this.loading && this.updatedAt) return;
-    this.loading = true;
+    this.refresh.next();this.loading = true;
     this.errors = [];
-    const load = <T>(resource: string, label: string) => this.dashboardService.listar<T>(resource).pipe(
+    const load = <T>(resource: string, label: string) => this.dashboardService.listar<T>(resource).pipe(timeout(20000),
       catchError(() => { this.errors.push(label); return of(null); })
     );
     forkJoin({ buses: load<Bus>('fleet/buses', 'buses'), drivers: load<Conductor>('fleet/drivers', 'conductores'),
-      trips: load<TripSummary>('trips/trips', 'viajes'), routes: load<RouteSummary>('routes/routes', 'rutas')
-    }).subscribe(result => {
+      trips: load<TripSummary>('trips/trips', 'viajes'), routes: this.routeApi.listar().pipe(timeout(20000),catchError(()=>{this.errors.push('rutas');return of(null);})), sales:load<{id:number;status:string}>('sales/sales','ventas')
+    }).pipe(takeUntil(this.refresh),takeUntil(this.destroyed)).subscribe(result => {
       this.buses = (result.buses ?? []).map(normalizeBus);
       this.drivers = result.drivers ?? [];
       this.trips = result.trips ?? [];
-      this.routes = result.routes ?? [];
+      this.routes = result.routes ?? [];this.sales=result.sales??[];
       this.updatedAt = new Date();
       this.loading = false;
     });

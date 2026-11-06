@@ -1052,7 +1052,7 @@ La operación es atómica: crea una sola venta `paid`, un pago aprobado, un
 `SaleItem` y un tiquete por cada silla, o no crea ninguno. Todas las sillas
 deben pertenecer al bus del viaje. Una silla vendida o con una reserva online
 vigente causa `409 Conflict` para toda la solicitud; las reservas online
-vencen después de 5 minutos.
+vencen después de 10 minutos.
 
 Para evitar duplicados, se recomienda enviar:
 
@@ -1155,7 +1155,7 @@ pasajeros. Se permiten máximo 10 boletas por compra. La clave de idempotencia
 es obligatoria y repetirla devuelve la misma venta sin crear otra.
 
 El backend valida la silla, obtiene el precio de `TripFare`, crea una venta
-`pending`, reserva todas las sillas durante 5 minutos y devuelve datos para el Widget
+`pending`, reserva todas las sillas durante 10 minutos y devuelve datos para el Widget
 de Wompi:
 
 ```json
@@ -1166,7 +1166,9 @@ de Wompi:
   "currency": "COP",
   "amount_in_cents": 5000000,
   "signature_integrity": "...",
-  "expires_at": "2026-11-04T15:05:00Z",
+  "expiration_time": "2026-11-04T15:10:00.000Z",
+  "signature_integrity_with_expiration": "...",
+  "expires_at": "2026-11-04T15:10:00Z",
   "server_time": "2026-11-04T15:00:00Z",
   "quantity": 2
 }
@@ -1309,3 +1311,10 @@ Framework y `drf-spectacular`.
 ```
 
 El precio siempre debe provenir del backend. El frontend solo lo muestra.
+
+
+### Vencimiento Wompi y pagos tardíos
+
+La reserva dura 10 minutos. El widget debe recibir juntos `signature_integrity_with_expiration` como `signature.integrity` y `expiration_time` como `expirationTime`. La cadena de vencimiento se envía exactamente como llega, sin cambiar zona horaria, milisegundos ni Z. `signature_integrity` se conserva por compatibilidad del backend y el nuevo frontend no la usa al abrir el widget. El contador de reserva utiliza `expires_at` y `server_time`.
+
+Las ventas y la consulta de pago pueden devolver `refund_required` si se recibió el pago después de vencer la reserva y ya no había sillas. No se emiten boletas ni factura. Debe mostrarse que el pago fue recibido y requiere reubicación o devolución por el equipo administrativo; no es una compra pendiente de pago. El frontend no realiza automáticamente una devolución ni vuelve a cobrar.

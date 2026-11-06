@@ -1,3 +1,4 @@
+import { expirationSignature, reservationDeadline, REFUND_REQUIRED_MESSAGE } from '../../core/utils/wompi-payment';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, NgZone, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -24,6 +25,8 @@ export class BookingComponent implements OnInit,OnDestroy {
   trips:OnlineTrip[]=[];seats:OnlineSeat[]=[];fares:OnlineFare[]=[];routes:OnlineRoute[]=[];places:OnlinePlace[]=[];
   profile:PassengerProfile|null=null;tripId:number|null=null;seatId:number|null=null;terms=false;loading=false;paying=false;checking=false;message='';error='';catalogError='';
   pending:PendingCheckout|null=null;checkoutData:CheckoutData|null=null;payment:PaymentStatus|null=null;receipt:PassengerSale|null=null;receiptError='';seconds=0;
+  readonly refundMessage=REFUND_REQUIRED_MESSAGE;
+  get refundRequired():boolean{return this.receipt?this.receipt.status==='refund_required':this.payment?.sale_status==='refund_required';}
   get trip(){return this.trips.find(t=>t.id===this.tripId);}
   get selectedSeat(){return this.seats.find(s=>s.id===this.seatId&&s.bus===this.trip?.bus);}
   get visibleSeats(){return this.seats.filter(s=>s.bus===this.trip?.bus).sort((a,b)=>a.row.localeCompare(b.row,undefined,{numeric:true})||a.col.localeCompare(b.col,undefined,{numeric:true}));}
@@ -75,17 +78,17 @@ const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!th
     this.paying=true;this.error='';this.message='Cargando Wompi…';
     try{await this.widget.load();}catch{if(!this.gone){this.paying=false;this.error='No se pudo cargar Wompi. No se envió el checkout.';this.message='';}return;}
     if(this.gone)return;
-    this.attemptKey=this.attemptKey||crypto.randomUUID();this.pending={saleId:null,deadline:Date.now()+300000,idempotencyKey:this.attemptKey};this.persist();
+    this.attemptKey=this.attemptKey||crypto.randomUUID();this.pending={saleId:null,deadline:Date.now()+600000,idempotencyKey:this.attemptKey};this.persist();
     this.api.checkout(this.tripId!,this.passengers.map(p=>{const v=this.samePerson?this.buyer(p.seat):p;return {...v,name:v.name.trim(),email:v.email.trim().toLowerCase(),telephone:v.telephone.trim(),identification_number:v.identification_number.trim()};}),location.origin+'/clientes/comprar',this.attemptKey).pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{
       this.paying=false;this.message='';
-      if(Number.isSafeInteger(data.sale_id)&&data.sale_id>0){this.pending={saleId:data.sale_id,deadline:this.pending?.deadline??Date.now()+300000};this.persist();}
-      if(!Number.isSafeInteger(data.sale_id)||data.sale_id<=0||!data.reference||!data.public_key?.startsWith('pub_')||data.currency!=='COP'||!Number.isSafeInteger(data.amount_in_cents)||data.amount_in_cents<=0||!data.signature_integrity){this.error='El servidor devolvió un checkout incompleto. Revisa tus compras antes de reintentar.';return;}
-      const expiry=data.expires_at?Date.parse(data.expires_at):NaN,server=data.server_time?Date.parse(data.server_time):NaN;const adjusted=Number.isFinite(expiry)&&Number.isFinite(server)?Date.now()+Math.max(0,expiry-server):expiry;
-      this.pending={saleId:data.sale_id,deadline:Number.isFinite(adjusted)?adjusted:(this.pending?.deadline??Date.now()+300000)};this.pending.idempotencyKey=this.attemptKey;this.checkoutData=data;this.persist();this.updateClock();this.openWidget();
+      if(Number.isSafeInteger(data.sale_id)&&data.sale_id>0){this.pending={saleId:data.sale_id,deadline:this.pending?.deadline??Date.now()+600000};this.persist();}
+      if(!Number.isSafeInteger(data.sale_id)||data.sale_id<=0||!data.reference||!data.public_key?.startsWith('pub_')||data.currency!=='COP'||!Number.isSafeInteger(data.amount_in_cents)||data.amount_in_cents<=0){this.error='El servidor devolvió un checkout incompleto. Revisa tus compras antes de reintentar.';return;}
+      let deadline:number;try{expirationSignature(data);deadline=reservationDeadline(data.expires_at,data.server_time);}catch(err){this.error=err instanceof Error?err.message:'El checkout está incompleto. Consulta tus compras.';return;}
+      this.pending={saleId:data.sale_id,deadline};this.pending.idempotencyKey=this.attemptKey;this.checkoutData=data;this.persist();this.updateClock();this.openWidget();
     },error:err=>{this.paying=false;this.message='';this.error=passengerError(err);if([400,401,403,404,409,422].includes(err.status)){this.pending=null;this.attemptKey='';this.persist();if(err.status===409)this.loadSeats();}else this.error+=' No se pudo confirmar si se creó la venta. Revisa tus compras antes de reintentar.';}});
   }
   openWidget():void{
-    if(!this.checkoutData||!this.pending?.saleId||this.checking||this.paying||this.seconds<=0||this.payment||this.receipt?.status==='paid')return;
+    if(!this.checkoutData||!this.pending?.saleId||this.checking||this.paying||this.seconds<=0||this.payment||this.receipt?.status==='paid'||this.refundRequired)return;
     const saleId=this.pending.saleId;const url=new URL('/clientes/comprar',location.origin);url.searchParams.set('venta',String(saleId));
     try{this.paying=true;this.widget.open(this.checkoutData,url.href,id=>this.zone.run(()=>{if(this.gone||this.pending?.saleId!==saleId)return;this.paying=false;if(!id){this.message='Wompi no devolvió una transacción. Puedes consultar el estado de tu compra.';return;}this.pending.transactionId=id;this.persist();this.verify();}));}catch{this.paying=false;this.error='No se pudo abrir Wompi. La venta puede seguir pendiente; consulta su estado.';}
   }
@@ -93,11 +96,11 @@ const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!th
   verify():void{
     if(this.checking||!this.pending?.saleId||!this.pending.transactionId)return;
     this.checking=true;this.error='';
-    this.api.status(this.pending.saleId,this.pending.transactionId).pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:status=>{this.checking=false;this.payment=status;if(status.sale_status==='paid'){this.message='Pago confirmado por el servidor.';this.refreshReceipt();}else if(['failed','expired','cancelled'].includes(status.sale_status)){this.message='La compra no se completó: '+status.sale_status+'.';}else{this.payment=null;this.message='El pago sigue pendiente de confirmación. Puedes consultar de nuevo.';}},error:err=>{this.checking=false;this.error=passengerError(err)+' No repitas el pago; vuelve a consultar su estado.';}});
+    this.api.status(this.pending.saleId,this.pending.transactionId).pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:status=>{this.checking=false;this.payment=status;if(status.sale_status==='paid'){this.message='Pago confirmado por el servidor.';this.refreshReceipt();}else if(status.sale_status==='refund_required'){this.payment={...status,tickets:[]};this.receipt=null;this.message=this.refundMessage;}else if(['failed','expired','cancelled'].includes(status.sale_status)){this.message='La compra no se completó: '+status.sale_status+'.';}else{this.payment=null;this.message='El pago sigue pendiente de confirmación. Puedes consultar de nuevo.';}},error:err=>{this.checking=false;this.error=passengerError(err)+' No repitas el pago; vuelve a consultar su estado.';}});
   }
   refreshReceipt():void{
     if(!this.pending?.saleId||this.checking)return;this.checking=true;this.receiptError='';
-    this.api.sale(this.pending.saleId).pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:sale=>{this.checking=false;this.receipt=sale;if(sale.status==='paid')this.message='Venta pagada confirmada por el servidor.';},error:err=>{this.checking=false;this.receiptError=passengerError(err);}});
+    this.api.sale(this.pending.saleId).pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:sale=>{this.checking=false;this.receipt=sale.status==='refund_required'?{...sale,tickets:[],factus_invoice:null}:sale;if(sale.status==='refund_required')this.message=this.refundMessage;else if(sale.status==='paid')this.message='Venta pagada confirmada por el servidor.';},error:err=>{this.checking=false;this.receiptError=passengerError(err);}});
   }
   newPurchase():void{
     if(this.paying||this.checking||!confirm('¿Ya revisaste el estado de esta operación en Mis compras? No vuelvas a pagar una compra confirmada.'))return;
@@ -106,10 +109,3 @@ const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!th
   invoiceLink(value?:string):string|null{try{const url=new URL(value??'');return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;}catch{return null;}}
   ngOnDestroy():void{this.gone=true;if(this.timer)clearInterval(this.timer);this.destroyed.next();this.destroyed.complete();}
 }
-
-
-
-
-
-
-

@@ -12,7 +12,7 @@ export interface OnlineSeat {id:number;bus:number;seat_number:string;row:string;
 export interface OnlineFare {id:number;trip:number;amount_cents:number;}
 export interface OnlineRoute {id:number;origin:number;destination:number;}
 export interface OnlinePlace {id:number;place_name:string;}
-export interface CheckoutData {sale_id:number;reference:string;public_key:string;currency:string;amount_in_cents:number;signature_integrity:string;expires_at?:string;server_time?:string;quantity?:number;}
+export interface CheckoutData {sale_id:number;reference:string;public_key:string;currency:string;amount_in_cents:number;signature_integrity:string;expiration_time:string;signature_integrity_with_expiration:string;expires_at:string;server_time:string;quantity?:number;}
 export interface PaymentStatus {sale_id:number;sale_status:string;transaction_status:string;tickets:PassengerSale['tickets'];}
 export interface CheckoutPassenger {seat:number;name:string;identification_document_code:string;identification_number:string;email:string;telephone:string;}
 @Injectable({providedIn:'root'})
@@ -32,5 +32,3 @@ export class OnlineBookingService {
   status(sale_id:number,transaction_id:string){return this.http.post<PaymentStatus>(API_BASE_URL+'/sales/wompi/status/',{sale_id,transaction_id},this.options());}
   sale(id:number){return this.http.get<PassengerSale>(API_BASE_URL+'/sales/sales/'+id+'/',this.options());}
 }
-
-

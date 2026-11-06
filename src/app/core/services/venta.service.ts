@@ -6,9 +6,9 @@ import { allApiPages } from './api-pagination';
 export interface SaleTrip {id:number;bus:number;route:number;date_time_start:string;trip_state:string;}
 export interface SaleSeat {id:number;bus:number;seat_number:string;row:string;col:string;}
 export interface SaleFare {trip:number;amount_cents:number;}
-export interface SaleTicket {seat_number?:string;id:number;trip:number;seat:number;status:string;ticket_code:string;}
+export interface SaleTicket {passenger_name?:string;passenger_identification?:string;passenger_email?:string;passenger_telephone?:string;issued_at?:string;verification_url?:string;seat_number?:string;id:number;trip:number;seat:number;status:string;ticket_code:string;}
 export interface AdminSalePayload {trip:number;seats:number[];identification_number:string;name:string;email:string;telephone:string;payment_method:'cash'|'card'|'transfer';}
-export interface FactusInvoice {status:string;number:string;cufe:string;public_url?:string;qr_url?:string;error_message?:string;raw_response?:{data?:{errors?:Record<string,string>}};}
+export interface FactusInvoice {status:string;number:string;cufe:string;public_url?:string;pdf_url?:string;xml_url?:string;qr_url?:string;error_message?:string;raw_response?:{data?:{errors?:Record<string,string>}};}
 export interface SaleResult {quantity?:number;unit_amount_cents?:number;buyer?:number;created_by?:number;trip?:number;seat?:number;source?:string;payment_method?:string;created_at?:string;passenger_name?:string;passenger_identification?:string;passenger_email?:string;passenger_telephone?:string;factus_invoice?:FactusInvoice|null;id:number;status:string;amount_cents:number;tickets:SaleTicket[];}
 @Injectable({providedIn:'root'})
 export class VentaService {
@@ -28,5 +28,8 @@ export class VentaService {
   tiquetes():Observable<SaleTicket[]>{return allApiPages<SaleTicket>(this.http,API_BASE_URL+'/sales/tickets/');}
   listar():Observable<SaleResult[]>{return allApiPages<SaleResult>(this.http,API_BASE_URL+'/sales/sales/');}
   consultar(id:number):Observable<SaleResult>{return this.http.get<SaleResult>(API_BASE_URL+'/sales/sales/'+id+'/').pipe(tap({next:sale=>this.logInvoice(sale),error:err=>this.logFailure('Consultar venta/factura','GET /api/sales/sales/:id/',err,id)}));}
+  invoice(id:number){return this.http.get<FactusInvoice>(API_BASE_URL+'/sales/sales/'+id+'/invoice/');}
+  retryInvoice(id:number){return this.http.post<FactusInvoice>(API_BASE_URL+'/sales/factus/invoices/'+id+'/retry/',{}).pipe(tap({error:err=>this.logFailure('Reintentar factura','POST /api/sales/factus/invoices/:id/retry/',err,id)}));}
+  resend(id:number){return this.http.post<{detail?:string}>(API_BASE_URL+'/sales/sales/'+id+'/resend-confirmation/',{}).pipe(tap({error:err=>this.logFailure('Reenviar confirmación','POST /api/sales/sales/:id/resend-confirmation/',err,id)}));}
   crear(payload:AdminSalePayload,idempotencyKey:string):Observable<SaleResult>{return this.http.post<SaleResult>(API_BASE_URL+'/sales/admin-sales/',payload,{headers:{'Idempotency-Key':idempotencyKey}}).pipe(tap({next:sale=>this.logInvoice(sale),error:err=>this.logFailure('Registrar venta','POST /api/sales/admin-sales/',err)}));}
 }

@@ -1,8 +1,9 @@
+import { expirationSignature } from '../utils/wompi-payment';
 ﻿import { Injectable } from '@angular/core';
 import { CheckoutData } from './online-booking.service';
 interface WidgetResult {transaction?:{id?:string};}
 interface WidgetInstance {open(callback:(result:WidgetResult)=>void):void;}
-type WidgetConstructor=new (options:{currency:string;amountInCents:number;reference:string;publicKey:string;signature:{integrity:string};redirectUrl:string})=>WidgetInstance;
+type WidgetConstructor=new (options:{currency:string;amountInCents:number;reference:string;publicKey:string;signature:{integrity:string};expirationTime:string;redirectUrl:string})=>WidgetInstance;
 declare global {interface Window {WidgetCheckout?:WidgetConstructor;}}
 @Injectable({providedIn:'root'})
 export class WompiWidgetService {
@@ -19,6 +20,6 @@ export class WompiWidgetService {
   }
   open(data:CheckoutData,redirectUrl:string,callback:(transactionId:string|null)=>void):void{
     if(!window.WidgetCheckout)throw new Error('Wompi no está disponible.');
-    new window.WidgetCheckout({currency:data.currency,amountInCents:data.amount_in_cents,reference:data.reference,publicKey:data.public_key,signature:{integrity:data.signature_integrity},redirectUrl}).open(result=>callback(result.transaction?.id??null));
+    new window.WidgetCheckout({currency:data.currency,amountInCents:data.amount_in_cents,reference:data.reference,publicKey:data.public_key,...expirationSignature(data),redirectUrl}).open(result=>callback(result.transaction?.id??null));
   }
 }

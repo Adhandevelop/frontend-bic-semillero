@@ -36,7 +36,7 @@ export async function createTicketPdf(saleId:number,entries:PdfTicket[]) {
     field('RUTA / TERMINALES',`${t.trip.origin} - ${t.trip.destination}`);
     field('SALIDA · HORA COLOMBIA',date(t.trip.date_time_start));
     field('LLEGADA · HORA COLOMBIA',date(t.trip.date_time_end));
-    field('SILLA / ESTADO',`${t.seat.seat_number} / Emitido`);
+    field('SILLA / ESTADO',`${t.seat.seat_number} / ${t.status==='issued'?'Emitida':t.status==='used'?'Ya utilizada':t.status==='cancelled'?'Cancelada':t.status}`);
     field('CÓDIGO DEL TIQUETE',t.ticket_code);
     pdf.setFontSize(9);pdf.setFont('helvetica','normal');pdf.text(`Emisión: ${date(issuedAt)}`,18,y);
     // QR stays in a fixed, generous area, with a quiet zone supplied by qrcode.

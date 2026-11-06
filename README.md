@@ -173,7 +173,7 @@ El acceso **Administración de asientos** (`/asientos`) hereda los guards del la
 
 El menú lateral incluye **Ventas**, con ruta administrativa protegida `/ventas`. Consulta todas las páginas de `GET /api/sales/sales/` y muestra cliente, documento, correo, viaje/ruta, silla, importe, método, origen, fecha, estado y factura. Incluye búsqueda, filtros por estado/origen/fecha de Colombia, siete registros por página e indicadores sobre los resultados filtrados; el total monetario suma solo ventas `paid`.
 
-**Ver detalle** consulta `/api/sales/sales/:id/` y muestra contacto, tiquetes y factura (número, CUFE, errores y enlace HTTPS). Si falla la actualización conserva los datos disponibles. Las respuestas antiguas no sustituyen la venta seleccionada después de cerrar/cambiar el detalle. Los catálogos secundarios cargan por separado: si fallan, conserva las ventas y muestra IDs. No modifica ventas ni procesa pagos; **Generar venta** abre el formulario existente.
+**Ver detalle** consulta `/api/sales/sales/:id/` y `/api/sales/sales/:id/invoice/`, y muestra comprador, importe, cada pasajero/silla y factura (número, CUFE, errores y enlaces HTTPS). Si falla la actualización conserva los datos disponibles. Las respuestas antiguas no sustituyen la venta seleccionada después de cerrar/cambiar el detalle. Los catálogos secundarios cargan por separado: si fallan, conserva las ventas y muestra IDs. La entrega permite descargar e imprimir boletas, solicitar reenvío y reintentar una factura fallida con confirmación explícita; no registra otra venta ni procesa pagos. **Generar venta** abre el formulario existente.
 
 ### Venta administrativa de tiquetes
 
@@ -482,3 +482,35 @@ El botón invierte el orden y, en listas paginadas, vuelve a la primera página.
 Se conservan los órdenes operativos del plano físico de sillas, paradas y próximas salidas. La API debe mantener un orden estable al paginar para evitar duplicados u omisiones entre sus páginas; el orden visual de Angular se aplica a los registros recuperados y no corrige esas inconsistencias del servidor.
 
 Verificación: compilación de producción y comprobaciones de orden descendente/ascendente, fechas coincidentes o inválidas, ausencia de mutación y orden previo a paginación.
+
+### Entrega completa desde el detalle de venta administrativo
+
+**Ventas → Ver detalle** desplaza el foco al detalle con importe definitivo, comprador, contacto y tarjetas para todos los pasajeros y sus sillas. No sustituye al pasajero por el comprador cuando faltan datos de una boleta. Cada tarjeta muestra el estado real y enlaza con la operación del viaje.
+
+- **Descargar boletas en PDF** reconsulta la venta pagada y verifica todas sus boletas contra el endpoint público. Genera un archivo con una página por boleta y QR a la vista pública visual. Se conservan estados emitida/utilizada/cancelada; imprimir no reactiva un tiquete. Nombre y documento completos proceden del detalle autenticado. Si falta identidad o una verificación no coincide, no se descarga un PDF parcial.
+- **Imprimir boletas** prepara el mismo PDF y lo abre en una pestaña solicitada por el operador. Si el visor no abre automáticamente el diálogo, permite usar su opción Imprimir. Si el navegador bloquea la pestaña, muestra la alternativa de descargar. Preparar el archivo no confirma que una impresora haya terminado.
+- **Reenviar confirmación** usa `POST /api/sales/sales/:id/resend-confirmation/`, permitido a administradores. Solicita confirmación, bloquea duplicados y aplica una espera local de un minuto. Una respuesta aceptada no se presenta como correo recibido. Un fallo de correo conserva la venta y boletas.
+- **Factura** consulta su endpoint específico y muestra número, CUFE, error y enlaces públicos/PDF/XML cuando la API los devuelve como HTTPS. Si la consulta falla, conserva la información incluida en la venta y muestra el fallo.
+- **Reintentar factura** solo aparece para facturas en error de ventas pagadas. Usa `POST /api/sales/factus/invoices/:id/retry/`, requiere confirmación y bloquea envíos simultáneos. Un HTTP exitoso con estado fiscal `error` sigue mostrándose como error. Ante resultado ambiguo se pide actualizar y revisar Factus; no se ejecutan reintentos automáticos ni otra venta/cobro.
+
+Todas estas acciones usan el contexto y sesión administrativos. Las verificaciones públicas del PDF no llevan JWT y solo consultan rutas permitidas del mismo portal. El PDF se distingue de la factura electrónica. Se conservan filtros, orden y paginación del listado al abrir el detalle.
+
+Verificación: compilación de producción y comprobaciones con varias identidades/estados, rechazo de boletas incompletas o ajenas, PDF/impresión, bloqueo de doble acción, reenvío aceptado/enfriamiento y factura fallida o sin confirmar. No se enviaron correos ni se reintentaron facturas reales durante estas comprobaciones. La impresión final depende del visor y la impresora del operador.
+
+### Control de viajes pendientes desde el dashboard
+
+La pantalla principal incorpora **Viajes pendientes y disponibilidad** con totales de viajes programados, programados para hoy y viajes en curso. Cada tarjeta muestra ruta, salida en hora Colombia, bus, conductor y sillas disponibles, reservadas y vendidas según `/api/trips/trips/:id/seats/`. Los accesos abren operación, asientos o QR conservando el viaje.
+
+Se puede buscar por viaje/ruta/placa/conductor, filtrar fecha, consultar Hoy y ordenar por proximidad de salida. Se muestran seis viajes por página y se consultan únicamente los visibles, con hasta tres solicitudes simultáneas. Las consultas anteriores se cancelan al cambiar de página o filtros. Se actualiza disponibilidad cada minuto mientras la pestaña está visible y también mediante botón; no se guarda ni modifica disponibilidad.
+
+El total de sillas libres indica cuántos viajes de la página se pudieron consultar: no es un total global de toda la operación. Un fallo muestra disponibilidad sin confirmar, nunca cero sillas libres. Se avisa si falta configurar sillas, si su número no coincide con la capacidad del bus o si una salida sigue programada después de su hora. Son datos comerciales, separados de GPS y ocupación física del dispositivo.
+
+El dashboard también avisa de ventas `refund_required` y enlaza al panel de ventas con ese filtro. Los datos generales y alertas se actualizan con Actualizar; cada tarjeta informa la hora de disponibilidad devuelta por el servidor.
+
+### Wompi: vencimiento y atención de pagos tardíos
+
+El widget envía la pareja `signature_integrity_with_expiration` / `expiration_time` recibida del backend. Se conserva exactamente la cadena de vencimiento, incluidos milisegundos y Z, y no se utiliza la firma anterior. Si falta cualquiera de los dos campos se bloquea la apertura, conservando la referencia de la venta para su consulta. El contador utiliza la diferencia entre `expires_at` y `server_time`; la reserva es ahora de 10 minutos. Referencia: [documentación oficial de Wompi](https://docs.wompi.co/docs/colombia/widget-checkout-web/).
+
+`refund_required` se presenta como **Pago recibido · Requiere atención** en compra online, historial y administración, con el mensaje de reubicación/devolución. No se muestran boletas ni factura, no se habilita entrega/reenvío fiscal y no se reabre el widget para ese pago. No se promete una devolución automática: el equipo debe resolverla por su procedimiento correspondiente.
+
+Verificación: firma nueva y vencimiento sin reformatear, rechazo de pareja incompleta, contador con desfase de reloj, flujo `refund_required`, disponibilidad real de sillas, datos inválidos/duplicados, consultas limitadas, cancelación al cambiar de página y errores parciales. La prueba integral de pago aprobado y expiración tras 10 minutos debe completarse contra Wompi Sandbox; no se realizaron pagos reales durante estas comprobaciones.

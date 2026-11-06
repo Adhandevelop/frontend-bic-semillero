@@ -1,3 +1,4 @@
+import { REFUND_REQUIRED_MESSAGE } from '../../core/utils/wompi-payment';
 import { ListOrder, orderRecords } from '../../core/utils/list-order';
 import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 import { publicVerificationUrl } from '../../core/utils/verification-link';
@@ -13,6 +14,7 @@ import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/r
 import { PassengerProfile, PassengerSale, DigitalCard, PassengerInvoice, PassengerService, passengerError } from '../../core/services/passenger.service';
 @Component({selector:'app-client-panel',standalone:true,imports:[ListOrderComponent,CommonModule,ReactiveFormsModule,FormsModule,RouterLink,RouterLinkActive,ClientSupportComponent],templateUrl:'./client-panel.component.html',styleUrls:['./client-panel.component.css','./client-documents.component.css']})
 export class ClientPanelComponent implements OnInit, OnDestroy {
+  readonly refundMessage=REFUND_REQUIRED_MESSAGE;
   listOrder:ListOrder='desc';
   private fb=inject(FormBuilder);private api=inject(PassengerService);private router=inject(Router);
   private route=inject(ActivatedRoute);
@@ -106,12 +108,13 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
   closeSale():void{this.invoiceRequest++;this.selectedSale=null;this.resendVersion++;this.resendBusy=false;this.invoiceLoading=false;this.detailLoading=false;}
   selectSale(sale:PassengerSale):void{const request=++this.invoiceRequest;this.selectedSale=sale;this.resendVersion++;this.resendBusy=false;this.resendMessage='';this.resendError='';this.pdfError='';this.detailError='';this.detailLoading=true;
     setTimeout(()=>{const target=document.getElementById('purchase-detail');target?.scrollIntoView({behavior:'smooth',block:'start'});target?.focus({preventScroll:true});});
-    this.api.sale(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.selectedSale=value;this.detailLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.detailLoading=false;this.detailError=passengerError(err);}});
-    this.invoice=sale.factus_invoice??null;this.invoiceError='';this.invoiceLoading=true;this.api.invoice(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.invoice=value;this.invoiceLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.invoiceLoading=false;this.invoiceError=passengerError(err);}});}
+    this.api.sale(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest)return;this.selectedSale=value;if(value.status==='refund_required'){this.invoice=null;this.invoiceLoading=false;}this.detailLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.detailLoading=false;this.detailError=passengerError(err);}});
+    if(sale.status==='refund_required'){this.invoice=null;this.invoiceError='';this.invoiceLoading=false;return;}
+    this.invoice=sale.factus_invoice??null;this.invoiceError='';this.invoiceLoading=true;this.api.invoice(sale.id).subscribe({next:value=>{if(request!==this.invoiceRequest||this.selectedSale?.status==='refund_required')return;this.invoice=value;this.invoiceLoading=false;},error:err=>{if(request!==this.invoiceRequest)return;this.invoiceLoading=false;this.invoiceError=passengerError(err);}});}
   ticketInfo:TicketInfo={};metadataLoading=false;metadataError='';private metadataSubscription?:Subscription;
   ticketFilter='all';historyStatus='';historyFrom='';historyTo='';historySearch='';
   get filteredHistory(){return orderRecords(filterClientSales(this.history,{status:this.historyStatus,from:this.historyFrom,to:this.historyTo,search:this.historySearch},this.ticketInfo),this.listOrder);}
-  get allTickets(){return this.history.flatMap(sale=>(sale.tickets??[]).map(ticket=>({ticket,sale})));}
+  get allTickets(){return this.history.filter(sale=>sale.status!=='refund_required').flatMap(sale=>(sale.tickets??[]).map(ticket=>({ticket,sale})));}
   get visibleTickets(){return this.allTickets.filter(({ticket})=>this.ticketFilter==='all'||(this.ticketFilter==='issued'?(this.ticketInfo[ticket.ticket_code]?.status??ticket.status)==='issued':ticketGroup(ticket,this.ticketInfo)===this.ticketFilter)).sort((a,b)=>{const x=Date.parse(this.ticketInfo[a.ticket.ticket_code]?.trip.date_time_start??''),y=Date.parse(this.ticketInfo[b.ticket.ticket_code]?.trip.date_time_start??'');return (Number.isFinite(x)?x:Infinity)-(Number.isFinite(y)?y:Infinity);});}
   ticketRoute(ticket:ClientTicket):string{return ticketLabel(ticket,this.ticketInfo);}
   ticketSeat(ticket:ClientTicket):string{return this.ticketInfo[ticket.ticket_code]?.seat.seat_number??'Sin número disponible';}
@@ -154,6 +157,6 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
   get passwordChangeRequired():boolean{return this.api.mustChangePassword();}
   save():void{if(this.passwordChangeRequired)return;if(this.saving||this.loading||!this.profile)return;this.form.markAllAsTouched();if(this.form.invalid)return;this.saving=true;this.message='';this.error='';const v=this.form.getRawValue();this.api.update({name:v.name.trim(),email:v.email.trim().toLowerCase(),telephone:v.telephone.trim()}).subscribe({next:p=>{this.profile=p;this.saving=false;this.editing=false;this.resetForm();this.message='Información actualizada.';},error:err=>{this.saving=false;this.error=passengerError(err);}});}
   logout():void{this.api.logout();void this.router.navigateByUrl('/clientes/login');}
-  status(value:string):string{return ({paid:'Pagada',pending:'Pendiente',failed:'Fallida',expired:'Expirada',cancelled:'Cancelada'} as Record<string,string>)[value]??value;}
+  status(value:string):string{return ({refund_required:'Pago recibido · Requiere atención',paid:'Pagada',pending:'Pendiente',failed:'Fallida',expired:'Expirada',cancelled:'Cancelada'} as Record<string,string>)[value]??value;}
   link(value?:string):string|null{try{const url=new URL(value??'');return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;}catch{return null;}}
 }

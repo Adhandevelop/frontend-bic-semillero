@@ -1,4 +1,4 @@
-﻿<section class="console" aria-labelledby="dashboard-title">
+<section class="console" aria-labelledby="dashboard-title">
   <header class="console-heading"><div><span class="eyebrow">Consola central de despacho</span><h1 id="dashboard-title">Dashboard General Administrativo</h1><p>Supervisa tu flota, conductores, rutas y viajes desde un solo lugar.</p></div><button class="refresh" type="button" (click)="cargarResumen()" [disabled]="loading">↻ {{ loading ? 'Cargando...' : 'Actualizar' }}</button></header>
   <div class="toolbar"><label><span class="sr-only">Buscar bus o conductor</span><input type="search" [(ngModel)]="searchValue" placeholder="Buscar ID, placa, modelo o conductor..."></label><div class="toolbar-actions"><button type="button" (click)="exportReport()" [disabled]="loading || errors.includes('buses')">↓ Exportar flota</button><details><summary>＋ Nuevo registro</summary><div class="dropdown"><a routerLink="/buses/nuevo">Registrar bus</a><a routerLink="/conductores/nuevo">Registrar conductor</a><a routerLink="/viajes/nuevo">Crear viaje</a><a routerLink="/rutas/nueva">Crear ruta</a></div></details></div></div>
   <p class="update-note" *ngIf="updatedAt && !loading">Última consulta: {{ updatedAt | date:'shortTime' }} · {{ errors.length ? 'Carga parcial' : 'Datos consultados en la API' }}</p>
@@ -11,6 +11,8 @@
     <article><span>Conductores <i aria-hidden="true">♙</i></span><strong>{{ errors.includes('conductores') ? '—' : drivers.length }}</strong><p>Directorio del equipo de operación</p><a routerLink="/conductores">Ver equipo →</a></article>
     <article><span>Rutas registradas <i aria-hidden="true">⌁</i></span><strong>{{ errors.includes('rutas') ? '—' : routes.length }}</strong><p>Conexiones de tu operación</p><a routerLink="/rutas">Administrar rutas →</a></article>
   </section>
+  <div *ngIf="refundCount" class="error-panel" role="status"><strong>{{refundCount}} pago(s) requieren atención</strong><p>Se recibieron pagos sin sillas disponibles. Revisa estas ventas para reubicar al cliente o gestionar su devolución.</p><a routerLink="/ventas" [queryParams]="{estado:'refund_required'}">Revisar ventas que requieren atención →</a></div>
+  <app-dashboard-trip-control [trips]="trips" [buses]="buses" [drivers]="drivers" [routes]="routes" [failed]="errors.includes('viajes')"></app-dashboard-trip-control>
   <div class="content-grid"><div class="main-column">
     <section class="panel"><div class="panel-heading"><div><h2><b aria-hidden="true">●</b> Gestión de buses y flota</h2><p>Estado registrado y capacidad por vehículo</p></div><a class="primary-action" routerLink="/buses/nuevo">＋ Añadir bus</a></div>
       <div class="table-tools"><button type="button" [attr.aria-pressed]="onlyActive" [class.selected]="onlyActive" (click)="onlyActive = !onlyActive">{{ onlyActive ? 'Mostrar todos' : 'Solo activos' }}</button><span>{{ filteredBuses.length }} unidades</span></div>
@@ -23,7 +25,7 @@
   </div><aside class="widgets">
     <section class="panel gps-panel"><div class="panel-heading"><h2>⌖ Monitoreo GPS</h2><span class="tag">Demostración</span></div><div class="map-preview"><div class="map-grid" aria-hidden="true"></div><div class="map-callout"><span aria-hidden="true">⌖</span><strong>Explora el mapa de buses</strong><p>Posiciones fijas de ejemplo</p></div></div><p>El GPS y los eventos en vivo aún no están conectados a esta consola.</p><a class="section-link" routerLink="/monitoreo">Ver mapa de demostración ↗</a></section>
     <section class="panel quick-links"><h2>Accesos operativos</h2><a routerLink="/buses">▣ <span>Administrar buses</span> →</a><a routerLink="/conductores">♙ <span>Gestionar conductores</span> →</a><a routerLink="/rutas">⌁ <span>Consultar rutas</span> →</a><a routerLink="/viajes">↗ <span>Programar viajes</span> →</a></section>
-    <section class="integration-card"><span class="eyebrow">Próximas integraciones</span><h2>Una operación conectada</h2><p>Ventas, ocupación de asientos y alertas de telemetría aparecerán aquí cuando sus servicios estén integrados.</p></section>
+    <section class="integration-card"><span class="eyebrow">Próximas integraciones</span><h2>Una operación conectada</h2><p>GPS y ocupación física continúan en demostración hasta conectar los dispositivos. La disponibilidad comercial de viajes ya se consulta en la API.</p></section>
   </aside></div>
   </ng-container>
   <footer>© {{ currentYear }} Buses Universal <span>Consola administrativa · Precision Fleet</span></footer>
