@@ -434,3 +434,17 @@ El resultado identifica **boleta de viaje** o **carné de identificación**, mue
 El contrato actual de verificación documenta `issued`, `used`, `cancelled` y un HTTP 404 para enlaces no válidos o registros inexistentes. Para distinguir con certeza una boleta o token vencido, el servidor debe devolver un estado explícito `expired` o un contrato de error diferenciado; Angular no lo deduce de la hora local ni convierte cualquier 404 en vencimiento. Un fallo de red no se presenta como una validación confirmada.
 
 Verificación: comprobaciones de boletas, carnés, otro viaje, vencimiento explícito, resultado 404, limpieza entre lecturas, rechazo de enlaces externos/tokens duplicados y liberación de cámara/peticiones. La cámara y el lector USB físicos deben verificarse en el equipo del operador.
+
+### Confirmar abordaje desde Validar QR
+
+Después de consultar una boleta emitida que corresponda al viaje esperado, el administrador puede pulsar **Confirmar abordaje** y aceptar la confirmación. Un carné, una boleta utilizada/cancelada, una de otro viaje o una consulta sin viaje esperado no habilitan esta acción. Escanear por sí solo continúa sin modificar estados.
+
+La operación usa `POST /api/sales/tickets/check-in/` con `verification_token`, `trip` y `Idempotency-Key`. La sesión administrativa se adjunta mediante el interceptor; no se envían operador, hora ni estado deseado. El backend autoriza, valida venta pagada y viaje `scheduled`/`in_progress`, evita duplicados y guarda el cambio a `used` junto con su auditoría. No hay reglas horarias adicionales calculadas por Angular.
+
+Solo se anuncia **Abordaje registrado** después de recibir `used`, código de boleta, viaje, silla y auditoría coherentes con el intento. Se muestran fecha del servidor y operador. Una respuesta repetida idempotente se identifica como resultado recuperado. El manifiesto de `/viajes/:id` muestra la auditoría de cada tiquete cuando está disponible en la API; se actualiza con Actualizar información.
+
+Ante red, timeout, sesión vencida, conflicto de idempotencia o respuesta incompleta, el resultado queda **sin confirmar**, no como éxito. Se conserva en memoria el mismo token QR, viaje y clave, se bloquea otra lectura y se ofrece **Reintentar el mismo abordaje**. No cerrar o recargar hasta aclarar el resultado; puede consultarse el detalle del viaje en otra pestaña. Los rechazos conocidos (`already_used`, `wrong_trip`, `ticket_cancelled`, `sale_not_paid`, `trip_not_boardable`, entre otros) no anuncian un abordaje nuevo y permiten leer otra boleta.
+
+El token del QR no se registra en consola ni se guarda en almacenamiento del navegador. La consulta pública conserva sus permisos y nunca recibe el JWT administrativo. Requiere desplegar el backend actualizado y aplicar su migración `0011_ticketcheckin_ticketcheckinidempotency.py` antes de utilizar la confirmación.
+
+Comprobaciones: consulta QR, confirmación explícita, bloqueo de doble envío, datos y clave idénticos al reintentar, rechazo de respuestas incompletas o de otro viaje, errores de negocio y limpieza entre lecturas. Las pruebas de simultaneidad en base de datos corresponden al backend; no se registraron abordajes reales desde estas comprobaciones.
