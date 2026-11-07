@@ -20,7 +20,7 @@ export class BookingComponent implements OnInit,OnDestroy {
   private buyer(seat:number):CheckoutPassenger{const p=this.profile!;return {seat,name:this.fullName,identification_document_code:p.identification_document_code??'',identification_number:p.identification_number,email:p.email,telephone:p.telephone??''};}
   useBuyer(passenger:CheckoutPassenger):void{if(!this.locked)Object.assign(passenger,this.buyer(passenger.seat));}
   get selectedSeatLabels():string{return this.passengers.map(p=>this.seats.find(s=>s.id===p.seat)?.seat_number??String(p.seat)).join(', ');}
-  get passengersValid():boolean{return this.passengers.length>0&&this.passengers.length<=10&&this.passengers.every(p=>{const v=this.samePerson?this.buyer(p.seat):p;return !!v.name.trim()&&v.name.trim().length<=150&&/^[A-Za-z0-9.-]{1,20}$/.test(v.identification_number)&&['13','22','41','12'].includes(v.identification_document_code)&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)&&/^\+?[0-9 ()-]{7,20}$/.test(v.telephone);});}
+  get passengersValid():boolean{return this.passengers.length>0&&new Set(this.passengers.map(p=>p.seat)).size===this.passengers.length&&this.passengers.every(p=>this.visibleSeats.some(s=>s.id===p.seat&&s.status==='available'))&&this.passengers.every(p=>{const v=this.samePerson?this.buyer(p.seat):p;return !!v.name.trim()&&v.name.trim().length<=150&&/^[A-Za-z0-9.-]{1,20}$/.test(v.identification_number)&&['13','22','41','12'].includes(v.identification_document_code)&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)&&/^\+?[0-9 ()-]{7,20}$/.test(v.telephone);});}
   buses:OnlineBus[]=[];
   trips:OnlineTrip[]=[];seats:OnlineSeat[]=[];fares:OnlineFare[]=[];routes:OnlineRoute[]=[];places:OnlinePlace[]=[];
   profile:PassengerProfile|null=null;tripId:number|null=null;seatId:number|null=null;terms=false;loading=false;paying=false;checking=false;message='';error='';catalogError='';
@@ -59,7 +59,6 @@ const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!th
     const existing=this.passengers.findIndex(p=>p.seat===id);
     if(existing>=0){this.passengers.splice(existing,1);}else{
       if(!this.visibleSeats.some(s=>s.id===id&&s.status==='available'))return;
-      if(this.passengers.length>=10){this.error='Puedes comprar hasta 10 boletas por operación.';return;}
       this.passengers.push(this.buyer(id));
     }
     this.seatId=this.passengers[0]?.seat??null;this.terms=false;this.attemptKey='';

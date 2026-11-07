@@ -114,12 +114,12 @@ export class VentaFormComponent implements OnInit,OnDestroy {
   nombre(c:Pick<Cliente,'first_name'|'last_name'|'username'>):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
   tripLabel(t:SaleTrip):string{const r=this.routes.find(r=>r.id===t.route);return '#'+t.id+' · '+(r?r.origen+' → '+r.destino:'Ruta #'+t.route);}
   sold(id:number):boolean{return this.seatStates[id]!==undefined?this.seatStates[id]==='sold':this.tickets.some(t=>t.trip===this.tripId&&t.seat===id&&(t.status==='issued'||t.status==='used'));}
-  get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!this.planIssues.length&&!!this.trip&&this.seatIds.length>=1&&this.seatIds.length<=10&&this.selectedSeats.length===this.seatIds.length&&this.seatIds.every(id=>!this.sold(id)&&!this.unavailableIds.includes(id))&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
+  get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!this.planIssues.length&&!!this.trip&&this.seatIds.length>=1&&this.selectedSeats.length===this.seatIds.length&&this.seatIds.every(id=>!this.sold(id)&&!this.unavailableIds.includes(id))&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
   changeTrip():void{this.loadTripSeats();}
   selectSeat(s:SaleSeat):void{
-    if(this.locked||this.planIssues.length||this.sold(s.id)||this.unavailableIds.includes(s.id))return;
+    if(this.locked||this.planIssues.length||!this.availableSeats.some(seat=>seat.id===s.id)||this.sold(s.id)||this.unavailableIds.includes(s.id))return;
     if(this.seatIds.includes(s.id))this.seatIds=this.seatIds.filter(id=>id!==s.id);
-    else{if(this.seatIds.length>=10){this.error='Puedes vender máximo 10 boletas por venta.';return;}this.seatIds=[...this.seatIds,s.id];}
+    else{this.seatIds=[...this.seatIds,s.id];}
     this.error='';this.paid=false;
   }
   cargar():void{

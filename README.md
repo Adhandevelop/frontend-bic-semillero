@@ -11,7 +11,7 @@ Aplicación académica de gestión de transporte desarrollada con Angular 18 y T
 | Conductores | Consulta, ficha, búsqueda, paginación, exportación CSV y gestión de registros | Guardar fotos, certificaciones y datos complementarios; verificaciones oficiales |
 | Rutas y viajes | Gestión con la API; asignación de recursos, horarios y cambios de estado de viajes | Validación de conflictos y disponibilidad horaria en el backend |
 | Clientes | Directorio, filtros, ficha, CSV y formulario administrativo de registro | Corregir validadores de registro en el backend; historial y fidelización |
-| Portal de pasajeros | Registro público, login, perfil editable e historial conectados a API; compra de hasta 10 boletas con Wompi; foto, carné y factura por API | Prueba integral contra el servidor y Wompi Sandbox |
+| Portal de pasajeros | Registro público, login, perfil editable e historial conectados a API; compra de varias boletas según disponibilidad con Wompi; foto, carné y factura por API | Prueba integral contra el servidor y Wompi Sandbox |
 | Ubicación | Mapa Leaflet/OpenStreetMap con tres buses estáticos en GeoJSON | Recepción de lecturas del dispositivo GPS y actualización en vivo |
 
 **Generar venta** abre la venta administrativa conectada a la API. Registra un recaudo ya realizado; no procesa cobros electrónicos. La compra pública usa el token de cliente y el checkout de Wompi. El perfil y su historial consultan la API.
@@ -90,7 +90,7 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 | `/clientes/login` | Login por correo o documento con sesión propia de cliente |
 | `/registro` | Registro público por API |
 | `/clientes/panel` | Perfil propio editable e historial de compras; requiere cliente |
-| `/clientes/comprar` | Compra de hasta 10 boletas, asignación de pasajeros y Wompi; requiere cliente |
+| `/clientes/comprar` | Compra de varias boletas según disponibilidad, asignación de pasajeros y Wompi; requiere cliente |
 | `/ubicacion` | Mapa de buses estáticos de ejemplo |
 | `/login` | Acceso administrativo |
 
@@ -100,7 +100,7 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 | --- | --- |
 | `/dashboard` | Resumen de operación |
 | `/clientes` | Directorio de clientes reales, filtros, ficha y exportación |
-| `/ventas/nueva` | Venta administrativa de 1–10 boletas, selección de sillas y emisión por API |
+| `/ventas/nueva` | Venta administrativa de una o varias boletas disponibles, selección de sillas y emisión por API |
 | `/buses` | Gestión de buses |
 | `/conductores` | Gestión de conductores |
 | `/rutas` | Gestión de rutas |
@@ -179,7 +179,7 @@ El menú lateral incluye **Ventas**, con ruta administrativa protegida `/ventas`
 
 `/ventas/nueva` implementa el diseño de venta en ventanilla bajo el guard administrativo. Se abre desde **Generar venta**, desde **Tiquete** en el directorio (cliente preseleccionado por ID) y después de registrar un cliente. La compra pública `/clientes/comprar` es un flujo independiente de Wompi para clientes.
 
-Consulta viajes futuros programados, terminales, clientes, tarifas, sillas y tiquetes, incluyendo todas las páginas. Permite seleccionar y quitar **de 1 a 10 sillas para el mismo cliente**. Cambiar de viaje limpia la selección; cambiar sillas, cliente o método de pago obliga a confirmar nuevamente el recaudo. Se muestran los números reales de las sillas, la cantidad, la tarifa por boleta y el total estimado. Las sillas con tiquetes emitidos o utilizados no se pueden seleccionar; la disponibilidad final y las reservas vigentes las valida el backend.
+Consulta viajes futuros programados, terminales, clientes, tarifas, sillas y tiquetes, incluyendo todas las páginas. Permite seleccionar y quitar **una o varias sillas disponibles para el mismo cliente**. Cambiar de viaje limpia la selección; cambiar sillas, cliente o método de pago obliga a confirmar nuevamente el recaudo. Se muestran los números reales de las sillas, la cantidad, la tarifa por boleta y el total estimado. Las sillas con tiquetes emitidos o utilizados no se pueden seleccionar; la disponibilidad final y las reservas vigentes las valida el backend.
 
 El POST a /api/sales/admin-sales/ envía seats: [ID, ...], el viaje, datos del cliente y método cash, card o transfer. No envía seat ni precios. El backend calcula el importe y crea una sola venta, pago y factura, con un tiquete por silla. La respuesta muestra el total definitivo, cantidad, tarifa unitaria cuando esté incluida, sillas y códigos de todos los tiquetes. El listado administrativo también muestra todas las sillas de cada compra.
 
@@ -187,7 +187,7 @@ Cada intento envía una Idempotency-Key. Ante un error de red, timeout, respuest
 
 Una factura en error no invalida la venta pagada ni sus tiquetes. Actualizar la factura solo consulta la venta y no la duplica. Los reintentos con la misma clave dependen de la idempotencia y los bloqueos transaccionales implementados por el backend. La migración correspondiente debe estar aplicada en el servidor antes de usar el nuevo flujo.
 
-Verificación: compilación de producción y comprobaciones de selección 1–10, total, confirmación de recaudo, envío sin precios, conflictos, resultado fiscal en error y reintentos con clave y datos idénticos. No se registraron ventas reales durante estas comprobaciones.
+Verificación: compilación de producción y comprobaciones de selección múltiple, total, confirmación de recaudo, envío sin precios, conflictos, resultado fiscal en error y reintentos con clave y datos idénticos. No se registraron ventas reales durante estas comprobaciones.
 
 ### Diagnóstico en consola de ventas
 
@@ -415,7 +415,7 @@ Un HTTP 401 con `code: password_change_required` se distingue de una sesión ven
 
 ### Plano de asientos en venta administrativa
 
-El selector administrativo comparte con la compra de clientes la lógica de posiciones por fila/columna y los estilos del plano: un piso, dos sillas a cada lado de un pasillo central, frente y parte trasera identificados. Los huecos del catálogo se conservan para evitar desplazar las sillas. Cada puesto muestra su número real y si está junto a la ventana o al pasillo; los estados comercial y de selección se distinguen por color. Se mantiene la selección múltiple de hasta 10 boletas y la validación de disponibilidad en el backend.
+El selector administrativo comparte con la compra de clientes la lógica de posiciones por fila/columna y los estilos del plano: un piso, dos sillas a cada lado de un pasillo central, frente y parte trasera identificados. Los huecos del catálogo se conservan para evitar desplazar las sillas. Cada puesto muestra su número real y si está junto a la ventana o al pasillo; los estados comercial y de selección se distinguen por color. Se permite selección múltiple según disponibilidad y la validación de disponibilidad en el backend.
 
 ### Detalle operativo del viaje y continuidad de navegación
 
@@ -534,7 +534,7 @@ Verificación: compilación de producción, paginación/filtrado/validación del
 
 Se corrigieron tres diferencias del frontend: consulta de sillas con filtro por bus para recuperar/completar todo el plano documentado, disponibilidad del viaje en la venta administrativa con reservas incluidas y cierre de sesión con revocación del refresh en servidor. El cambio obligatorio de contraseña reconoce 401 y 403. Los botones de salida muestran el proceso y evitan envíos repetidos; los tokens locales se eliminan aunque la revocación remota falle.
 
-La venta administrativa carga todas las posiciones del viaje al seleccionarlo, bloquea las reservadas/vendidas, cancela consultas anteriores y permite reintentar una lectura fallida. Una respuesta de otro viaje o con sillas duplicadas/incompletas no habilita la venta. El endpoint de disponibilidad tiene prioridad frente a un catálogo de tiquetes antiguo. Un bus de 30 o 42 plazas no queda reducido a 10; ese límite corresponde únicamente a cuántas boletas se venden en una operación.
+La venta administrativa carga todas las posiciones del viaje al seleccionarlo, bloquea las reservadas/vendidas, cancela consultas anteriores y permite reintentar una lectura fallida. Una respuesta de otro viaje o con sillas duplicadas/incompletas no habilita la venta. El endpoint de disponibilidad tiene prioridad frente a un catálogo de tiquetes antiguo. Un bus de 30 o 42 plazas muestra todas sus sillas; ya no existe un límite fijo de boletas por operación.
 
 Se ejecutaron 16 grupos de comprobaciones locales con respuestas controladas. Ver [FRONTEND_CONTRACT_REVIEW.md](FRONTEND_CONTRACT_REVIEW.md) para contratos revisados, validaciones y pasos pendientes contra el servidor. La compilación y los tests locales no confirman por sí solos el despliegue de backend, datos remotos, correo, Factus o Wompi Sandbox.
 
@@ -585,3 +585,15 @@ Las rutas priorizan `origin_name` y `destination_name` y conservan `origin_city`
 `RutaService.listar` acepta `search`, `origin` y `destination`. `ViajeService.listar` acepta `route`, `bus`, `driver`, `state` y `date`, conservados en las páginas siguientes. Los viajes asociados a un bus o conductor usan ahora ese filtro en el servidor y también comprueban la pertenencia al recibirlos. Se aprovechan `origin`, `destination`, `bus_plate` y `driver_name` al mostrar viajes. La asignación de recursos exige bus y conductor activos; los solapamientos los decide el backend. El precio integrado se usa también en el detalle operativo del viaje.
 
 Verificación local: crear y editar generan una sola escritura con centavos enteros; cargar la edición no consulta tarifas por separado. Se probaron respuestas incompletas, pérdida de conexión y bloqueo de reenvío, filtros conservados al paginar, nombres descriptivos aunque falle geografía, origen/destino iguales, distancia cero, duplicados rechazados por API y mensajes de solapamiento. Se ejecutaron regresiones de conductores y operación de flota. No se crearon rutas ni viajes reales durante estas comprobaciones.
+
+### Compras sin límite fijo de boletas
+
+Se elimina el tope de diez sillas tanto en la compra online como en la venta administrativa. La selección permanece limitada por las sillas reales disponibles del viaje, con IDs únicos y plano consistente; reservadas/vendidas no se seleccionan. Se conservan pasajeros, totales, confirmación de recaudo, idempotencia, reserva atómica y firma/vencimiento de Wompi. La reserva continúa siendo de diez minutos: no se confunde con cantidad de boletas. El buscador público permite introducir una cantidad entera positiva de pasajeros sin un máximo fijo; no reserva puestos desde la portada. El backend vuelve a validar disponibilidad y precio.
+
+### Bandeja administrativa de soporte
+
+`/soporte` está dentro del layout y guard de administrador, con accesos en ambos menús. Consulta todas las páginas de `/api/support/requests/` con filtros de servidor `status`, `category` y `search`, orden y siete resultados por página. El detalle muestra datos de cliente, compra, asunto, mensaje y fechas. Actualizar estado envía únicamente PATCH `{status}` con la sesión administrativa: `in_progress`, `resolved` o `closed`. Se confirma la respuesta antes de anunciar éxito y los resultados inciertos requieren consultar el detalle. Cambios de selección cancelan consultas antiguas.
+
+La bandeja no modifica ventas, tiquetes, facturas ni reembolsos y no envía correos. El contrato revisado no incluye un campo o endpoint de respuesta al cliente; por eso no se presenta un editor de respuestas que no pueda persistir. El soporte del portal cliente mantiene su servicio y sesión separados.
+
+Verificación local con respuestas controladas: checkout de 1, 12 y 38 pasajeros, venta administrativa de 38 sillas, totales, exclusión de reservadas/vendidas y un solo envío por intento. En soporte se comprobaron filtros, siete resultados por página, cancelación de detalle anterior, PATCH exclusivo de estado, doble clic, respuesta incorrecta y error de conexión sin éxito falso. No se hicieron cobros Wompi, ventas ni cambios de solicitudes en producción. La validación visual móvil sigue pendiente.

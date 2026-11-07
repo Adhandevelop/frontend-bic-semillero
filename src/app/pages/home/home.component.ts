@@ -50,11 +50,11 @@ export class HomeComponent implements OnInit {
       this.routeMessage = 'Selecciona una fecha de ida válida, desde hoy en adelante.'; return;
     }
     if (this.returnDate && (!this.validDate(this.returnDate) || this.returnDate < this.departureDate)) { this.routeMessage = 'El regreso no puede ser anterior a la ida.'; return; }
-    if(!Number.isInteger(this.passengers)||this.passengers<1||this.passengers>10){this.routeMessage='Selecciona entre 1 y 10 pasajeros.';return;}
+    if(!Number.isSafeInteger(this.passengers)||this.passengers<1){this.routeMessage='Ingresa un número entero de pasajeros mayor que cero.';return;}
     if(this.returnDate){this.routeMessage='Consulta y compra cada trayecto por separado.';return;}
     if(this.catalogLoading||this.catalogError){this.routeMessage='Espera a que cargue el catálogo o reintenta la consulta.';return;}
     this.searched=true;this.results=this.trips.filter(t=>{const r=this.routeFor(t);const day=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Bogota',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(t.date_time_start));return r?.origin.id===Number(this.origin)&&r.destination.id===Number(this.destination)&&day===this.departureDate;});
-    this.routeMessage=this.results.length?'Selecciona un viaje para continuar. Puedes comprar hasta 10 boletas.':'No hay viajes programados para esa ruta y fecha.';
+    this.routeMessage=this.results.length?'Selecciona un viaje para continuar. La compra depende de sus sillas disponibles.':'No hay viajes programados para esa ruta y fecha.';
   }
   choosePopular(id:string):void{const route=this.routes.find(r=>r.id===Number(id));if(!route)return;this.origin=String(route.origin.id);this.destination=String(route.destination.id);this.searched=true;this.results=this.trips.filter(t=>this.routeFor(t)?.id===route.id);this.routeMessage=this.results.length?'Selecciona un viaje disponible.':'No hay horarios publicados para esta ruta.';}  subscribeNewsletter(): void {
     this.newsletterMessage = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.newsletterEmail.trim())
