@@ -656,8 +656,10 @@ Verificación local: plano con IDs reales y pasillo central, conteos físicos in
 
 ### Búsqueda de horarios desde el inicio
 
+Comprobación pública del 7 de noviembre de 2026: `/api/public/trips/?origin=1&destination=2` devuelve el viaje #24, Terminal Salitre → Terminal del Norte de Medellín. El frontend publicado `main-NOAWVPYM.js` aún contenía la limitación a tres tarjetas y el botón antiguo «Reservar asiento»; no incluía la nueva búsqueda. Es necesario desplegar los cambios del frontend para ver esta corrección. La prueba local incluye selección Salitre–Medellín; no se modificó el backend ni la programación del viaje.
+
 Cada búsqueda consulta de nuevo `/api/public/trips/` con origen y destino, recorriendo todas las páginas y cancelando consultas anteriores. La fecha se compara en Colombia sobre salidas futuras; no depende de interpretar el día como UTC en el servidor. Si no hay salidas en el día elegido, se ofrecen las otras fechas publicadas de esa ruta. Un error de conexión se muestra como error, no como ausencia de horarios.
 
-Se muestran todas las rutas del catálogo. «Consultar horarios» selecciona la ruta, limpia la fecha anterior, consulta sus próximas salidas y enfoca los resultados. Una ruta publicada sin viajes futuros no equivale a una reserva disponible. «Elegir sillas» continúa al portal del cliente con el viaje seleccionado; la disponibilidad se valida durante la compra. No se crea una reserva desde el inicio.
+Se muestran como máximo seis tarjetas de rutas destacadas en el inicio. Los selectores de origen/destino y la búsqueda conservan el catálogo completo. «Consultar horarios» selecciona la ruta, limpia la fecha anterior, consulta sus próximas salidas y enfoca los resultados. Una ruta publicada sin viajes futuros no equivale a una reserva disponible. «Elegir sillas» continúa al portal del cliente con el viaje seleccionado; la disponibilidad se valida durante la compra. No se crea una reserva desde el inicio.
 
 Verificación: consultas recientes, filtros de terminales, medianoche de Colombia, exclusión de salidas pasadas, fechas alternativas, más de diez pasajeros, cancelación de respuestas anteriores, errores y paginación con filtros. Compilación de producción correcta. Se consultó únicamente el catálogo público en producción; no se modificaron viajes ni ventas. Revisión visual pendiente.

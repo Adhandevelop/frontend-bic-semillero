@@ -1,4 +1,4 @@
-﻿import { PublicCatalogService, PublicRoute, PublicTrip } from '../../core/services/public-catalog.service';
+import { PublicCatalogService, PublicRoute, PublicTrip } from '../../core/services/public-catalog.service';
 import { passengerError } from '../../core/services/passenger.service';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
@@ -13,7 +13,7 @@ export class HomeComponent implements OnInit,OnDestroy {
   readonly images = ["https://lh3.googleusercontent.com/aida-public/AB6AXuD3tgQT79djQy4BGinia3MFo9csgUOaPGobX_Se3qfcTw8mu2kP6paYh_kgYlwfaY78aR4ZSXV_Q7PHAOIRUXEFn_I-tEmEKHgXcJjD63jCek115IdMOEuiEJda2aK9srM3oORFZntoZqJx9x5UfPmnM_4TXuvhLpgJtVfeLHjhOpV93Es96n2OMlxKZSrsHJjEdE9EQt4AE2O6M8qdfxOiLKQ7MMiFnpqCxk1Uj0FRRW7GEbLl822H","https://lh3.googleusercontent.com/aida-public/AB6AXuD8HjaTYSqeiMW0-AA272PEqDpOXkD4sfVcHvBaSCtlv493mmU2Fpe4w8Qwzpw2CSVtSy9Fba_0y1hARPnrGOpgyq7gEJYhlhcfQRhXV8F7lH4tdGJLITK1qRDuAIL9WJTFd8tLCzS5CMOA74sJ3oxPT0kLUvKypiVo09Cdrsq567RU_hP4sZYt9e6xAm4DWM93TcLf3vtmlN3pyLgxXXJqJw1Gy1nHSbV-EaWarKqEhbJl9T_ZMU3T","https://lh3.googleusercontent.com/aida-public/AB6AXuBzecAHdmI0-Q0y699nemycYwTzCiHDuXVQ7wogFdncau4HsPn489r_K_B-ut-ABCUf4YNdkPCJeINlW_tDsJuqPuxYom52QGK7MT3thPwjIM-1K2Fce7XM9_iorypfdumVYbBB_4e26GBIsHdkug1dZFKfu0ZmuxDtuTobE594M0K47Sd-KJ0ye0UKwoNem2YIPWsbE7RGhEycHWRLGDeJgjSXggG0DVGVQVqz1NduzoIFOoDPGG-w"];
   routes:PublicRoute[]=[];trips:PublicTrip[]=[];results:PublicTrip[]=[];catalogLoading=false;catalogError='';searched=false;
   get cities(){return [...new Map(this.routes.flatMap(r=>[r.origin,r.destination]).map(p=>[p.id,{code:String(p.id),name:p.name}])).values()];}
-  get popularRoutes(){return this.routes.map(r=>({origin:r.origin.name,destination:String(r.id),name:r.destination.name,duration:r.distance_km?r.distance_km+' km':'Ruta intermunicipal',price:'Consultar horarios',service:r.origin.name+' → '+r.destination.name}));}
+  get popularRoutes(){return this.routes.slice(0,6).map(r=>({origin:r.origin.name,destination:String(r.id),name:r.destination.name,duration:r.distance_km?r.distance_km+' km':'Ruta intermunicipal',price:'Consultar horarios',service:r.origin.name+' → '+r.destination.name}));}
   ngOnInit():void{this.loadCatalog();}
   loadCatalog():void{if(this.catalogLoading)return;this.catalogLoading=true;this.catalogError='';this.publicApi.catalog().pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{this.routes=data.routes;this.trips=data.trips;this.catalogLoading=false;},error:err=>{this.catalogLoading=false;this.catalogError=passengerError(err);}});}
   routeFor(t:PublicTrip):PublicRoute|undefined{return typeof t.route==='number'?this.routes.find(r=>r.id===t.route):t.route;}
@@ -79,5 +79,3 @@ export class HomeComponent implements OnInit,OnDestroy {
   }
   pending(feature: string): void { this.notice = feature + ': disponible próximamente.'; }
 }
-
-
