@@ -1,3 +1,4 @@
+import { preparePassengerTickets } from '../../core/services/passenger-ticket-download';
 import { REFUND_REQUIRED_MESSAGE } from '../../core/utils/wompi-payment';
 import { ListOrder, orderRecords } from '../../core/utils/list-order';
 import { ListOrderComponent } from '../../shared/list-order/list-order.component';
@@ -6,7 +7,7 @@ import { ClientSupportComponent } from '../client-support/client-support.compone
 import { ClientTicket, TicketInfo, filterClientSales, ticketGroup, ticketLabel } from './client-purchases';
 import { FormsModule } from '@angular/forms';
 import { Subscription, catchError, firstValueFrom, from, map, mergeMap, of, timeout } from 'rxjs';
-import { createTicketPdf, ticketVerificationUrl, PdfTicket } from '../../core/services/ticket-pdf';
+import { createTicketPdf, ticketVerificationUrl } from '../../core/services/ticket-pdf';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -76,22 +77,7 @@ export class ClientPanelComponent implements OnInit, OnDestroy {
     const id=this.selectedSale?.id;if(!id||this.pdfBusy||!this.canDownloadTickets)return;
     this.pdfBusy=true;this.pdfError='';
     try{
-      const sale=await firstValueFrom(this.api.sale(id).pipe(timeout(20000)));
-      if(sale.id!==id)throw new Error('La compra recibida no coincide con la solicitada. Actualiza el detalle.');
-      if(sale.status!=='paid')throw new Error('La compra todavía no está pagada.');
-      const tickets=sale.tickets?.filter(t=>t.status==='issued')??[];
-      if(!tickets.length)throw new Error('Esta compra ya no tiene boletas emitidas.');
-      const entries:PdfTicket[]=await Promise.all(tickets.map(async ticket=>{
-        const url=ticketVerificationUrl(ticket.verification_url,location.origin,this.api.token());
-        const verified=await firstValueFrom(this.api.verifyTicket(url.href).pipe(timeout(15000)));
-        if(!verified.valid||verified.status!=='issued'||verified.ticket_code!==ticket.ticket_code||verified.trip?.id!==ticket.trip||verified.seat?.id!==ticket.seat)throw new Error('Una boleta ya no está emitida o su verificación no coincide. Actualiza la compra.');
-        const passengerName=typeof ticket.passenger_name==='string'?ticket.passenger_name.trim():'';
-        const passengerIdentification=typeof ticket.passenger_identification==='string'?ticket.passenger_identification.trim():'';
-        if(!passengerName||!passengerIdentification||passengerIdentification.includes('*'))throw new Error('El tiquete autenticado no incluye el nombre y documento completos del pasajero. Actualiza la compra antes de descargar.');
-        if(!verified.trip.origin||!verified.trip.destination||!verified.trip.date_time_start||!verified.seat.seat_number)throw new Error('El servidor devolvió datos incompletos del viaje o asiento para imprimir una boleta.');
-        // The public verification intentionally masks identity; print only the authenticated ticket data.
-        return {ticket:{...verified,passenger:{name:passengerName,identification_number:passengerIdentification}},verificationUrl:publicVerificationUrl(ticket.verification_url!,location.origin,this.api.token()),issuedAt:ticket.issued_at};
-      }));
+      const {entries}=await preparePassengerTickets(this.api,id,location.origin);
       const pdf=await createTicketPdf(id,entries);
       pdf.save(`boletas-compra-${id}.pdf`);
     }catch(err){

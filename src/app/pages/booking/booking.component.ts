@@ -1,3 +1,5 @@
+import { preparePassengerTickets } from '../../core/services/passenger-ticket-download';
+import { createTicketPdf } from '../../core/services/ticket-pdf';
 import { expirationSignature, reservationDeadline, REFUND_REQUIRED_MESSAGE } from '../../core/utils/wompi-payment';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, NgZone, OnDestroy, OnInit, inject } from '@angular/core';
@@ -102,9 +104,24 @@ const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!th
     if(!this.pending?.saleId||this.checking)return;this.checking=true;this.receiptError='';
     this.api.sale(this.pending.saleId).pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:sale=>{this.checking=false;this.receipt=sale.status==='refund_required'?{...sale,tickets:[],factus_invoice:null}:sale;if(sale.status==='refund_required')this.message=this.refundMessage;else if(sale.status==='paid')this.message='Venta pagada confirmada por el servidor.';},error:err=>{this.checking=false;this.receiptError=passengerError(err);}});
   }
+  pdfBusy=false;pdfError='';private verifiedSeatNumbers:Record<string,string>={};
+  get canDownloadTickets():boolean{return !this.refundRequired&&!!this.pending?.saleId&&(this.receipt?(this.receipt.status==='paid'?this.receipt.tickets:[]):this.payment?.sale_status==='paid'?this.payment.tickets:[]).some(t=>t.status==='issued');}
+  receiptSeatNumber(ticket:PassengerSale['tickets'][number]):string{return ticket.seat_number||this.verifiedSeatNumbers[ticket.ticket_code]||this.seatNumber(ticket.seat);}
+  async downloadTickets():Promise<void>{
+    const id=this.pending?.saleId;if(!id||this.pdfBusy||!this.canDownloadTickets)return;
+    this.pdfBusy=true;this.pdfError='';
+    try{
+      const {sale,entries}=await preparePassengerTickets(this.session,id,location.origin);
+      if(this.gone||this.pending?.saleId!==id)return;
+      this.receipt=sale;for(const entry of entries)this.verifiedSeatNumbers[entry.ticket.ticket_code]=entry.ticket.seat.seat_number;
+      const pdf=await createTicketPdf(id,entries);
+      if(!this.gone&&this.pending?.saleId===id)pdf.save(`boletas-compra-${id}.pdf`);
+    }catch(err){if(!this.gone&&this.pending?.saleId===id)this.pdfError=err instanceof Error?err.message:passengerError(err as {status?:number;error?:unknown});}
+    finally{this.pdfBusy=false;}
+  }
   newPurchase():void{
-    if(this.paying||this.checking||!confirm('¿Ya revisaste el estado de esta operación en Mis compras? No vuelvas a pagar una compra confirmada.'))return;
-    this.passengers=[];this.attemptKey='';this.pending=null;this.checkoutData=null;this.payment=null;this.receipt=null;this.seatId=null;this.terms=false;this.error='';this.message='';this.persist();this.updateClock();window.history.replaceState(window.history.state,'',location.origin+'/clientes/comprar');
+    if(this.pdfBusy||this.paying||this.checking||!confirm('¿Ya revisaste el estado de esta operación en Mis compras? No vuelvas a pagar una compra confirmada.'))return;
+    this.pdfError='';this.verifiedSeatNumbers={};this.passengers=[];this.attemptKey='';this.pending=null;this.checkoutData=null;this.payment=null;this.receipt=null;this.seatId=null;this.terms=false;this.error='';this.message='';this.persist();this.updateClock();window.history.replaceState(window.history.state,'',location.origin+'/clientes/comprar');
   }
   invoiceLink(value?:string):string|null{try{const url=new URL(value??'');return url.protocol==='https:'&&!url.username&&!url.password?url.href:null;}catch{return null;}}
   ngOnDestroy():void{this.gone=true;if(this.timer)clearInterval(this.timer);this.destroyed.next();this.destroyed.complete();}
