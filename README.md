@@ -617,3 +617,5 @@ El formulario de bus incorpora selección opcional de dispositivos libres al cre
 En editar bus aparece el panel de GPS actual con asignación de equipo libre, sustitución confirmada y retiro. Esta operación se guarda por separado de los datos del vehículo. Las tarjetas de buses muestran el GPS registrado y un acceso explícito «Asignar GPS»/«Gestionar GPS». La vinculación no asegura conexión ni crea telemetría de demostración.
 
 Comprobaciones locales: selección de GPS libre, ausencia de campos no admitidos en el payload del bus, orden crear → asignar → releer, rechazo de un GPS fuera del catálogo, conservación del bus ante fallo de asignación, bloqueo de creación repetida y edición sin reasignación implícita. Se verificaron también los controles de acceso desde la lista y formulario. No se crearon buses ni asignaciones reales durante estas pruebas.
+
+En editar bus, el orden visual es información general y resumen de la unidad primero; el panel de asignación GPS queda debajo de ambas columnas. Se conservan sus controles y endpoints.
