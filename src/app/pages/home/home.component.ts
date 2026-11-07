@@ -1,3 +1,4 @@
+import { HomeMapComponent } from './home-map.component';
 import { PublicCatalogService, PublicRoute, PublicTrip } from '../../core/services/public-catalog.service';
 import { passengerError } from '../../core/services/passenger.service';
 import { CommonModule } from '@angular/common';
@@ -6,7 +7,7 @@ import { Subject, takeUntil, timeout } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-@Component({selector: 'app-home', standalone: true, imports: [CommonModule, FormsModule, RouterLink], templateUrl: './home.component.html', styleUrls: ['./home.component.css', './home-content.component.css']})
+@Component({selector: 'app-home', standalone: true, imports: [CommonModule, FormsModule, RouterLink, HomeMapComponent], templateUrl: './home.component.html', styleUrls: ['./home.component.css', './home-content.component.css', './home-hero-map.component.css']})
 export class HomeComponent implements OnInit,OnDestroy {
   private destroyed=new Subject<void>();private searchCancelled=new Subject<void>();
   searching=false;searchError='';alternativeDates:string[]=[];

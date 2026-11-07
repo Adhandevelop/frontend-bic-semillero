@@ -664,6 +664,12 @@ Se muestran como máximo seis tarjetas de rutas destacadas en el inicio. Los sel
 
 Verificación: consultas recientes, filtros de terminales, medianoche de Colombia, exclusión de salidas pasadas, fechas alternativas, más de diez pasajeros, cancelación de respuestas anteriores, errores y paginación con filtros. Compilación de producción correcta. Se consultó únicamente el catálogo público en producción; no se modificaron viajes ni ventas. Revisión visual pendiente.
 
+### Mapa de muestra en la cabecera del inicio
+
+La cabecera del inicio incorpora un mapa Leaflet con tres iconos azules de buses, reutilizando el estilo de la proyección y posiciones GeoJSON fijas de demostración. El buscador permanece por encima, con fondo para conservar contraste. El mapa de fondo no captura desplazamientos ni gestos; mantiene atribución de OpenStreetMap y ajusta el encuadre al cambiar el tamaño. No consulta ubicaciones ni pasajeros reales; el aviso de GPS en desarrollo sigue visible. Al salir se libera el mapa y su observador.
+
+Verificación del mapa con Leaflet simulado: tres marcadores, gestos deshabilitados, atribución, encuadre en escritorio/móvil y limpieza del observador. Falta la comprobación visual en navegador.
+
 ### Descargar boletas al finalizar la compra
 
 La confirmación de Wompi ofrece «Descargar tiquetes en PDF» cuando la API confirma una venta pagada con tiquetes emitidos. La descarga es manual y no se dispara al recargar o actualizar el pago. Genera un único PDF, una página por boleta, reutilizando la preparación y validación del detalle de Mis compras: vuelve a consultar la venta autenticada, comprueba cada QR y utiliza los datos completos del pasajero del tiquete autenticado. Un fallo de factura no impide descargar boletas válidas.
