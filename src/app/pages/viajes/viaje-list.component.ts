@@ -50,7 +50,7 @@ export class ViajeListComponent implements OnInit {
   capacidadBus(trip:Viaje):number|undefined{return this.buses.find(bus=>bus.id===trip.bus)?.capacity;}
   nombreConductor(trip:Viaje):string{return trip.driver_name||this.conductores.find(driver=>driver.id===trip.conductor)?.full_name||trip.conductor_detalle?.full_name||trip.conductor_detalle?.nombre||'Conductor #'+trip.conductor;}
   licenciaConductor(trip:Viaje):string{return this.conductores.find(driver=>driver.id===trip.conductor)?.license_number||'Licencia sin datos';}
-  nombreRuta(trip:Viaje):string{const route=this.rutas.find(route=>route.id===trip.ruta)||trip.ruta_detalle;return route?.origen&&route?.destino?route.origen+' → '+route.destino:'Ruta #'+trip.ruta;}
+  nombreRuta(trip:Viaje):string{if(trip.origin&&trip.destination)return trip.origin+' → '+trip.destination;const route=this.rutas.find(route=>route.id===trip.ruta)||trip.ruta_detalle;return route?.origen&&route?.destino?route.origen+' → '+route.destino:'Ruta #'+trip.ruta;}
   get dateTrips():Viaje[]{return this.viajes.filter(trip=>!this.selectedDate||tripDay(trip.fecha_hora_inicio)===this.selectedDate);}
   countState(state:Viaje['estado']):number{return this.dateTrips.filter(trip=>trip.estado===state).length;}
   get origins():string[]{return [...new Set(this.rutas.map(route=>route.origen))].sort();}

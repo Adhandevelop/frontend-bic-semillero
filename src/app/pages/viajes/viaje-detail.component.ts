@@ -30,7 +30,7 @@ export class ViajeDetailComponent implements OnInit,OnDestroy {
       const id=Number(raw);this.tripId=id;this.loading=true;
       return this.tripApi.obtenerPorId(id).pipe(timeout(20000),switchMap(trip=>{
         if(trip.id!==id)throw new Error('El viaje recibido no coincide.');this.trip=trip;
-        return forkJoin({bus:this.partial(this.busApi.obtenerPorId(trip.bus),'el bus'),driver:this.partial(this.driverApi.obtenerPorId(trip.conductor),'el conductor'),route:this.partial(this.routeApi.obtenerPorId(trip.ruta),'la ruta'),fares:this.partial(this.tripApi.listarTarifas(),'la tarifa'),seats:this.partial(this.seatsApi.seats(trip.bus),'los números de sillas'),tickets:this.partial(this.seatsApi.tickets(id),'los pasajeros y sus boletas')});
+        return forkJoin({bus:this.partial(this.busApi.obtenerPorId(trip.bus),'el bus'),driver:this.partial(this.driverApi.obtenerPorId(trip.conductor),'el conductor'),route:this.partial(this.routeApi.obtenerPorId(trip.ruta),'la ruta'),fares:trip.fare_amount_cents===undefined?this.partial(this.tripApi.listarTarifas(),'la tarifa'):of({data:[] as TripFare[],error:''}),seats:this.partial(this.seatsApi.seats(trip.bus),'los números de sillas'),tickets:this.partial(this.seatsApi.tickets(id),'los pasajeros y sus boletas')});
       }),catchError(err=>{this.error=this.failure(err,'el viaje');return of(null);}),finalize(()=>{this.loading=false;}));
     }),takeUntil(this.destroyed)).subscribe(data=>{
       if(!data)return;this.bus=data.bus.data;this.driver=data.driver.data;this.route=data.route.data;this.fare=data.fares.data?.find(value=>value.trip===this.tripId)??null;this.seats=(data.seats.data??[]).filter(value=>value.bus===this.trip?.bus);this.tickets=(data.tickets.data??[]).filter(value=>value.trip===this.tripId).sort((a,b)=>this.seatLabel(a).localeCompare(this.seatLabel(b),undefined,{numeric:true}));
@@ -39,8 +39,8 @@ export class ViajeDetailComponent implements OnInit,OnDestroy {
   }
   private reset():void{this.trip=null;this.bus=null;this.driver=null;this.route=null;this.fare=null;this.seats=[];this.tickets=[];this.tripId=null;this.loading=false;this.error='';this.warnings=[];this.ticketsFailed=false;this.fareFailed=false;this.updatedAt=null;}
   reload():void{if(!this.loading)this.refresh.next();}
-  get routeLabel():string{return this.route?this.route.origen+' → '+this.route.destino:this.trip?'Ruta #'+this.trip.ruta:'Viaje';}
-  get farePesos():number|null{const value=this.fare?.amount_cents;return typeof value==='number'&&Number.isSafeInteger(value)&&value>0?value/100:null;}
+  get routeLabel():string{if(this.trip?.origin&&this.trip.destination)return this.trip.origin+' → '+this.trip.destination;return this.route?this.route.origen+' → '+this.route.destino:this.trip?'Ruta #'+this.trip.ruta:'Viaje';}
+  get farePesos():number|null{const value=this.trip?.fare_amount_cents!==undefined?this.trip.fare_amount_cents:this.fare?.amount_cents;return typeof value==='number'&&Number.isSafeInteger(value)&&value>0?value/100:null;}
   get issuedCount():number{return this.tickets.filter(t=>t.status==='issued').length;}
   get usedCount():number{return this.tickets.filter(t=>t.status==='used').length;}
   get cancelledCount():number{return this.tickets.filter(t=>t.status==='cancelled').length;}

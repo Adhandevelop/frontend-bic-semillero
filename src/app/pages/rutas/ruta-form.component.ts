@@ -1,4 +1,5 @@
-﻿import { CommonModule } from '@angular/common';
+﻿import { fleetError } from '../../core/utils/fleet-error';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -62,7 +63,7 @@ export class RutaFormComponent implements OnInit, OnDestroy {
     this.saving=true;this.error='';
     (this.editando&&this.rutaId?this.rutaService.actualizar(this.rutaId,payload):this.rutaService.crear(payload)).subscribe({
       next:()=>{void this.router.navigateByUrl('/rutas');},
-      error:()=>{this.saving=false;this.error='No se pudo guardar la ruta. Revisa los datos y los permisos de tu cuenta e intenta nuevamente.';}
+      error:err=>{this.saving=false;this.error=fleetError(err,'guardar la ruta');}
     });
   }
   ngOnDestroy():void{this.changes?.unsubscribe();}

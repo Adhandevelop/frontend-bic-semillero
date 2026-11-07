@@ -2,7 +2,7 @@
 
 ## Causa encontrada
 
-El generador local `complete_seats_for_bus` compara `str(seat_number)` literalmente. Las sillas existentes `01` a `09` no coinciden con las nuevas etiquetas `1` a `9`; `10` sí coincide. Al completar un bus de 40 plazas que ya tenía `01` a `10`, puede crear 39 registros en lugar de 30 y terminar con 49.
+El generador anterior comparaba `str(seat_number)` literalmente. Las sillas existentes `01` a `09` no coincidían con las nuevas etiquetas `1` a `9`; `10` sí coincidía. Al completar un bus de 40 plazas que ya tenía `01` a `10`, podía crear 39 registros en lugar de 30 y terminar con 49.
 
 Además, si una posición natural estaba ocupada, el generador asignaba otra libre. Esto produce números como `1` después de `09` y `10`. El renderizador anterior de Angular también rellenaba otra posición libre cuando había colisiones, ocultando la inconsistencia física.
 
@@ -18,6 +18,10 @@ Además, si una posición natural estaba ocupada, el generador asignaba otra lib
 Esta protección no repara la base de datos ni resuelve boletas ya emitidas para dos IDs equivalentes. La verificación de una boleta sigue reflejando el estado que devuelve el backend.
 
 ## Trabajo requerido en backend
+
+Actualización de la revisión: el código local del backend ya incluye comparación canónica, diagnóstico y conciliación. Esto no acredita su despliegue ni repara automáticamente registros antiguos. El aviso con pares `01`/`1` e IDs `1`/`130` a `9`/`138` sigue indicando datos equivalentes que deben revisarse. No se ha consultado ni modificado la base de producción en esta revisión.
+
+El comando local existente admite diagnóstico explícito sin completar ni modificar sillas: `python manage.py complete_bus_seats --plate PLACA_REAL --diagnose-only`. Debe ejecutarse en el backend desplegado con la placa correcta y revisar referencias antes de decidir la reparación. La aplicación de conciliación es una operación aparte; no se ejecutó desde Angular ni durante esta revisión.
 
 1. Corregir la comparación del generador antes de seguir completando buses: usar una clave numérica canónica para etiquetas numéricas, sin exigir que se renombren las etiquetas existentes.
 2. Normalizar también las claves de posición. No utilizar una posición libre distinta para ocultar una colisión que representa la misma silla física.

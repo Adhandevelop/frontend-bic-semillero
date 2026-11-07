@@ -1,3 +1,4 @@
+import { fleetError } from '../../core/utils/fleet-error';
 import { ListOrder, orderRecords } from '../../core/utils/list-order';
 import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 import { CommonModule } from '@angular/common';
@@ -15,14 +16,14 @@ export class RutaListComponent implements OnInit {
   selectedRoute:Ruta|null=null;notice='';updatedAt:Date|null=null;
   constructor(private rutaService:RutaService){}
   ngOnInit():void{this.cargarRutas();}
-  hasDistance(route:Ruta):boolean{return route.distancia_km!=null&&Number.isFinite(route.distancia_km)&&route.distancia_km>=0;}
+  hasDistance(route:Ruta):boolean{return route.distancia_km!=null&&Number.isFinite(route.distancia_km)&&route.distancia_km>0;}
   get totalKm():number{return this.rutas.reduce((total,route)=>total+(this.hasDistance(route)?route.distancia_km!:0),0);}
   get measuredCount():number{return this.rutas.filter(route=>this.hasDistance(route)).length;}
   get connectedCount():number{return new Set(this.rutas.flatMap(route=>[route.origen_id!=null?'id:'+route.origen_id:'name:'+route.origen,route.destino_id!=null?'id:'+route.destino_id:'name:'+route.destino])).size;}
   get origins():string[]{return [...new Set(this.rutas.map(route=>route.origen))].sort();}
   get filteredRoutes():Ruta[]{
     const query=this.searchValue.trim().toLocaleLowerCase();
-    return orderRecords(this.rutas.filter(route=>(!query||[route.id,route.origen,route.destino].join(' ').toLocaleLowerCase().includes(query))&&(!this.originFilter||route.origen===this.originFilter)&&(!this.distanceFilter||(this.distanceFilter==='unknown'?!this.hasDistance(route):this.hasDistance(route)&&(this.distanceFilter==='short'?route.distancia_km!<200:this.distanceFilter==='medium'?route.distancia_km!>=200&&route.distancia_km!<500:route.distancia_km!>=500)))),this.listOrder);
+    return orderRecords(this.rutas.filter(route=>(!query||[route.id,route.origen,route.destino,route.origin_city,route.destination_city].join(' ').toLocaleLowerCase().includes(query))&&(!this.originFilter||route.origen===this.originFilter)&&(!this.distanceFilter||(this.distanceFilter==='unknown'?!this.hasDistance(route):this.hasDistance(route)&&(this.distanceFilter==='short'?route.distancia_km!<200:this.distanceFilter==='medium'?route.distancia_km!>=200&&route.distancia_km!<500:route.distancia_km!>=500)))),this.listOrder);
   }
   get pageCount():number{return Math.max(1,Math.ceil(this.filteredRoutes.length/this.pageSize));}
   get currentPage():number{return Math.min(this.page,this.pageCount);}
@@ -39,7 +40,7 @@ export class RutaListComponent implements OnInit {
   eliminarRuta(route:Ruta):void{
     if(this.loading||this.deletingId!==null||!route.id||!confirm('¿Eliminar la ruta '+route.origen+' → '+route.destino+'?'))return;
     this.deletingId=route.id;this.error='';this.success='';
-    this.rutaService.eliminar(route.id).subscribe({next:()=>{this.rutas=this.rutas.filter(item=>item.id!==route.id);if(this.selectedRoute?.id===route.id)this.selectedRoute=this.rutas[0]||null;this.deletingId=null;this.page=Math.min(this.page,this.pageCount);this.success='Ruta eliminada correctamente.';},error:()=>{this.deletingId=null;this.error='No se pudo eliminar la ruta. Comprueba sus asociaciones y permisos en el backend.';}});
+    this.rutaService.eliminar(route.id).subscribe({next:()=>{this.rutas=this.rutas.filter(item=>item.id!==route.id);if(this.selectedRoute?.id===route.id)this.selectedRoute=this.rutas[0]||null;this.deletingId=null;this.page=Math.min(this.page,this.pageCount);this.success='Ruta eliminada correctamente.';},error:err=>{this.deletingId=null;this.error=fleetError(err,'eliminar la ruta');}});
   }
   exportCsv():void{
     if(this.loading||this.loadFailed||!this.filteredRoutes.length)return;

@@ -8,6 +8,8 @@ export interface Ruta {
   origen_punto?: Point;
   destino_punto?: Point;
   destino: string;
+  origin_city?: string;
+  destination_city?: string;
   distancia_km?: number;
   estado: 'activa' | 'inactiva';
 }

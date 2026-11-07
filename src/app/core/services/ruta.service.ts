@@ -5,7 +5,8 @@ import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { Ruta } from '../models/ruta.model';
 import { allApiPages } from './api-pagination';
-interface RouteDto {id:number;origin:number;destination:number;distance_km:string|number;}
+export interface RouteFilters {search?:string;origin?:number;destination?:number;}
+interface RouteDto {origin_name?:string;destination_name?:string;origin_city?:string;destination_city?:string;id:number;origin:number;destination:number;distance_km:string|number;}
 export interface PlaceDto {id:number;place_name:string;place_point?:Point;}
 @Injectable({providedIn:'root'})
 export class RutaService {
@@ -13,11 +14,12 @@ export class RutaService {
   private readonly placesUrl=API_BASE_URL+'/geography/places/';
   constructor(private http:HttpClient){}
   private toView(route:RouteDto,places:PlaceDto[]):Ruta {
-    return {id:route.id,origen:places.find(p=>p.id===route.origin)?.place_name||'Ubicación #'+route.origin,destino:places.find(p=>p.id===route.destination)?.place_name||'Ubicación #'+route.destination,origen_id:route.origin,destino_id:route.destination,origen_punto:places.find(p=>p.id===route.origin)?.place_point,destino_punto:places.find(p=>p.id===route.destination)?.place_point,distancia_km:Number(route.distance_km),estado:'activa'};
+    return {id:route.id,origin_city:route.origin_city,destination_city:route.destination_city,origen:route.origin_name||places.find(p=>p.id===route.origin)?.place_name||'Ubicación #'+route.origin,destino:route.destination_name||places.find(p=>p.id===route.destination)?.place_name||'Ubicación #'+route.destination,origen_id:route.origin,destino_id:route.destination,origen_punto:places.find(p=>p.id===route.origin)?.place_point,destino_punto:places.find(p=>p.id===route.destination)?.place_point,distancia_km:Number(route.distance_km),estado:'activa'};
   }
   // The backend has no route-state field; 'activa' is only a legacy UI default.
-  listar():Observable<Ruta[]> {
-    return forkJoin({routes:allApiPages<RouteDto>(this.http,this.apiUrl),places:allApiPages<PlaceDto>(this.http,this.placesUrl).pipe(catchError(()=>of([] as PlaceDto[])))}).pipe(map(data=>data.routes.map(route=>this.toView(route,data.places))));
+  listar(filters:RouteFilters={}):Observable<Ruta[]> {
+    const query=new URLSearchParams();for(const [key,value] of Object.entries(filters))if(value!==undefined&&String(value).trim())query.set(key,String(value));
+    return forkJoin({routes:allApiPages<RouteDto>(this.http,this.apiUrl+(query.size?'?'+query.toString():'')),places:allApiPages<PlaceDto>(this.http,this.placesUrl).pipe(catchError(()=>of([] as PlaceDto[])))}).pipe(map(data=>data.routes.map(route=>this.toView(route,data.places))));
   }
   obtenerPorId(id:number):Observable<Ruta> {
     return forkJoin({route:this.http.get<RouteDto>(this.apiUrl+id+'/'),places:allApiPages<PlaceDto>(this.http,this.placesUrl).pipe(catchError(()=>of([] as PlaceDto[])))}).pipe(map(data=>this.toView(data.route,data.places)));

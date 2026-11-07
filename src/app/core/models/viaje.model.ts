@@ -4,6 +4,9 @@ export interface Viaje {
   conductor: number;
   driver_name?: string;
   bus_plate?: string;
+  origin?: string;
+  destination?: string;
+  fare_amount_cents?: number | null;
   ruta: number;
   fecha_hora_inicio: string;
   fecha_hora_fin?: string | null;

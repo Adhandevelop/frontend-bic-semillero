@@ -143,11 +143,11 @@ En el backend local hay relaciones `PROTECT` desde ventas, tiquetes y registros 
 
 ### Precio de cada viaje
 
-El formulario de creación/edición permite asignar el precio por silla en COP, obligatorio, positivo y con máximo dos decimales (hasta 21.474.836,47 COP). Convierte pesos a centavos enteros: 25000 COP → `amount_cents: 2500000`. Al editar carga la tarifa del viaje; si no existe, requiere asignarla.
+El formulario de creación/edición permite asignar el precio por silla en COP, obligatorio, positivo y con máximo dos decimales (hasta 21.474.836,47 COP). Convierte pesos a centavos enteros: 25000 COP → `fare_amount_cents: 2500000`. Al editar lee la tarifa integrada en el detalle del viaje; si no existe, requiere asignarla.
 
-Se guarda primero el viaje con el servicio existente (`POST /api/trips/trips/` o `PATCH /api/trips/trips/:id/`) y después se consulta `/api/trips/fares/`: crea con `{trip, amount_cents}` o actualiza la tarifa existente con `PATCH /api/trips/fares/:id/`. Se conserva el prefijo real de viajes configurado en el proyecto; el ejemplo `/api/trips/` no coincide con el router local. El JWT administrativo lo añade el interceptor.
+Viaje y tarifa se guardan de forma atómica en una sola solicitud (`POST /api/trips/trips/` o `PATCH /api/trips/trips/:id/`). El formulario no escribe después en `/api/trips/fares/`. Los métodos de tarifas permanecen para consumidores existentes; el JWT administrativo lo añade el interceptor.
 
-Las solicitudes no son atómicas. Si falla la tarifa, la pantalla informa que el viaje ya se guardó y conserva su ID: reintentar actualiza ese viaje, consulta si ya existe tarifa y evita crear otro viaje. Si se abandona la pantalla, se puede completar desde editar. No se anuncia éxito completo ni se navega hasta guardar ambas partes. Ante un error de red en la primera solicitud, revisar el listado antes de reintentar. La venta continúa tomando el precio del backend; no envía `amount_cents`.
+Se verifica que la respuesta confirme ID y tarifa antes de anunciar éxito. Ante pérdida de conexión, error de servidor o respuesta incompleta, se bloquea el reenvío desde el formulario y se indica consultar el listado. No se reintenta automáticamente. Los rechazos de validación muestran el motivo devuelto por el backend. La venta continúa tomando el precio del backend y no envía el importe elegido por el navegador.
 
 ### Dashboard de rutas
 
@@ -546,6 +546,8 @@ Angular ya no desplaza sillas a posiciones libres ni crea filas ficticias para a
 
 La corrección de datos requiere backend: comparar numeración canónica y conciliar IDs/referencias existentes sin borrar boletas vendidas. Ver [SEAT_PLAN_DATA_ISSUE.md](SEAT_PLAN_DATA_ISSUE.md). La protección de interfaz no sustituye una validación del backend ni resuelve automáticamente conflictos de boletas ya emitidas.
 
+La revisión más reciente del código local del backend confirma que ya incorpora comparación canónica y herramientas de diagnóstico/conciliación. Los duplicados antiguos pueden seguir en la base y deben revisarse por separado; actualizar el generador no los repara. No se retiró el bloqueo de venta ni se hicieron cambios en datos de producción.
+
 Verificación: reproducción del caso 49, detección `01`/`1` y posición `A`/`1`, ausencia de mutaciones, bloqueo de compra/venta, rechazo de conteos inflados y mantenimiento del plano correcto de 40 sillas y los casos de 30/42.
 
 ### Capacidad del tipo y sillas del vehículo
@@ -575,3 +577,11 @@ Se integra `Driver.is_active` en ficha, tabla, tarjetas, filtro y CSV. Activar/d
 Programar/editar viajes solo permite guardar con un conductor confirmado activo; una asignación antigua inactiva sigue visible como referencia. El backend sigue siendo responsable de rechazar inactividad o solapamientos, y sus mensajes se muestran en el formulario. Los campos de lectura `driver_name` y `bus_plate` se conservan en el modelo de viajes y se aprovechan en listas, viajes asociados y mapa; no se envían al guardar un viaje. Crear una ficha de conductor sigue usando los cuatro datos operativos; el servidor aplica su estado activo por defecto y este puede modificarse en la ficha.
 
 Comprobaciones locales: PATCH confirmado y rechazado, doble clic, respuesta de otro conductor, estado ausente, conservación de filtros en paginación (incluido `is_active=false`), metadatos de viaje de solo lectura, bloqueo de asignaciones inactivas/no informadas y mensaje de solapamiento del backend. También pasan las comprobaciones anteriores de formularios, listas, viajes asociados y CSV. No se alteraron conductores ni viajes en producción.
+
+### Contrato enriquecido de rutas y viajes
+
+Las rutas priorizan `origin_name` y `destination_name` y conservan `origin_city`/`destination_city`, visibles en la tabla y selectores y disponibles en búsqueda. La consulta de lugares se mantiene para coordenadas GeoJSON y compatibilidad; si falla, los nombres descriptivos siguen disponibles. Las validaciones locales impiden origen igual a destino y distancia no positiva; duplicados y asociaciones se validan en el servidor y se muestra su mensaje.
+
+`RutaService.listar` acepta `search`, `origin` y `destination`. `ViajeService.listar` acepta `route`, `bus`, `driver`, `state` y `date`, conservados en las páginas siguientes. Los viajes asociados a un bus o conductor usan ahora ese filtro en el servidor y también comprueban la pertenencia al recibirlos. Se aprovechan `origin`, `destination`, `bus_plate` y `driver_name` al mostrar viajes. La asignación de recursos exige bus y conductor activos; los solapamientos los decide el backend. El precio integrado se usa también en el detalle operativo del viaje.
+
+Verificación local: crear y editar generan una sola escritura con centavos enteros; cargar la edición no consulta tarifas por separado. Se probaron respuestas incompletas, pérdida de conexión y bloqueo de reenvío, filtros conservados al paginar, nombres descriptivos aunque falle geografía, origen/destino iguales, distancia cero, duplicados rechazados por API y mensajes de solapamiento. Se ejecutaron regresiones de conductores y operación de flota. No se crearon rutas ni viajes reales durante estas comprobaciones.

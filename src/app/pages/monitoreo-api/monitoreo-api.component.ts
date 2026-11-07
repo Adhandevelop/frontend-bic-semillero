@@ -19,7 +19,7 @@ export class MonitoreoApiComponent implements OnInit,OnDestroy {
   trips:Viaje[]=[];buses:Bus[]=[];routes:Ruta[]=[];tripId:number|null=null;readings:ApiGpsReading[]=[];loading=false;readingLoading=false;error='';readingError='';warnings:string[]=[];discarded=0;updatedAt:Date|null=null;
   get trip():Viaje|undefined{return this.trips.find(trip=>trip.id===this.tripId);}
   get latest():ApiGpsReading|null{return this.readings.at(-1)??null;}
-  routeLabel(trip:Viaje):string{const route=this.routes.find(route=>route.id===trip.ruta);return route?route.origen+' → '+route.destino:'Ruta #'+trip.ruta;}
+  routeLabel(trip:Viaje):string{if(trip.origin&&trip.destination)return trip.origin+' → '+trip.destination;const route=this.routes.find(route=>route.id===trip.ruta);return route?route.origen+' → '+route.destino:'Ruta #'+trip.ruta;}
   busLabel(trip:Viaje):string{return trip.bus_plate||this.buses.find(bus=>bus.id===trip.bus)?.plate||'Bus #'+trip.bus;}
   ngOnInit():void{this.load();}
   load():void{this.catalog.next();this.selection.next();this.loading=true;this.readingLoading=false;this.updatedAt=null;this.discarded=0;this.error='';this.readings=[];this.readingError='';this.warnings=[];
