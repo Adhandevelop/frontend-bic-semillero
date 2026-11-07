@@ -609,3 +609,11 @@ Inventario y fecha de última señal no equivalen a GPS o sensores conectados en
 El mapa y el historial de sensores diferencian `time_stamp` (hora del dispositivo) de `created_at` (recepción en servidor), cuando la API proporciona ambos. Una fecha de recepción ausente se muestra como no informada; no se inventa con la hora de consulta.
 
 Verificación local con respuestas controladas: paginación y filtros, separación de clave completa/metadatos, creación y edición, regeneración y errores inciertos sin reenvío, copia y descarte del modal, asignación/desvinculación por ambos endpoints, relectura del bus y cancelación de consultas antiguas. Pasaron también las regresiones de capacidad, GPS API y navegación. No se registraron dispositivos ni se regeneraron claves en producción; la revisión visual móvil queda pendiente por ausencia de navegador conectado.
+
+### GPS desde crear/editar bus
+
+El formulario de bus incorpora selección opcional de dispositivos libres al crear. Se registra primero el bus con sus campos admitidos y luego se llama a `POST /api/fleet/buses/:id/assign-device/` con `{device_id}`; no se envía un campo GPS no soportado en el POST del bus. La confirmación relee el bus y comprueba el dispositivo esperado. Si falla la segunda operación, se conserva el ID del bus y se muestra el acceso para consultar/asignar GPS sin repetir su creación.
+
+En editar bus aparece el panel de GPS actual con asignación de equipo libre, sustitución confirmada y retiro. Esta operación se guarda por separado de los datos del vehículo. Las tarjetas de buses muestran el GPS registrado y un acceso explícito «Asignar GPS»/«Gestionar GPS». La vinculación no asegura conexión ni crea telemetría de demostración.
+
+Comprobaciones locales: selección de GPS libre, ausencia de campos no admitidos en el payload del bus, orden crear → asignar → releer, rechazo de un GPS fuera del catálogo, conservación del bus ante fallo de asignación, bloqueo de creación repetida y edición sin reasignación implícita. Se verificaron también los controles de acceso desde la lista y formulario. No se crearon buses ni asignaciones reales durante estas pruebas.
