@@ -37,8 +37,7 @@ export class ViajeFormComponent implements OnInit {
     bus:[0,[Validators.required,Validators.min(1),Validators.pattern(/^\d+$/)]],
     conductor:[0,[Validators.required,Validators.min(1),Validators.pattern(/^\d+$/)]],
     ruta:[0,[Validators.required,Validators.min(1),Validators.pattern(/^\d+$/)]],
-    fecha_hora_inicio:['',Validators.required],fecha_hora_fin:[''],
-    estado:['programado' as Viaje['estado'],[Validators.required,Validators.pattern(/^(programado|en_curso|finalizado|cancelado)$/)]]
+    fecha_hora_inicio:['',Validators.required],fecha_hora_fin:['']
   },{validators:tripSchedule});
   constructor(private route:ActivatedRoute,private router:Router,private busService:BusService,private conductorService:ConductorService,private rutaService:RutaService,private viajeService:ViajeService){}
   get eligibleDrivers():Conductor[]{return this.conductores.filter(driver=>driver.is_active===true||driver.id===Number(this.form.controls.conductor.value));}
@@ -84,8 +83,8 @@ export class ViajeFormComponent implements OnInit {
     if(!this.driverAssignable){this.error='Selecciona un conductor activo. Si su estado no aparece, actualiza los datos del catálogo.';return;}
     this.loading=true;this.error='';
     const cents=Math.round(v.precio_cop!*100);
-    const viaje:Viaje={fare_amount_cents:cents,bus:Number(v.bus),conductor:Number(v.conductor),ruta:Number(v.ruta),fecha_hora_inicio:bogotaIso(v.fecha_hora_inicio)!,fecha_hora_fin:v.fecha_hora_fin?bogotaIso(v.fecha_hora_fin):null,estado:v.estado};
-    const request=this.editando&&this.viajeId?this.viajeService.actualizarParcial(this.viajeId,viaje):this.viajeService.crear(viaje);
+    const viaje:Viaje={fare_amount_cents:cents,bus:Number(v.bus),conductor:Number(v.conductor),ruta:Number(v.ruta),fecha_hora_inicio:bogotaIso(v.fecha_hora_inicio)!,fecha_hora_fin:v.fecha_hora_fin?bogotaIso(v.fecha_hora_fin):null,estado:'programado'};
+    const request=this.editando&&this.viajeId?this.viajeService.actualizarParcial(this.viajeId,{bus:viaje.bus,conductor:viaje.conductor,ruta:viaje.ruta,fare_amount_cents:viaje.fare_amount_cents}):this.viajeService.crear(viaje);
     request.pipe(timeout(20000)).subscribe({next:saved=>{
       const id=saved.id;
       if(!id||(this.editando&&id!==this.viajeId)||saved.fare_amount_cents!==cents){this.loading=false;this.saveUncertain=true;this.error='La respuesta no confirma el viaje y su tarifa. Consulta el listado antes de intentar otra operación.';return;}

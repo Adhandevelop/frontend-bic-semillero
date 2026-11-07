@@ -1,3 +1,4 @@
+import { TripSalesMetadata } from '../../core/utils/trip-sales';
 import { TripControlComponent } from './trip-control/trip-control.component';
 import { RutaService } from '../../core/services/ruta.service';
 import { Ruta } from '../../core/models/ruta.model';
@@ -12,7 +13,7 @@ import { Bus, normalizeBus } from '../../core/models/bus.model';
 import { Conductor } from '../../core/models/conductor.model';
 import { DashboardService } from '../../core/services/dashboard.service';
 
-interface TripSummary { id: number; bus: number; driver: number; route: number; date_time_start: string; trip_state: string; }
+interface TripSummary extends TripSalesMetadata { id: number; bus: number; driver: number; route: number; date_time_start: string; trip_state: string; }
 type RouteSummary=Ruta;
 @Component({
   selector: 'app-dashboard', standalone: true,
@@ -23,7 +24,8 @@ export class DashboardComponent implements OnInit,OnDestroy {
   private routeApi=inject(RutaService);private destroyed=new Subject<void>();private refresh=new Subject<void>();
   sales:Array<{id:number;status:string}>=[];
   get refundCount():number{return this.sales.filter(sale=>sale.status==='refund_required').length;}
-  ngOnDestroy():void{this.refresh.next();this.refresh.complete();this.destroyed.next();this.destroyed.complete();}
+  private stateTimer?:ReturnType<typeof setInterval>;
+  ngOnDestroy():void{if(this.stateTimer)clearInterval(this.stateTimer);this.refresh.next();this.refresh.complete();this.destroyed.next();this.destroyed.complete();}
   listOrder:ListOrder='desc';
   readonly currentYear = new Date().getFullYear();
   loading = true;
@@ -36,7 +38,7 @@ export class DashboardComponent implements OnInit,OnDestroy {
   onlyActive = false;
   updatedAt: Date | null = null;
   constructor(private dashboardService: DashboardService) {}
-  ngOnInit(): void { this.cargarResumen(); }
+  ngOnInit(): void { this.cargarResumen(); this.stateTimer=setInterval(()=>{if(document.visibilityState==='visible'&&!this.loading)this.cargarResumen();},60000); }
   cargarResumen(): void {
     if (this.loading && this.updatedAt) return;
     this.refresh.next();this.loading = true;

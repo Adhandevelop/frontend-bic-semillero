@@ -1,3 +1,4 @@
+import { tripCanSell, tripSalesMessage, tripSalesMetadataPresent, TRIP_SALES_CONTRACT_MESSAGE } from '../../core/utils/trip-sales';
 import { preparePassengerTickets } from '../../core/services/passenger-ticket-download';
 import { createTicketPdf } from '../../core/services/ticket-pdf';
 import { expirationSignature, reservationDeadline, REFUND_REQUIRED_MESSAGE } from '../../core/utils/wompi-payment';
@@ -39,7 +40,8 @@ export class BookingComponent implements OnInit,OnDestroy {
   get total(){return this.trip?this.price(this.trip):null;}
   get purchaseTotal():number|null{const unit=this.total;return unit===null?null:Math.round(unit*100)*this.passengers.length/100;}
   get locked(){return this.paying||this.checking||!!this.pending||!!this.receipt||!!this.payment;}
-  get canPay(){return !!this.profile&&!!this.trip&&this.passengersValid&&!this.planIssues.length&&!this.seatsLoading&&this.total!==null&&this.terms&&!this.locked&&!this.loading;}
+  get saleClosureMessage():string{return this.trip&&!tripCanSell(this.trip)?tripSalesMessage(this.trip):'';}
+  get canPay(){return !!this.profile&&!!this.trip&&tripCanSell(this.trip)&&this.passengersValid&&!this.planIssues.length&&!this.seatsLoading&&this.total!==null&&this.terms&&!this.locked&&!this.loading;}
   get remaining(){return Math.floor(this.seconds/60)+':'+String(this.seconds%60).padStart(2,'0');}
   get fullName(){return this.profile?.name||[this.profile?.first_name,this.profile?.last_name].filter(Boolean).join(' ');}
   busLabel(trip:OnlineTrip):string{const bus=this.buses.find(b=>b.id===trip.bus);return bus?[bus.plate,bus.model].filter(Boolean).join(' · '):'Servicio intermunicipal';}
@@ -49,7 +51,7 @@ export class BookingComponent implements OnInit,OnDestroy {
     this.session.me().pipe(takeUntil(this.destroyed)).subscribe({next:p=>{this.profile=p;this.key='bic_checkout_'+p.id;this.restore();this.load();},error:err=>this.error=passengerError(err)});
     this.timer=setInterval(()=>this.updateClock(),1000);
   }
-  load():void{if(this.loading)return;this.loading=true;this.catalogError='';this.api.catalog().pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{this.trips=data.trips.filter(t=>t.trip_state==='scheduled'&&Date.parse(t.date_time_start)>Date.now()).sort((a,b)=>Date.parse(a.date_time_start)-Date.parse(b.date_time_start));this.buses=data.buses??[];this.seats=data.seats;this.fares=data.fares;this.routes=data.routes;this.places=data.places;this.loading=false;if(!this.trips.some(t=>t.id===this.tripId)){this.tripId=null;this.seatId=null;this.passengers=[];}
+  load():void{if(this.loading)return;this.loading=true;this.catalogError='';this.api.catalog().pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{if(data.trips.some(t=>!tripSalesMetadataPresent(t)))this.catalogError=TRIP_SALES_CONTRACT_MESSAGE;this.trips=data.trips.filter(t=>tripCanSell(t)).sort((a,b)=>Date.parse(a.date_time_start)-Date.parse(b.date_time_start));this.buses=data.buses??[];this.seats=data.seats;this.fares=data.fares;this.routes=data.routes;this.places=data.places;this.loading=false;if(!this.trips.some(t=>t.id===this.tripId)){this.tripId=null;this.seatId=null;this.passengers=[];}
 const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!this.tripId&&!this.pending&&this.trips.some(t=>t.id===requestedTrip))this.selectTrip(requestedTrip);},error:err=>{this.loading=false;this.catalogError=passengerError(err);}});}
   selectTrip(id:number):void{if(this.locked)return;this.tripId=id;this.seatId=null;this.passengers=[];this.seats=[];this.terms=false;this.loadSeats();}
   loadSeats():void{
@@ -76,7 +78,7 @@ const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!th
   private updateClock():void{this.seconds=this.pending?Math.max(0,Math.ceil((this.pending.deadline-Date.now())/1000)):0;}
   async checkout():Promise<void>{
     if(!this.canPay)return;
-    if(Date.parse(this.trip!.date_time_start)<=Date.now()){this.error='El viaje ya no admite esta compra. Actualiza los horarios.';return;}
+    if(!tripCanSell(this.trip!)){this.error=tripSalesMessage(this.trip!);return;}
     this.paying=true;this.error='';this.message='Cargando Wompi…';
     try{await this.widget.load();}catch{if(!this.gone){this.paying=false;this.error='No se pudo cargar Wompi. No se envió el checkout.';this.message='';}return;}
     if(this.gone)return;

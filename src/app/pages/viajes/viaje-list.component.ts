@@ -87,17 +87,6 @@ export class ViajeListComponent implements OnInit {
       this.error=err.status===401?'La sesión venció. Inicia sesión nuevamente.':err.status===403?'Tu cuenta no tiene permisos para eliminar viajes.':err.status===400||err.status===409?(detail||'El servidor impide eliminar este viaje por sus registros asociados.'):err.status===404?'El viaje ya no existe en el servidor. Actualiza el listado.':err.status===0?'No se pudo confirmar la eliminación por un problema de conexión. Actualiza el listado antes de reintentar.':err.status!==undefined&&err.status>=500?'El servidor presentó un error al eliminar el viaje #'+trip.id+' (HTTP '+err.status+'). Puede tener ventas, tiquetes o registros protegidos; requiere revisar el backend. Actualiza el listado para confirmar su estado.':'No se pudo confirmar la eliminación. Actualiza el listado antes de reintentar.';
     }});
   }
-  iniciarViaje(trip:Viaje):void{this.cambiarEstado(trip,'iniciar');}
-  finalizarViaje(trip:Viaje):void{this.cambiarEstado(trip,'finalizar');}
-  cancelarViaje(trip:Viaje):void{this.cambiarEstado(trip,'cancelar');}
-  private cambiarEstado(trip:Viaje,action:'iniciar'|'finalizar'|'cancelar'):void{
-    if(this.loading||this.busyId!==null||!trip.id)return;
-    if(action==='iniciar'&&trip.estado!=='programado'||action==='finalizar'&&trip.estado!=='en_curso'||action==='cancelar'&&!['programado','en_curso'].includes(trip.estado))return;
-    if(action==='cancelar'&&!confirm('¿Cancelar el viaje #'+trip.id+'?'))return;
-    this.busyId=trip.id;this.error='';this.errorReasons=[];this.errorHttp='';this.success='';
-    const request=action==='iniciar'?this.viajeService.iniciarViaje(trip.id):action==='finalizar'?this.viajeService.finalizarViaje(trip.id):this.viajeService.cancelarViaje(trip.id);
-    request.subscribe({next:updated=>{this.viajes=this.viajes.map(item=>item.id===trip.id?updated:item);this.busyId=null;this.page=Math.min(this.page,this.pageCount);this.success='Estado del viaje actualizado: '+this.stateLabel(updated.estado)+'.';},error:(err)=>{this.busyId=null;this.explainFailure(err);this.error='No se pudo cambiar el estado del viaje.';}});
-  }
   exportCsv():void{
     if(this.loading||this.loadFailed||!this.filteredTrips.length)return;
     const rows=[['Viaje','Ruta','Salida UTC','Fin UTC','Bus','Conductor','Estado'],...this.filteredTrips.map(trip=>[String(trip.id??''),this.nombreRuta(trip),trip.fecha_hora_inicio,trip.fecha_hora_fin||'',this.nombreBus(trip),this.nombreConductor(trip),this.stateLabel(trip.estado)])];

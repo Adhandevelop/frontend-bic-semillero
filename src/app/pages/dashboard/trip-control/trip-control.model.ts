@@ -1,6 +1,7 @@
+import { TripSalesMetadata } from '../../../core/utils/trip-sales';
 import { seatPlanIssues } from '../../../core/utils/seat-plan';
 ﻿import { AdminAvailability } from '../../../core/services/admin-seats.service';
-export interface DashboardTrip {id:number;bus:number;driver:number;route:number;date_time_start:string;trip_state:string;}
+export interface DashboardTrip extends TripSalesMetadata {id:number;bus:number;driver:number;route:number;date_time_start:string;trip_state:string;}
 export interface AvailabilitySummary {available:number;reserved:number;sold:number;total:number;serverTime:string;}
 export function summarizeAvailability(data:AdminAvailability,trip:number,capacity?:number):AvailabilitySummary {
   if(!data||data.trip!==trip||!Array.isArray(data.seats)||!Number.isFinite(Date.parse(data.server_time)))throw new Error('La disponibilidad no corresponde al viaje.');

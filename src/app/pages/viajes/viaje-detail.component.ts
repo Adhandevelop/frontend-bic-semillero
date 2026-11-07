@@ -1,3 +1,5 @@
+import { TripActionsComponent } from './trip-actions.component';
+import { tripCanSell } from '../../core/utils/trip-sales';
 import { ListOrder, orderRecords } from '../../core/utils/list-order';
 import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 ﻿import { CommonModule } from '@angular/common';
@@ -14,7 +16,7 @@ import { RutaService } from '../../core/services/ruta.service';
 import { TripFare, ViajeService } from '../../core/services/viaje.service';
 import { AdminAvailability, AdminSeat, AdminSeatTicket, AdminSeatsService } from '../../core/services/admin-seats.service';
 interface PartialResult<T>{data:T|null;error:string;}
-@Component({standalone:true,imports:[ListOrderComponent,CommonModule,RouterLink],templateUrl:'./viaje-detail.component.html',styleUrl:'./viaje-detail.component.css'})
+@Component({standalone:true,imports:[TripActionsComponent,ListOrderComponent,CommonModule,RouterLink],templateUrl:'./viaje-detail.component.html',styleUrl:'./viaje-detail.component.css'})
 export class ViajeDetailComponent implements OnInit,OnDestroy {
   listOrder:ListOrder='desc';
   get orderedRecords(){return orderRecords(this.tickets,this.listOrder);}
@@ -33,7 +35,7 @@ export class ViajeDetailComponent implements OnInit,OnDestroy {
       const id=Number(raw);this.tripId=id;this.loading=true;
       return this.tripApi.obtenerPorId(id).pipe(timeout(20000),switchMap(trip=>{
         if(trip.id!==id)throw new Error('El viaje recibido no coincide.');this.trip=trip;
-        const availability=trip.estado==='programado'?this.partial(this.seatsApi.availability(id).pipe(map(value=>{if(value.trip!==id||!Array.isArray(value.seats)||!value.seats.every(seat=>Number.isSafeInteger(seat.id)&&['available','reserved','sold'].includes(seat.status)))throw new Error('Disponibilidad de otro viaje o incompleta.');return value;})),'la disponibilidad de sillas'):of({data:null,error:''});
+        const availability=tripCanSell(trip)?this.partial(this.seatsApi.availability(id).pipe(map(value=>{if(value.trip!==id||!Array.isArray(value.seats)||!value.seats.every(seat=>Number.isSafeInteger(seat.id)&&['available','reserved','sold'].includes(seat.status)))throw new Error('Disponibilidad de otro viaje o incompleta.');return value;})),'la disponibilidad de sillas'):of({data:null,error:''});
         return forkJoin({availability,bus:this.partial(this.busApi.obtenerPorId(trip.bus),'el bus'),driver:this.partial(this.driverApi.obtenerPorId(trip.conductor),'el conductor'),route:this.partial(this.routeApi.obtenerPorId(trip.ruta),'la ruta'),fares:trip.fare_amount_cents===undefined?this.partial(this.tripApi.listarTarifas(),'la tarifa'):of({data:[] as TripFare[],error:''}),seats:this.partial(this.seatsApi.seats(trip.bus),'los números de sillas'),tickets:this.partial(this.seatsApi.manifest(id),'los pasajeros y sus boletas')});
       }),catchError(err=>{this.error=this.failure(err,'el viaje');return of(null);}),finalize(()=>{this.loading=false;}));
     }),takeUntil(this.destroyed)).subscribe(data=>{

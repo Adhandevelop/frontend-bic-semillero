@@ -1,4 +1,5 @@
-export interface Viaje {
+import { TripSalesMetadata } from '../utils/trip-sales';
+export interface Viaje extends TripSalesMetadata {
   id?: number;
   bus: number;
   conductor: number;

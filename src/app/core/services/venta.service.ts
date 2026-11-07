@@ -1,9 +1,10 @@
+import { TripSalesMetadata } from '../utils/trip-sales';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, tap } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { allApiPages } from './api-pagination';
-export interface SaleTrip {id:number;bus:number;route:number;date_time_start:string;trip_state:string;}
+export interface SaleTrip extends TripSalesMetadata {id:number;bus:number;route:number;date_time_start:string;trip_state:string;}
 export interface SaleSeat {id:number;bus:number;seat_number:string;row:string;col:string;}
 export interface SaleAvailability {trip:number;server_time:string;seats:Array<Omit<SaleSeat,'bus'> & {status:'available'|'reserved'|'sold'}>;}
 export interface SaleFare {trip:number;amount_cents:number;}

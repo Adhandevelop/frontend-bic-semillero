@@ -1,3 +1,4 @@
+import { tripCanSell, tripSalesMessage, tripSalesMetadataPresent, TRIP_SALES_CONTRACT_MESSAGE } from '../../core/utils/trip-sales';
 import { buildSeatRows, seatPlanIssues, SeatPlanRow } from '../../core/utils/seat-plan';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
@@ -11,7 +12,8 @@ import { VentaService, SaleTrip, SaleSeat, SaleFare, SaleTicket, SaleResult, Adm
 @Component({selector:'app-venta-form',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./venta-form.component.html',styleUrls:['./venta-form.component.css','../booking/booking-seats.component.css']})
 export class VentaFormComponent implements OnInit,OnDestroy {
   seatLoading=false;seatError='';seatStates:Record<number,string>={};private seatSelection=new Subject<void>();private destroyed=new Subject<void>();
-  ngOnDestroy():void{this.seatSelection.next();this.seatSelection.complete();this.destroyed.next();this.destroyed.complete();}
+  private salesTimer?:ReturnType<typeof setInterval>;
+  ngOnDestroy():void{if(this.salesTimer)clearInterval(this.salesTimer);this.seatSelection.next();this.seatSelection.complete();this.destroyed.next();this.destroyed.complete();}
   loadTripSeats():void{
     if(this.saving||this.uncertain||this.result)return;this.seatSelection.next();this.seats=[];this.seatStates={};this.seatIds=[];this.unavailableIds=[];this.paid=false;this.seatError='';this.seatLoading=false;
     const trip=this.trip;if(!trip)return;this.seatLoading=true;
@@ -97,7 +99,7 @@ export class VentaFormComponent implements OnInit,OnDestroy {
   clients:Cliente[]=[];trips:SaleTrip[]=[];seats:SaleSeat[]=[];fares:SaleFare[]=[];tickets:SaleTicket[]=[];routes:Ruta[]=[];
   tripId:number|null=null;clientId:number|null=null;seatIds:number[]=[];search='';payment:AdminSalePayload['payment_method']='cash';paid=false;
   constructor(private sales:VentaService,private clientsApi:ClienteService,private routesApi:RutaService,private route:ActivatedRoute){}
-  ngOnInit():void{this.cargarClientes();this.cargar();}
+  ngOnInit():void{this.cargarClientes();this.cargar();this.salesTimer=setInterval(()=>{this.saleClosureMessage=this.trip&&!tripCanSell(this.trip)?tripSalesMessage(this.trip):'';},1000);}
   get locked():boolean{return this.creatingClient||this.searchingClient||this.loading||this.seatLoading||this.saving||this.uncertain||!!this.result;}
   get trip():SaleTrip|undefined{return this.trips.find(t=>t.id===this.tripId);}
   get client():Omit<Cliente,'id'|'role'>|undefined{return this.draftPassenger??this.clients.find(c=>c.id===this.clientId);}
@@ -114,7 +116,8 @@ export class VentaFormComponent implements OnInit,OnDestroy {
   nombre(c:Pick<Cliente,'first_name'|'last_name'|'username'>):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
   tripLabel(t:SaleTrip):string{const r=this.routes.find(r=>r.id===t.route);return '#'+t.id+' · '+(r?r.origen+' → '+r.destino:'Ruta #'+t.route);}
   sold(id:number):boolean{return this.seatStates[id]!==undefined?this.seatStates[id]==='sold':this.tickets.some(t=>t.trip===this.tripId&&t.seat===id&&(t.status==='issued'||t.status==='used'));}
-  get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!this.planIssues.length&&!!this.trip&&this.seatIds.length>=1&&this.selectedSeats.length===this.seatIds.length&&this.seatIds.every(id=>!this.sold(id)&&!this.unavailableIds.includes(id))&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
+  saleClosureMessage='';
+  get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!this.planIssues.length&&!!this.trip&&tripCanSell(this.trip)&&this.seatIds.length>=1&&this.selectedSeats.length===this.seatIds.length&&this.seatIds.every(id=>!this.sold(id)&&!this.unavailableIds.includes(id))&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
   changeTrip():void{this.loadTripSeats();}
   selectSeat(s:SaleSeat):void{
     if(this.locked||this.planIssues.length||!this.availableSeats.some(seat=>seat.id===s.id)||this.sold(s.id)||this.unavailableIds.includes(s.id))return;
@@ -125,14 +128,14 @@ export class VentaFormComponent implements OnInit,OnDestroy {
   cargar():void{
     if(this.locked)return;this.loading=true;this.error='';
     forkJoin({catalog:this.sales.catalogos(),routes:this.routesApi.listar()}).pipe(timeout(15000)).subscribe({next:({catalog,routes})=>{
-      this.trips=catalog.trips.filter(t=>t.trip_state==='scheduled'&&new Date(t.date_time_start).getTime()>Date.now());this.seats=catalog.seats;this.fares=catalog.fares;this.tickets=catalog.tickets;this.routes=routes;
+      if(catalog.trips.some(t=>!tripSalesMetadataPresent(t)))this.error=TRIP_SALES_CONTRACT_MESSAGE;this.trips=catalog.trips.filter(t=>tripCanSell(t));this.seats=catalog.seats;this.fares=catalog.fares;this.tickets=catalog.tickets;this.routes=routes;
       if(!this.trip)this.tripId=null;this.seatIds=[];this.paid=false;
       this.unavailableIds=[];this.loading=false;if(this.trip)this.loadTripSeats();
     },error:()=>{this.loading=false;this.error='No se pudieron cargar los viajes, rutas, tarifas o sillas. El directorio de clientes se carga por separado. Revisa tu sesión, permisos y la disponibilidad de la API.';this.trips=[];this.seats=[];}});
   }
   emitir():void {
     if(!this.ready)return;
-    if(new Date(this.trip!.date_time_start).getTime()<=Date.now()){this.error='El viaje ya no admite ventas desde esta pantalla. Actualiza los datos.';return;}
+    if(!tripCanSell(this.trip!)){this.error=tripSalesMessage(this.trip!);return;}
     const c=this.client!;
     if(!globalThis.confirm('Se registrará una sola venta pagada con '+this.seatIds.length+' boleta(s). ¿Confirmas que recibiste el pago total?'))return;
     this.attempt={key:crypto.randomUUID(),payload:{trip:this.tripId!,seats:[...this.seatIds],identification_number:c.identification_number,name:this.nombre(c),email:c.email,telephone:c.telephone!,payment_method:this.payment}};

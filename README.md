@@ -654,6 +654,20 @@ Criterio visual provisional y explícito: lecturas de más de dos minutos respec
 
 Verificación local: plano con IDs reales y pasillo central, conteos físicos independientes de boletas, cortes sin lecturas futuras, antigüedad/conflictos, ausencia de datos sin falsos asientos libres, historial deduplicado, pasajeros de boleta, errores parciales, cancelación al cambiar de viaje y reproducción/pausa/fin/pestaña oculta. Se comprobaron también la consulta GPS y los controles del mapa. Compilación de producción correcta. No se transmitieron datos ni se modificaron ventas; la revisión visual en navegador/móvil sigue pendiente.
 
+### Estados operativos automáticos y cierre comercial
+
+Angular consume `state_source`, `automatic_completion_at`, `sales_close_at`, `can_sell`, `sales_block_reason` y `server_time`. Ya no envía `trip_state` al crear o editar, ni ofrece iniciar manualmente un viaje. El servidor calcula Programado/En curso/Finalizado y conserva las decisiones manuales. El formulario general permite editar recursos y tarifa; para cambiar horarios de un viaje existente se usa Postergar desde su detalle, conservando el historial.
+
+El detalle operativo incorpora Cancelar (motivo obligatorio), Finalizar y Postergar (nueva salida, llegada opcional y motivo), mediante los POST `/cancel/`, `/complete/` y `/postpone/`. Antes de enviar pide confirmación y después consulta el recurso autenticado para comprobar ID y resultado. No interpreta la respuesta `{detail, trip}` como un viaje plano. Un error o resultado incierto bloquea la repetición hasta consultar nuevamente; no muestra éxito optimista ni cancela pagos automáticamente.
+
+Inicio, compra Wompi y taquilla usan la misma regla comercial: `can_sell=true`, estado Programado o En curso y hora anterior a `sales_close_at`. Se retiraron los filtros que impedían vender desde la hora exacta de salida. El reloj visual parte de `server_time` y avanza con tiempo monotónico; el navegador no inventa estados ni extiende la reserva de Wompi. Sin metadatos suficientes no habilita la venta. El servidor vuelve a validar cada compra y sigue recortando vencimiento/firma; Angular conserva esos valores sin modificarlos.
+
+El dashboard muestra programados y en curso con cierre comercial, y consulta sus datos cada minuto mientras está visible. Las consultas de disponibilidad de viajes cerrados no se presentan como sillas libres. El detalle conserva el manifiesto de boletas aunque el viaje haya cerrado sus ventas.
+
+Pruebas locales: borde exacto del cierre, ventana posterior a salida, estados bloqueados y metadatos ausentes, payload sin estado manual, conservación de metadatos, tres acciones POST con lectura posterior, motivo, postergación con zona Colombia, doble clic, conexión fallida y respuesta que no confirma la acción. Se verificó también el buscador con el nuevo contrato. No se ejecutaron acciones administrativas ni compras reales. La ejecución periódica de `sync_trip_states` corresponde al despliegue del backend; Angular no sustituye ese proceso. La revisión visual en navegador/móvil permanece pendiente.
+
+Comprobación de integración del 7 de noviembre de 2026: la consulta pública desplegada devolvió HTTP 200 y el viaje #24, pero sin `can_sell`, `sales_close_at` ni `server_time`. El serializer del backend local sí incluye esos campos. Debe verificarse la versión efectivamente servida por producción. Angular muestra un diagnóstico de contrato incompleto en lugar de afirmar que no existen viajes o habilitar una venta sin información del servidor.
+
 ### Búsqueda de horarios desde el inicio
 
 Comprobación pública del 7 de noviembre de 2026: `/api/public/trips/?origin=1&destination=2` devuelve el viaje #24, Terminal Salitre → Terminal del Norte de Medellín. El frontend publicado `main-NOAWVPYM.js` aún contenía la limitación a tres tarjetas y el botón antiguo «Reservar asiento»; no incluía la nueva búsqueda. Es necesario desplegar los cambios del frontend para ver esta corrección. La prueba local incluye selección Salitre–Medellín; no se modificó el backend ni la programación del viaje.
@@ -666,7 +680,7 @@ Verificación: consultas recientes, filtros de terminales, medianoche de Colombi
 
 ### Mapa de muestra en la cabecera del inicio
 
-El mapa se presenta sin velo de color, con solo los iconos azules de bus: no añade etiquetas de unidad, ventanas emergentes, líneas ni leyenda de recorrido. El fondo del buscador queda limitado a su tarjeta para conservar la lectura y dejar visibles los colores del mapa.
+El buscador se centra sobre el mapa, con tres iconos azules distribuidos a sus lados en escritorio y una franja de mapa encima en móvil. Una unidad incluye un trazado azul de tres capas, como la proyección. Las posiciones y el recorrido son fijos, simulados y exclusivos de esta composición; no representan registros del dispositivo ni un recorrido vial calculado. No añade etiquetas de unidad ni ventanas emergentes. El fondo del buscador queda limitado a su tarjeta para conservar la lectura y dejar visibles los colores del mapa.
 
 La cabecera del inicio incorpora un mapa Leaflet con tres iconos azules de buses, reutilizando el estilo de la proyección y posiciones GeoJSON fijas de demostración. El buscador permanece por encima, con fondo para conservar contraste. El mapa de fondo no captura desplazamientos ni gestos; mantiene atribución de OpenStreetMap y ajusta el encuadre al cambiar el tamaño. No consulta ubicaciones ni pasajeros reales; el aviso de GPS en desarrollo sigue visible. Al salir se libera el mapa y su observador.
 

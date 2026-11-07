@@ -1,3 +1,4 @@
+import { tripCanSell, tripSalesMessage, tripSalesMetadataPresent, TRIP_SALES_CONTRACT_MESSAGE } from '../../core/utils/trip-sales';
 import { HomeMapComponent } from './home-map.component';
 import { PublicCatalogService, PublicRoute, PublicTrip } from '../../core/services/public-catalog.service';
 import { passengerError } from '../../core/services/passenger.service';
@@ -16,7 +17,7 @@ export class HomeComponent implements OnInit,OnDestroy {
   get cities(){return [...new Map(this.routes.flatMap(r=>[r.origin,r.destination]).map(p=>[p.id,{code:String(p.id),name:p.name}])).values()];}
   get popularRoutes(){return this.routes.slice(0,6).map(r=>({origin:r.origin.name,destination:String(r.id),name:r.destination.name,duration:r.distance_km?r.distance_km+' km':'Ruta intermunicipal',price:'Consultar horarios',service:r.origin.name+' → '+r.destination.name}));}
   ngOnInit():void{this.loadCatalog();}
-  loadCatalog():void{if(this.catalogLoading)return;this.catalogLoading=true;this.catalogError='';this.publicApi.catalog().pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{this.routes=data.routes;this.trips=data.trips;this.catalogLoading=false;},error:err=>{this.catalogLoading=false;this.catalogError=passengerError(err);}});}
+  loadCatalog():void{if(this.catalogLoading)return;this.catalogLoading=true;this.catalogError='';this.publicApi.catalog().pipe(timeout(20000),takeUntil(this.destroyed)).subscribe({next:data=>{this.routes=data.routes;this.trips=data.trips;this.catalogLoading=false;if(data.trips.some(t=>!tripSalesMetadataPresent(t)))this.catalogError=TRIP_SALES_CONTRACT_MESSAGE;},error:err=>{this.catalogLoading=false;this.catalogError=passengerError(err);}});}
   routeFor(t:PublicTrip):PublicRoute|undefined{return typeof t.route==='number'?this.routes.find(r=>r.id===t.route):t.route;}
   searchMode = 'Número de viaje';
   searchValue = '';
@@ -65,7 +66,7 @@ export class HomeComponent implements OnInit,OnDestroy {
   private queryTrips(date=''):void{
     this.searchCancelled.next();this.results=[];this.searched=true;this.searching=true;this.searchError='';this.alternativeDates=[];this.routeMessage='';const origin=this.origin,destination=this.destination;
     this.publicApi.trips({origin,destination}).pipe(timeout(20000),takeUntil(this.searchCancelled),takeUntil(this.destroyed)).subscribe({next:trips=>{
-      this.searching=false;const available=trips.filter(t=>{const r=this.routeFor(t);return Number(r?.origin.id)===Number(origin)&&Number(r?.destination.id)===Number(destination)&&Date.parse(t.date_time_start)>Date.now();}).sort((a,b)=>Date.parse(a.date_time_start)-Date.parse(b.date_time_start));
+      this.searching=false;if(trips.some(t=>!tripSalesMetadataPresent(t))){this.searchError=TRIP_SALES_CONTRACT_MESSAGE;return;}const available=trips.filter(t=>{const r=this.routeFor(t);return Number(r?.origin.id)===Number(origin)&&Number(r?.destination.id)===Number(destination)&&tripCanSell(t);}).sort((a,b)=>Date.parse(a.date_time_start)-Date.parse(b.date_time_start));
       this.results=date?available.filter(t=>this.tripDay(t)===date):available;
       if(!this.results.length&&date)this.alternativeDates=[...new Set(available.map(t=>this.tripDay(t)).filter(Boolean))];
       this.routeMessage=this.results.length?'Selecciona un horario para elegir tus sillas. La disponibilidad se confirma al comprar.':date?'No hay salidas futuras para esta ruta en la fecha seleccionada.':'Esta ruta está publicada, pero aún no tiene salidas futuras programadas.';
