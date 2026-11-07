@@ -597,3 +597,11 @@ Se elimina el tope de diez sillas tanto en la compra online como en la venta adm
 La bandeja no modifica ventas, tiquetes, facturas ni reembolsos y no envía correos. El contrato revisado no incluye un campo o endpoint de respuesta al cliente; por eso no se presenta un editor de respuestas que no pueda persistir. El soporte del portal cliente mantiene su servicio y sesión separados.
 
 Verificación local con respuestas controladas: checkout de 1, 12 y 38 pasajeros, venta administrativa de 38 sillas, totales, exclusión de reservadas/vendidas y un solo envío por intento. En soporte se comprobaron filtros, siete resultados por página, cancelación de detalle anterior, PATCH exclusivo de estado, doble clic, respuesta incorrecta y error de conexión sin éxito falso. No se hicieron cobros Wompi, ventas ni cambios de solicitudes en producción. La validación visual móvil sigue pendiente.
+
+### Inventario GPS / IoT y credenciales de un solo uso
+
+`/dispositivos` es un módulo administrativo protegido: inventario real paginado, orden, filtros de servidor por disponibilidad/estado/búsqueda, alta, edición, regeneración y asignación/desvinculación de buses. No se implementa borrado de equipos: se puede cambiar su estado sin perder historial. La ficha de cada bus permite consultar el GPS, seleccionar uno libre o retirarlo usando las acciones del bus; se relee la ficha para confirmar la asignación. Las sustituciones requieren confirmación y la API mantiene la autoridad sobre las relaciones.
+
+Al crear o regenerar, la clave completa solo vive en memoria del modal de copia hasta cerrarlo o salir. No se guarda en localStorage, sessionStorage, URL, catálogos ni logs. El servicio selecciona explícitamente metadatos y limita el prefijo mostrado; una clave completa ausente no se sustituye por un prefijo. Regenerar avisa que se revoca la clave anterior. Si se pierde la respuesta, no se repite automáticamente y se pide revisar el inventario. El portapapeles solo se utiliza por acción expresa del administrador.
+
+Inventario y fecha de última señal no equivalen a GPS o sensores conectados en vivo. El hardware continúa en desarrollo y la demostración permanece separada. Este módulo no simula señales, no cambia asientos y no envía telemetría ni usa la clave del dispositivo desde Angular. La configuración del firmware corresponde al técnico.

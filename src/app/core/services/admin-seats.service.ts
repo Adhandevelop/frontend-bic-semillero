@@ -5,7 +5,7 @@ import { map } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { allApiPages } from './api-pagination';
 export interface AdminSeat {id:number;bus:number;seat_number:string;row:string;col:string;}
-export interface AdminSeatReading {id:number;trip:number;seat:number;time_stamp:string;occupied:boolean;}
+export interface AdminSeatReading {id:number;trip:number;seat:number;time_stamp:string;created_at?:string|null;occupied:boolean;}
 export interface AdminSeatTicket {check_in?:TicketCheckIn|null;id:number;sale:number;trip:number;seat:number;status:string;ticket_code:string;passenger_name?:string;passenger_identification?:string;}
 export interface AdminCustomer {id:number;name:string;identification_number:string;}
 export interface AdminAvailability {trip:number;server_time:string;seats:Array<{id:number;seat_number?:string;row?:string;col?:string;status:'available'|'reserved'|'sold'}>;}

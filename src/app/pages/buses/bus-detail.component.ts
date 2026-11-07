@@ -1,3 +1,4 @@
+import { BusDeviceComponent } from '../../shared/bus-device/bus-device.component';
 import { FleetTripsComponent } from '../../shared/fleet-trips/fleet-trips.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
@@ -8,7 +9,7 @@ import { seatPlanIssues } from '../../core/utils/seat-plan';
 import { Bus } from '../../core/models/bus.model';
 import { BusService } from '../../core/services/bus.service';
 
-@Component({standalone:true,imports:[CommonModule,RouterLink,FleetTripsComponent],templateUrl:'./bus-detail.component.html',styleUrl:'./bus-detail.component.css'})
+@Component({standalone:true,imports:[CommonModule,RouterLink,FleetTripsComponent,BusDeviceComponent],templateUrl:'./bus-detail.component.html',styleUrl:'./bus-detail.component.css'})
 export class BusDetailComponent implements OnInit, OnDestroy {
   private seatsApi=inject(AdminSeatsService);private route=inject(ActivatedRoute);private api=inject(BusService);private destroyed=new Subject<void>();private retryRequest?:Subscription;
   seats:AdminSeat[]=[];seatsLoaded=false;seatsLoading=false;seatsError='';
