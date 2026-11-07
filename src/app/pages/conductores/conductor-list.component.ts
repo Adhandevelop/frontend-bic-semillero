@@ -1,3 +1,5 @@
+import { fleetError } from '../../core/utils/fleet-error';
+import { timeout } from 'rxjs';
 import { ListOrder, orderRecords } from '../../core/utils/list-order';
 import { ListOrderComponent } from '../../shared/list-order/list-order.component';
 import { CommonModule } from '@angular/common';
@@ -23,9 +25,8 @@ export class ConductorListComponent implements OnInit {
   contactFilter = '';
   view: 'table' | 'grid' = 'table';
   page = 1;
-  readonly pageSize = 5;
+  readonly pageSize = 7;
   deletingId: number | null = null;
-  selectedDriver: Conductor | null = null;
 
   constructor(private conductorService: ConductorService) {}
   ngOnInit(): void { this.cargarConductores(); }
@@ -34,7 +35,7 @@ export class ConductorListComponent implements OnInit {
   get withAddress(): number { return this.conductores.filter(driver => driver.address?.trim()).length; }
   get filteredDrivers(): Conductor[] {
     const query = this.searchValue.trim().toLocaleLowerCase();
-    return orderRecords(this.conductores.filter(driver => (!query || [driver.full_name, driver.license_number, driver.id, driver.user, driver.phone_number].join(' ').toLocaleLowerCase().includes(query)) &&
+    return orderRecords(this.conductores.filter(driver => (!query || [driver.full_name, driver.license_number, driver.id, driver.phone_number].join(' ').toLocaleLowerCase().includes(query)) &&
       (!this.contactFilter || (this.contactFilter === 'with' ? Boolean(driver.phone_number?.trim()) : !driver.phone_number?.trim()))),this.listOrder);
   }
   get pageCount(): number { return Math.max(1, Math.ceil(this.filteredDrivers.length / this.pageSize)); }
@@ -52,7 +53,7 @@ export class ConductorListComponent implements OnInit {
 
   cargarConductores(): void {
     if (this.loading) return;
-    this.loading = true; this.loadFailed = false; this.error = ''; this.selectedDriver = null;
+    this.loading = true; this.loadFailed = false; this.error = '';
     this.conductorService.listarTodos().subscribe({
       next: drivers => { this.conductores = drivers; this.page = Math.min(this.page, this.pageCount); this.loading = false; },
       error: () => { this.conductores = []; this.error = 'No se pudieron cargar los conductores.'; this.loadFailed = true; this.loading = false; }
@@ -61,15 +62,15 @@ export class ConductorListComponent implements OnInit {
   eliminarConductor(driver: Conductor): void {
     if (this.loading || this.deletingId !== null || !driver.id || !confirm('¿Eliminar el conductor ' + driver.full_name + '?')) return;
     this.deletingId = driver.id; this.error = ''; this.success = '';
-    this.conductorService.eliminar(driver.id).subscribe({
+    this.conductorService.eliminar(driver.id).pipe(timeout(20000)).subscribe({
       next: () => { this.deletingId = null; this.success = 'Conductor eliminado correctamente.'; this.cargarConductores(); },
-      error: () => { this.deletingId = null; this.error = 'No se pudo eliminar el conductor.'; }
+      error: err => { this.deletingId = null; this.error = fleetError(err,'eliminar el conductor'); }
     });
   }
   exportCsv(): void {
     if (this.loading || this.loadFailed || !this.filteredDrivers.length) return;
-    const rows = [['ID', 'Nombre', 'Licencia', 'Usuario asociado', 'Direccion', 'Telefono'], ...this.filteredDrivers.map(driver =>
-      [String(driver.id ?? ''), driver.full_name, driver.license_number, String(driver.user ?? ''), driver.address ?? '', driver.phone_number ?? ''])];
+    const rows = [['ID', 'Nombre', 'Licencia', 'Direccion', 'Telefono'], ...this.filteredDrivers.map(driver =>
+      [String(driver.id ?? ''), driver.full_name, driver.license_number, driver.address ?? '', driver.phone_number ?? ''])];
     const csv = rows.map(row => row.map(value => {
       const safe = /^[=+@\-\t\r\n]/.test(value) ? "'" + value : value;
       return '"' + safe.replace(/"/g, '""') + '"';

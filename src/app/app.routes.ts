@@ -54,6 +54,7 @@ export const routes: Routes = [
       { path: 'conductores', component: ConductorListComponent },
       { path: 'conductores/nuevo', component: ConductorFormComponent },
       { path: 'conductores/editar/:id', component: ConductorFormComponent },
+      { path: 'conductores/:id', loadComponent: () => import('./pages/conductores/conductor-detail.component').then(m => m.ConductorDetailComponent) },
       { path: 'rutas', component: RutaListComponent },
       { path: 'rutas/nueva', component: RutaFormComponent },
       { path: 'rutas/editar/:id', component: RutaFormComponent },

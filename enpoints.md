@@ -585,6 +585,9 @@ Estados de bus: `Active`, `Inactive`, `Maintenance`.
 
 ```text
 GET    /api/fleet/drivers/
+GET    /api/fleet/drivers/?search={nombre_licencia_o_telefono}
+GET    /api/fleet/drivers/?is_active={true|false}
+GET    /api/fleet/drivers/?license_number={licencia}
 POST   /api/fleet/drivers/
 GET    /api/fleet/drivers/{id}/
 PUT    /api/fleet/drivers/{id}/
@@ -592,19 +595,21 @@ PATCH  /api/fleet/drivers/{id}/
 DELETE /api/fleet/drivers/{id}/
 ```
 
-Crear un conductor:
+Crear un conductor (Ficha operativa pura sin relación con usuario):
+
+El conductor se registra únicamente con sus datos laborales/operativos. No requiere usuario, ni rol, ni correo, ni contraseña.
 
 ```json
 {
   "full_name": "Carlos Conductor",
-  "user": 8,
   "license_number": "LIC123456",
   "address": "Calle 1 # 2-3",
-  "phone_number": "3001234567"
+  "phone_number": "3001234567",
+  "is_active": true
 }
 ```
 
-El `user` debe referenciar un usuario cuyo rol sea `driver`.
+*Nota:* Si un conductor desea comprar una boleta de viaje, lo hace como cualquier cliente común y corriente desde la plataforma pública registrándose con su cuenta de cliente, sin mezclar sus datos de chofer.
 
 ### Sillas
 

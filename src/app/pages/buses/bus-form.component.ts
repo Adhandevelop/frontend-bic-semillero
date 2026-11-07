@@ -1,6 +1,6 @@
 ﻿import { BusType, BusTypeService } from '../../core/services/bus-type.service';
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Bus } from '../../core/models/bus.model';
@@ -11,14 +11,8 @@ import { BusService } from '../../core/services/bus.service';
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './bus-form.component.html', styleUrl: './bus.component.css'
 })
-export class BusFormComponent implements OnInit, OnDestroy {
+export class BusFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  readonly defaultImage = "https://lh3.googleusercontent.com/aida-public/AB6AXuDAjY9yJRSwtZ5n1bW8XMg8YU6JCFz22Uqa07zjo3r34X4j849c2MRJDh5NOBh5OhwnpPE01nf2L-lE1GrLcSEIr3Lh4d37RUh6mQozg5DIzm2MIdxaddgDaK8P2Z4_taL-UItaUlkx750sB8l3h__iXh7zP044ON0OZanxCOIzQDiUtFml4LXeBgtQTs-L0_cuu3-9wc1eLHYGI-mZfh3Q5NMAW5vgNfiIejP8vwSx8Bz7bEMYcXN6hW6g3jP6OBnWSNcDFR7Xooo";
-  readonly equipmentOptions = ['Wi-Fi', 'Aire acondicionado', 'GPS', 'Cámaras', 'Baño'];
-  readonly selectedEquipment = new Set<string>();
-  imageUrl = '';
-  imageName = '';
-  imageError = '';
   loading = false;
   loadFailed = false;
   error = '';
@@ -74,34 +68,6 @@ export class BusFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleEquipment(name: string): void {
-    if (this.loading || this.loadFailed) return;
-    if (this.selectedEquipment.has(name)) this.selectedEquipment.delete(name);
-    else this.selectedEquipment.add(name);
-  }
-
-  selectImage(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    this.imageError = '';
-    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      this.imageError = 'Selecciona una imagen PNG, JPG o WEBP de hasta 5 MB.';
-      input.value = '';
-      return;
-    }
-    this.removeImage();
-    this.imageUrl = URL.createObjectURL(file);
-    this.imageName = file.name;
-    input.value = '';
-  }
-
-  removeImage(): void {
-    if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
-    this.imageUrl = '';
-    this.imageName = '';
-  }
-
   guardar(): void {
     if (this.loading || this.typesLoading || this.loadFailed || this.success) return;
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
@@ -109,7 +75,7 @@ export class BusFormComponent implements OnInit, OnDestroy {
     this.error = '';
     this.success = '';
     const values = this.form.getRawValue();
-    // Only fields supported by the current API. Image/equipment are local previews.
+    // Only fields supported by the current API.
     const bus: Bus = { plate: values.plate.trim(), model: values.model.trim(), capacity: values.capacity, state: values.state,...(values.bus_type!==null||this.editando?{bus_type:values.bus_type}:{}) };
     const request = this.editando && this.busId ? this.busService.actualizar(this.busId, bus) : this.busService.crear(bus);
     request.subscribe({
@@ -123,7 +89,5 @@ export class BusFormComponent implements OnInit, OnDestroy {
       error: (err) => {this.loading=false;const fields=['plate','capacity','model','state','bus_type','detail','non_field_errors'];const messages=err.error&&typeof err.error==='object'?Object.entries(err.error).filter(([key])=>fields.includes(key)).flatMap(([,value])=>Array.isArray(value)?value:typeof value==='string'?[value]:[]):[];this.error=messages.filter(value=>typeof value==='string').join(' ')||'No se pudo guardar el bus'+(err.status?' (HTTP '+err.status+')':'')+'.';}
     });
   }
-
-  ngOnDestroy(): void { this.removeImage(); }
 }
 

@@ -1,0 +1,1 @@
+.fleet-toolbar select{min-height:44px;max-width:100%;padding:10px;border:1px solid #cad9ef;border-radius:8px;background:white;color:#173252}.fleet-pagination{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px;font-size:12px}.bus-card-actions,.bus-card-status{flex-wrap:wrap}.fleet-pagination button:disabled{opacity:.5;cursor:default}

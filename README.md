@@ -547,3 +547,23 @@ Angular ya no desplaza sillas a posiciones libres ni crea filas ficticias para a
 La corrección de datos requiere backend: comparar numeración canónica y conciliar IDs/referencias existentes sin borrar boletas vendidas. Ver [SEAT_PLAN_DATA_ISSUE.md](SEAT_PLAN_DATA_ISSUE.md). La protección de interfaz no sustituye una validación del backend ni resuelve automáticamente conflictos de boletas ya emitidas.
 
 Verificación: reproducción del caso 49, detección `01`/`1` y posición `A`/`1`, ausencia de mutaciones, bloqueo de compra/venta, rechazo de conteos inflados y mantenimiento del plano correcto de 40 sillas y los casos de 30/42.
+
+### Capacidad del tipo y sillas del vehículo
+
+«Capacidad máxima permitida» define el límite del tipo. «Número de sillas del vehículo» representa su capacidad real y define el plano. El formulario muestra el límite seleccionado y bloquea guardar si se supera o los datos son inválidos; no cambia automáticamente la capacidad al elegir tipo. Reducir capacidad requiere validación del backend sobre sillas y tiquetes existentes.
+
+El detalle consulta las sillas filtradas por bus y muestra registros/capacidad, tipo y límite. Advierte sobre sillas faltantes, exceso, numeración equivalente duplicada, IDs o posiciones repetidas y distribución inválida. Incluye carga, error y actualización; cancela consultas al cambiar de bus. Un fallo no se presenta como cero sillas. No elimina ni reubica registros; este diagnóstico no representa disponibilidad comercial ni lecturas de sensores.
+
+### Conductores independientes de cuentas
+
+Según el contrato actualizado de `enpoints.md`, crear/editar un conductor envía exclusivamente `full_name`, `license_number`, `address` y `phone_number`. Se retiró el usuario asociado del formulario, modelo, búsqueda, ficha y CSV. No se crea una cuenta ni se solicitan credenciales; si el conductor compra boletas, utiliza una cuenta de cliente independiente. El progreso del formulario corresponde a sus cuatro campos obligatorios.
+
+### Operación de buses y conductores
+
+El detalle de cada bus y la nueva ficha `/conductores/:id` incorporan viajes asociados reales: programados/en curso e historial de finalizados/cancelados, siete por página. Cada viaje enlaza a su operación, mapa con `trip` y asientos del bus con el mismo contexto. La consulta usa el catálogo paginado existente y filtra por bus/conductor; una consulta fallida no se presenta como ausencia de viajes. Si fallan los nombres de terminales se muestran IDs con aviso. Para grandes volúmenes convendrá un filtro de backend.
+
+Eliminar buses y conductores muestra los mensajes de validación JSON disponibles y el HTTP, conserva el registro ante fallos y aplica tiempo límite. Un HTTP 500 sin detalle requiere logs del servidor. Los formularios muestran exclusivamente los campos que persisten: se retiraron fotos ilustrativas, cargas locales, equipamiento, certificaciones y datos personales no soportados. No se borran datos existentes en el backend.
+
+La lista de buses incorpora tipo, filtros por tipo/estado, siete unidades por página y CSV de todos los resultados filtrados y ordenados. Conductores pasa también a siete por página. Los botones de reportes/contacto pendientes se sustituyen por accesos a operaciones reales. GPS y sensores siguen sujetos a los datos de API o a demostración explícita, sin afirmar conexión del dispositivo.
+
+Verificación local: filtros, orden y paginación, CSV completo independiente de la página, conservación del registro ante rechazo al eliminar, mensajes de API/timeout, asociación y clasificación de viajes, errores parciales de terminales, cancelación de consultas antiguas y parámetros de ficha del conductor. Se comprobaron también el formulario de cuatro campos y el diagnóstico de capacidad/sillas. No se realizaron eliminaciones ni escrituras en producción. La revisión visual móvil queda pendiente por ausencia de navegador conectado.
