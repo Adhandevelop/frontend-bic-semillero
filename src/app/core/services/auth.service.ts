@@ -1,6 +1,6 @@
 ﻿import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of, switchMap, tap, throwError, timeout } from 'rxjs';
+import { Observable, catchError, finalize, map, of, shareReplay, switchMap, tap, throwError, timeout } from 'rxjs';
 import { API_BASE_URL, AUTH_LOGIN_URL } from '../config/api.config';
 
 export type AuthPhase = 'token' | 'profile';
@@ -15,6 +15,22 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly accessTokenKey = 'transporte_access_token';
   private readonly refreshTokenKey = 'transporte_refresh_token';
+  private renewal?:Observable<string>;private sessionVersion=0;
+
+  renew(expectedAccess:string|null=this.getToken()):Observable<string>{
+    const access=this.getToken(),refresh=this.getRefreshToken(),version=this.sessionVersion;
+    if(!access||!refresh){this.logout();return throwError(()=>new HttpErrorResponse({status:401,statusText:'Sesión administrativa vencida'}));}
+    if(expectedAccess&&access!==expectedAccess)return of(access);
+    if(this.renewal)return this.renewal;
+    const renewal=this.http.post<{access:string;refresh?:string}>(API_BASE_URL+'/token/refresh/',{refresh}).pipe(timeout(15000),map(tokens=>{
+      if(this.sessionVersion!==version||this.getToken()!==access||this.getRefreshToken()!==refresh)throw new HttpErrorResponse({status:401,statusText:'La sesión cambió durante la renovación'});
+      if(typeof tokens.access!=='string'||!tokens.access.trim()||tokens.refresh!==undefined&&(typeof tokens.refresh!=='string'||!tokens.refresh.trim()))throw new HttpErrorResponse({status:502,statusText:'Respuesta de renovación incompleta'});
+      localStorage.setItem(this.accessTokenKey,tokens.access);
+      if(tokens.refresh)localStorage.setItem(this.refreshTokenKey,tokens.refresh);
+      return tokens.access;
+    }),catchError(err=>{if([400,401,403].includes(err.status)&&this.sessionVersion===version&&this.getToken()===access)this.logout();return throwError(()=>err);}),finalize(()=>{if(this.renewal===renewal)this.renewal=undefined;}),shareReplay({bufferSize:1,refCount:false}));
+    this.renewal=renewal;return renewal;
+  }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     this.logout();
@@ -49,14 +65,14 @@ export class AuthService {
 
   verificarAdministrador(): Observable<boolean> {
     const token = this.getToken();
-    if (!token || !this.estaAutenticado()) {
+    if (!token) {
       this.logout();
       return of(false);
     }
-    return this.obtenerPerfil(token).pipe(
+    return (this.estaAutenticado()?of(token):this.renew(token)).pipe(switchMap(access=>this.obtenerPerfil(access)),
       map(profile => profile.role === 'admin'),
-      catchError(() => of(false)),
-      tap(allowed => { if (!allowed) this.logout(); })
+      tap(allowed => { if (!allowed) this.logout(); }),
+      catchError(err => {if([400,401,403].includes(err.status))this.logout();return of(false);})
     );
   }
 
@@ -81,6 +97,7 @@ export class AuthService {
   }
 
   logout(): void {
+    this.sessionVersion++;this.renewal=undefined;
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.refreshTokenKey);
   }

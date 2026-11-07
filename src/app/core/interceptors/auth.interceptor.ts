@@ -20,17 +20,22 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
       return client.renew(clientToken).pipe(switchMap(access=>next(request.clone({setHeaders:{Authorization:'Bearer '+access}}))));
     }));
   }
-  const token = inject(AuthService).getToken();
+  const admin=inject(AuthService);const token=admin.getToken();
 
-  if (!token || request.headers.has('Authorization') || !request.url.startsWith(`${API_BASE_URL}/`)) {
+  if (!token || (explicit && explicit!=='Bearer '+token) || !request.url.startsWith(`${API_BASE_URL}/`)) {
     return next(request);
   }
 
-  return next(
-    request.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-  );
+  const router=inject(Router);
+  const authorized=request.clone({setHeaders:{Authorization:'Bearer '+token}});
+  let refreshedAccess:string|null=null;
+  return next(authorized).pipe(catchError(err=>{
+    if(err.status!==401)return throwError(()=>err);
+    // A rejected authentication can be retried once; network/5xx failures are never replayed.
+    return admin.renew(token).pipe(switchMap(access=>{refreshedAccess=access;return next(request.clone({setHeaders:{Authorization:'Bearer '+access}}));}),catchError(failure=>{
+      if(failure.status===401&&refreshedAccess&&admin.getToken()===refreshedAccess)admin.logout();
+      if([400,401,403].includes(failure.status)&&!admin.getToken())void router.navigate(['/login'],{queryParams:{returnUrl:router.url}});
+      return throwError(()=>failure);
+    }));
+  }));
 };

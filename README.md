@@ -656,6 +656,12 @@ Verificación local: plano con IDs reales y pasillo central, conteos físicos in
 
 ### Estados operativos automáticos y cierre comercial
 
+La sesión administrativa renueva el access token al recibir HTTP 401 mediante `/api/token/refresh/`, conserva el refresh rotado y comparte una única renovación entre consultas simultáneas. Reintenta la petición original una sola vez con el nuevo access; no repite operaciones por errores de conexión o HTTP 5xx. La renovación no mezcla credenciales de cliente ni restaura una sesión cerrada o reemplazada mientras la respuesta estaba en curso. El guard también intenta renovar un access vencido antes de comprobar el rol administrativo.
+
+Si el refresh fue rechazado o ya no existe, se elimina la sesión administrativa y se abre el login. Al volver a entrar desde un detalle de viaje, se conserva únicamente un destino interno validado `/viajes/{id}`. Las acciones operativas muestran «Tu sesión administrativa venció o fue revocada» en lugar del mensaje JWT técnico; si el POST fue aceptado y falló la consulta posterior, avisan que falta confirmar el resultado antes de repetirlo.
+
+Verificación: renovación compartida, rotación, respuesta 401 tardía, cierre y nuevo login durante renovación, refresh inválido, conexión fallida, guard con access vencido, conservación del cuerpo de postergación, un solo reintento, ausencia de repetición ante HTTP 500 y separación cliente/administrador. Compilación de producción correcta. No se usaron credenciales ni se postergaron viajes reales desde las pruebas.
+
 Angular consume `state_source`, `automatic_completion_at`, `sales_close_at`, `can_sell`, `sales_block_reason` y `server_time`. Ya no envía `trip_state` al crear o editar, ni ofrece iniciar manualmente un viaje. El servidor calcula Programado/En curso/Finalizado y conserva las decisiones manuales. El formulario general permite editar recursos y tarifa; para cambiar horarios de un viaje existente se usa Postergar desde su detalle, conservando el historial.
 
 El detalle operativo incorpora Cancelar (motivo obligatorio), Finalizar y Postergar (nueva salida, llegada opcional y motivo), mediante los POST `/cancel/`, `/complete/` y `/postpone/`. Antes de enviar pide confirmación y después consulta el recurso autenticado para comprobar ID y resultado. No interpreta la respuesta `{detail, trip}` como un viaje plano. Un error o resultado incierto bloquea la repetición hasta consultar nuevamente; no muestra éxito optimista ni cancela pagos automáticamente.

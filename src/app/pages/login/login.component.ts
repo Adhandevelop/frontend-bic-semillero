@@ -5,7 +5,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, AuthFailure } from '../../core/services/auth.service';
 
 @Component({
@@ -19,6 +19,7 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   loading = false;
   error = '';
@@ -42,7 +43,9 @@ export class LoginComponent {
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
         this.success = 'Inicio de sesión correcto.';
-        this.router.navigateByUrl('/dashboard').then((navigated) => {
+        const requested=this.route.snapshot.queryParamMap.get('returnUrl')??'';
+        const destination=/^\/viajes\/[1-9]\d*(?:#trip-actions)?$/.test(requested)?requested:'/dashboard';
+        this.router.navigateByUrl(destination).then((navigated) => {
           if (!navigated) {
             this.error = 'No se pudo abrir el panel principal.';
           }
