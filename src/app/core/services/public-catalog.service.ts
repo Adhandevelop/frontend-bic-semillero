@@ -10,6 +10,6 @@ export interface PublicTrip {id:number;route:PublicRoute|number;date_time_start:
 export class PublicCatalogService {
   constructor(private http:HttpClient){}
   routes(){return allApiPages<PublicRoute>(this.http,API_BASE_URL+'/public/routes/');}
-  trips(){return allApiPages<PublicTrip>(this.http,API_BASE_URL+'/public/trips/');}
+  trips(filters:{origin?:string;destination?:string}={}){const params=new URLSearchParams();if(filters.origin)params.set('origin',filters.origin);if(filters.destination)params.set('destination',filters.destination);return allApiPages<PublicTrip>(this.http,API_BASE_URL+'/public/trips/'+(params.size?'?'+params.toString():''));}
   catalog(){return forkJoin({routes:this.routes(),trips:this.trips()});}
 }

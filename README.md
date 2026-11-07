@@ -653,3 +653,11 @@ El corte GPS seleccionado sincroniza el plano y el historial: no se emplean lect
 Criterio visual provisional y explícito: lecturas de más de dos minutos respecto al corte se muestran antiguas/sin confirmar, no libres. Lecturas ausentes o contradictorias quedan desconocidas. Sin GPS, el corte usa la hora de consulta del navegador; no es una garantía de antigüedad del servidor. El umbral deberá ajustarse a la frecuencia del dispositivo cuando esté definida. Los sensores de muestra siguen limitados a la demostración y no se copian al bus real.
 
 Verificación local: plano con IDs reales y pasillo central, conteos físicos independientes de boletas, cortes sin lecturas futuras, antigüedad/conflictos, ausencia de datos sin falsos asientos libres, historial deduplicado, pasajeros de boleta, errores parciales, cancelación al cambiar de viaje y reproducción/pausa/fin/pestaña oculta. Se comprobaron también la consulta GPS y los controles del mapa. Compilación de producción correcta. No se transmitieron datos ni se modificaron ventas; la revisión visual en navegador/móvil sigue pendiente.
+
+### Búsqueda de horarios desde el inicio
+
+Cada búsqueda consulta de nuevo `/api/public/trips/` con origen y destino, recorriendo todas las páginas y cancelando consultas anteriores. La fecha se compara en Colombia sobre salidas futuras; no depende de interpretar el día como UTC en el servidor. Si no hay salidas en el día elegido, se ofrecen las otras fechas publicadas de esa ruta. Un error de conexión se muestra como error, no como ausencia de horarios.
+
+Se muestran todas las rutas del catálogo. «Consultar horarios» selecciona la ruta, limpia la fecha anterior, consulta sus próximas salidas y enfoca los resultados. Una ruta publicada sin viajes futuros no equivale a una reserva disponible. «Elegir sillas» continúa al portal del cliente con el viaje seleccionado; la disponibilidad se valida durante la compra. No se crea una reserva desde el inicio.
+
+Verificación: consultas recientes, filtros de terminales, medianoche de Colombia, exclusión de salidas pasadas, fechas alternativas, más de diez pasajeros, cancelación de respuestas anteriores, errores y paginación con filtros. Compilación de producción correcta. Se consultó únicamente el catálogo público en producción; no se modificaron viajes ni ventas. Revisión visual pendiente.
