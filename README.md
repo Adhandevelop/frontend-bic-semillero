@@ -619,3 +619,13 @@ En editar bus aparece el panel de GPS actual con asignación de equipo libre, su
 Comprobaciones locales: selección de GPS libre, ausencia de campos no admitidos en el payload del bus, orden crear → asignar → releer, rechazo de un GPS fuera del catálogo, conservación del bus ante fallo de asignación, bloqueo de creación repetida y edición sin reasignación implícita. Se verificaron también los controles de acceso desde la lista y formulario. No se crearon buses ni asignaciones reales durante estas pruebas.
 
 En editar bus, el orden visual es información general y resumen de la unidad primero; el panel de asignación GPS queda debajo de ambas columnas. Se conservan sus controles y endpoints.
+
+### Comprobación del manifiesto operativo
+
+El detalle de un viaje programado contrasta los tiquetes autenticados (todas sus páginas) con las sillas marcadas `sold` por disponibilidad. Si hay una silla vendida sin boleta emitida/utilizada en la consulta, informa la discrepancia en lugar de declarar que no hay boletas. No crea pasajeros a partir del comprador ni inventa tiquetes para completar la lista. Una consulta fallida permanece diferenciada de un resultado vacío; en viajes no programados no se consulta el endpoint público de disponibilidad, restringido a programados.
+
+El número de silla devuelto en la boleta tiene prioridad para poder mostrarlo aunque falle el catálogo de sillas. El acceso a `/monitoreo?trip=...` se identifica como mapa de lecturas API, manteniendo la demostración en su ruta separada. La discrepancia concreta del viaje #25 requiere comprobar la respuesta HTTP de tiquetes en producción; estas mejoras no acreditan por sí solas la existencia o asociación de esa boleta en el servidor.
+
+Tras confirmar una venta pagada con boleta del viaje, el manifiesto contrasta dos fuentes autenticadas y paginadas: `/api/sales/tickets/` y las boletas anidadas en `/api/sales/sales/`. Une por ID, comprueba viaje/venta/silla y advierte de estados o referencias distintas. Recupera boletas incluidas en ventas cuando el listado independiente no las devuelve, indicando su procedencia. Solo usa datos del pasajero de cada boleta, nunca el comprador como sustituto. Un error de Factus no excluye boletas emitidas. Si ambas consultas fallan, el manifiesto queda no disponible, no como cero pasajeros confirmados.
+
+Comprobaciones locales: 33 tiquetes distribuidos en cuatro páginas, boleta del viaje #25 en la última página, recuperación desde venta #30, deduplicación, ausencia de inferencia del comprador, errores parciales y totales, conflictos de identidad/estado, número real de silla y cambios de viaje con cancelación. Son respuestas controladas, no operaciones ni modificaciones en producción.
