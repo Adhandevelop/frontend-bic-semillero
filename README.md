@@ -666,6 +666,8 @@ Verificación: consultas recientes, filtros de terminales, medianoche de Colombi
 
 ### Mapa de muestra en la cabecera del inicio
 
+El mapa se presenta sin velo de color, con solo los iconos azules de bus: no añade etiquetas de unidad, ventanas emergentes, líneas ni leyenda de recorrido. El fondo del buscador queda limitado a su tarjeta para conservar la lectura y dejar visibles los colores del mapa.
+
 La cabecera del inicio incorpora un mapa Leaflet con tres iconos azules de buses, reutilizando el estilo de la proyección y posiciones GeoJSON fijas de demostración. El buscador permanece por encima, con fondo para conservar contraste. El mapa de fondo no captura desplazamientos ni gestos; mantiene atribución de OpenStreetMap y ajusta el encuadre al cambiar el tamaño. No consulta ubicaciones ni pasajeros reales; el aviso de GPS en desarrollo sigue visible. Al salir se libera el mapa y su observador.
 
 Verificación del mapa con Leaflet simulado: tres marcadores, gestos deshabilitados, atribución, encuadre en escritorio/móvil y limpieza del observador. Falta la comprobación visual en navegador.
