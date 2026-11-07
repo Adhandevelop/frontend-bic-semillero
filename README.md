@@ -537,3 +537,13 @@ Se corrigieron tres diferencias del frontend: consulta de sillas con filtro por 
 La venta administrativa carga todas las posiciones del viaje al seleccionarlo, bloquea las reservadas/vendidas, cancela consultas anteriores y permite reintentar una lectura fallida. Una respuesta de otro viaje o con sillas duplicadas/incompletas no habilita la venta. El endpoint de disponibilidad tiene prioridad frente a un catálogo de tiquetes antiguo. Un bus de 30 o 42 plazas no queda reducido a 10; ese límite corresponde únicamente a cuántas boletas se venden en una operación.
 
 Se ejecutaron 16 grupos de comprobaciones locales con respuestas controladas. Ver [FRONTEND_CONTRACT_REVIEW.md](FRONTEND_CONTRACT_REVIEW.md) para contratos revisados, validaciones y pasos pendientes contra el servidor. La compilación y los tests locales no confirman por sí solos el despliegue de backend, datos remotos, correo, Factus o Wompi Sandbox.
+
+### Integridad del plano: numeración duplicada
+
+Un plano que contiene `01` y `1` con IDs distintos se considera inconsistente, igual que dos sillas en la misma posición física. El generador del backend debe reconocer esas equivalencias antes de completar hasta la capacidad. Se identificó un caso de 49 registros para un plano de 40 al añadir `1` a `9` aunque ya existían `01` a `09`.
+
+Angular ya no desplaza sillas a posiciones libres ni crea filas ficticias para acomodar colisiones. Detecta duplicados numéricos, IDs repetidos, columnas fuera de la distribución 2 + pasillo + 2 y posiciones equivalentes repetidas. La venta y compra se bloquean hasta resolver el plano; la consulta administrativa muestra el diagnóstico sin modificar registros. El dashboard tampoco publica la disponibilidad de un plano inflado como confirmada.
+
+La corrección de datos requiere backend: comparar numeración canónica y conciliar IDs/referencias existentes sin borrar boletas vendidas. Ver [SEAT_PLAN_DATA_ISSUE.md](SEAT_PLAN_DATA_ISSUE.md). La protección de interfaz no sustituye una validación del backend ni resuelve automáticamente conflictos de boletas ya emitidas.
+
+Verificación: reproducción del caso 49, detección `01`/`1` y posición `A`/`1`, ausencia de mutaciones, bloqueo de compra/venta, rechazo de conteos inflados y mantenimiento del plano correcto de 40 sillas y los casos de 30/42.

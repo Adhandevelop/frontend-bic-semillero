@@ -8,7 +8,7 @@ import { OnlineBookingService, CheckoutPassenger, OnlineBus, OnlineTrip, OnlineS
 import { PassengerService, PassengerProfile, PassengerSale, passengerError } from '../../core/services/passenger.service';
 import { WompiWidgetService } from '../../core/services/wompi-widget.service';
 interface PendingCheckout {saleId:number|null;deadline:number;transactionId?:string;idempotencyKey?:string;}
-import { buildSeatRows, SeatPlanRow } from '../../core/utils/seat-plan';
+import { buildSeatRows, seatPlanIssues, SeatPlanRow } from '../../core/utils/seat-plan';
 export { buildSeatRows } from '../../core/utils/seat-plan';
 
 @Component({selector:'app-booking',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./booking.component.html',styleUrls:['./booking.component.css','./booking-payment.component.css','./booking-seats.component.css']})
@@ -30,13 +30,14 @@ export class BookingComponent implements OnInit,OnDestroy {
   get trip(){return this.trips.find(t=>t.id===this.tripId);}
   get selectedSeat(){return this.seats.find(s=>s.id===this.seatId&&s.bus===this.trip?.bus);}
   get visibleSeats(){return this.seats.filter(s=>s.bus===this.trip?.bus).sort((a,b)=>a.row.localeCompare(b.row,undefined,{numeric:true})||a.col.localeCompare(b.col,undefined,{numeric:true}));}
+  get planIssues():string[]{return seatPlanIssues(this.visibleSeats);}
   get seatRows():SeatPlanRow<OnlineSeat>[]{return buildSeatRows(this.visibleSeats);}
   price(trip:OnlineTrip):number|null{const cents=this.fares.find(f=>f.trip===trip.id)?.amount_cents;return typeof cents==='number'&&Number.isSafeInteger(cents)&&cents>0?cents/100:null;}
   seatNumber(id:number):string{return this.seats.find(seat=>seat.id===id)?.seat_number??'Sin número disponible';}
   get total(){return this.trip?this.price(this.trip):null;}
   get purchaseTotal():number|null{const unit=this.total;return unit===null?null:Math.round(unit*100)*this.passengers.length/100;}
   get locked(){return this.paying||this.checking||!!this.pending||!!this.receipt||!!this.payment;}
-  get canPay(){return !!this.profile&&!!this.trip&&this.passengersValid&&!this.seatsLoading&&this.total!==null&&this.terms&&!this.locked&&!this.loading;}
+  get canPay(){return !!this.profile&&!!this.trip&&this.passengersValid&&!this.planIssues.length&&!this.seatsLoading&&this.total!==null&&this.terms&&!this.locked&&!this.loading;}
   get remaining(){return Math.floor(this.seconds/60)+':'+String(this.seconds%60).padStart(2,'0');}
   get fullName(){return this.profile?.name||[this.profile?.first_name,this.profile?.last_name].filter(Boolean).join(' ');}
   busLabel(trip:OnlineTrip):string{const bus=this.buses.find(b=>b.id===trip.bus);return bus?[bus.plate,bus.model].filter(Boolean).join(' · '):'Servicio intermunicipal';}
@@ -54,7 +55,7 @@ const requestedTrip=Number(this.route.snapshot.queryParamMap.get('trip'));if(!th
     this.api.availability(id).pipe(timeout(15000),takeUntil(this.destroyed)).subscribe({next:data=>{if(request!==this.seatRequest)return;this.seatsLoading=false;if(data.trip!==id||!Array.isArray(data.seats)||!data.seats.every(seat=>Number.isSafeInteger(seat.id)&&seat.id>0&&['available','reserved','sold'].includes(seat.status??'')&&!!String(seat.row??'').trim()&&!!String(seat.col??'').trim())){this.seats=[];this.passengers=[];this.seatId=null;this.error='La API devolvió sillas incompletas o de otro viaje. Actualiza la disponibilidad.';return;}this.seats=data.seats.map(s=>({...s,bus:0,row:String(s.row),col:String(s.col),seat_number:String(s.seat_number)}));this.passengers=this.passengers.filter(p=>this.seats.some(s=>s.id===p.seat&&s.status==='available'));this.seatId=this.passengers[0]?.seat??null;},error:err=>{if(request!==this.seatRequest)return;this.seatsLoading=false;this.error=passengerError(err);}});
   }
   selectSeat(id:number):void{
-    if(this.locked||this.seatsLoading)return;
+    if(this.locked||this.seatsLoading||this.planIssues.length)return;
     const existing=this.passengers.findIndex(p=>p.seat===id);
     if(existing>=0){this.passengers.splice(existing,1);}else{
       if(!this.visibleSeats.some(s=>s.id===id&&s.status==='available'))return;

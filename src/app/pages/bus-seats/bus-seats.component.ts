@@ -1,3 +1,4 @@
+import { seatPlanIssues } from '../../core/utils/seat-plan';
 ﻿import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +20,7 @@ export class BusSeatsComponent implements OnInit,OnDestroy {
   loading=false;telemetryLoading=false;busError='';seatsError='';tripsError='';sourceErrors:string[]=[];ticketsFailed=false;currentFailed=false;historyFailed=false;availabilityFailed=false;contextError='';selectedSeatId:number|null=null;
   private id(value:string|null):number|null{return value&&/^[1-9]\d*$/.test(value)&&Number.isSafeInteger(Number(value))?Number(value):null;}
   private safe<T>(request:Observable<T>):Observable<Result<T>>{return request.pipe(timeout(20000),map(value=>({value,error:''})),catchError(err=>of({value:null,error:adminSeatError(err)})));}
+  get planIssues():string[]{return seatPlanIssues(this.seats,this.bus?.capacity);}
   ngOnInit():void{combineLatest([this.route.paramMap,this.route.queryParamMap]).pipe(takeUntil(this.destroyed)).subscribe(([params,query])=>{this.busId=this.id(params.get('id'))??0;this.clientId=this.id(query.get('cliente'));this.requestedTrip=this.id(query.get('trip'));this.requestedSeat=this.id(query.get('asiento'));this.load();});}
   load():void{
     this.context.next();this.selection.next();this.loading=false;this.bus=null;this.customer=null;this.seats=[];this.trips=[];this.tripId=null;this.selectedSeatId=null;this.clearTelemetry();this.contextError='';this.busError='';this.seatsError='';this.tripsError='';this.customerError='';

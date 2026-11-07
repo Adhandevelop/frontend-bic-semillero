@@ -32,3 +32,7 @@ Se usaron respuestas controladas, no credenciales o dinero reales. Esta revisió
 - Revisar visualmente móvil, cámara, lector USB e impresora. La sesión de trabajo no dispone de navegador conectado.
 
 Para telemetría de alto volumen siguen siendo necesarios filtros de viaje/tiempo documentados en backend; el frontend recupera las páginas permitidas por el contrato actual y filtra las lecturas por viaje.
+
+## Incidencia posterior: integridad del catálogo de sillas
+
+Se detectó que el generador de backend puede añadir etiquetas `1`–`9` aunque existan `01`–`09`. Angular ahora bloquea planos duplicados, sin reubicar registros ni alterar sus IDs. Este problema de datos requiere la reparación descrita en [SEAT_PLAN_DATA_ISSUE.md](SEAT_PLAN_DATA_ISSUE.md); las pruebas de capacidad completa anteriores no certificaban la integridad de los registros del servidor.

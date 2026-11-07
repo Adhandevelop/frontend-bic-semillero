@@ -1,4 +1,4 @@
-import { buildSeatRows, SeatPlanRow } from '../../core/utils/seat-plan';
+import { buildSeatRows, seatPlanIssues, SeatPlanRow } from '../../core/utils/seat-plan';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -103,6 +103,7 @@ export class VentaFormComponent implements OnInit,OnDestroy {
   get client():Omit<Cliente,'id'|'role'>|undefined{return this.draftPassenger??this.clients.find(c=>c.id===this.clientId);}
   private attempt:{payload:AdminSalePayload;key:string}|null=null;
   unavailableIds:number[]=[];
+  get planIssues():string[]{return seatPlanIssues(this.availableSeats);}
   get seatRows():SeatPlanRow<SaleSeat>[]{return buildSeatRows(this.availableSeats);}
   get selectedSeats():SaleSeat[]{return this.availableSeats.filter(s=>this.seatIds.includes(s.id));}
   get selectedSeatLabels():string{return this.selectedSeats.map(s=>s.seat_number).join(', ');}
@@ -113,10 +114,10 @@ export class VentaFormComponent implements OnInit,OnDestroy {
   nombre(c:Pick<Cliente,'first_name'|'last_name'|'username'>):string{return [c.first_name,c.last_name].filter(Boolean).join(' ').trim()||c.username;}
   tripLabel(t:SaleTrip):string{const r=this.routes.find(r=>r.id===t.route);return '#'+t.id+' · '+(r?r.origen+' → '+r.destino:'Ruta #'+t.route);}
   sold(id:number):boolean{return this.seatStates[id]!==undefined?this.seatStates[id]==='sold':this.tickets.some(t=>t.trip===this.tripId&&t.seat===id&&(t.status==='issued'||t.status==='used'));}
-  get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!!this.trip&&this.seatIds.length>=1&&this.seatIds.length<=10&&this.selectedSeats.length===this.seatIds.length&&this.seatIds.every(id=>!this.sold(id)&&!this.unavailableIds.includes(id))&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
+  get ready():boolean{const c=this.client;return !this.addingClient&&!this.locked&&!this.planIssues.length&&!!this.trip&&this.seatIds.length>=1&&this.seatIds.length<=10&&this.selectedSeats.length===this.seatIds.length&&this.seatIds.every(id=>!this.sold(id)&&!this.unavailableIds.includes(id))&&this.amount!==null&&!!c?.identification_number&&!!c.email&&!!c.telephone&&this.paid;}
   changeTrip():void{this.loadTripSeats();}
   selectSeat(s:SaleSeat):void{
-    if(this.locked||this.sold(s.id)||this.unavailableIds.includes(s.id))return;
+    if(this.locked||this.planIssues.length||this.sold(s.id)||this.unavailableIds.includes(s.id))return;
     if(this.seatIds.includes(s.id))this.seatIds=this.seatIds.filter(id=>id!==s.id);
     else{if(this.seatIds.length>=10){this.error='Puedes vender máximo 10 boletas por venta.';return;}this.seatIds=[...this.seatIds,s.id];}
     this.error='';this.paid=false;
