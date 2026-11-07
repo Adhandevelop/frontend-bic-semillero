@@ -1,39 +1,13 @@
-﻿<header class="site-header">
+<header class="site-header">
   <a routerLink="/" class="brand">Buses Universal</a>
-  <nav aria-label="Navegación principal"><a routerLink="/">Inicio</a><a routerLink="/ubicacion" aria-current="page">Ubicación del bus</a><a routerLink="/login">Iniciar sesión</a></nav>
+  <nav aria-label="Navegación del portal familiar"><a routerLink="/">Inicio</a><a routerLink="/ubicacion" aria-current="page">Ubicación del bus</a><a routerLink="/clientes/login">Iniciar sesión</a></nav>
 </header>
 <main>
-  <section class="hero">
-    <div class="introduction">
-      <span class="eyebrow">◎ Portal familiar</span>
-      <h1>Mantén a tus seres queridos <span>a la vista.</span></h1>
-      <p>Consulta la ubicación del bus y acompaña el recorrido de quienes más quieres.</p>
-      <div class="family-note"><span class="family-symbol" aria-hidden="true">♡</span><p>Más tranquilidad en cada trayecto.</p></div>
-    </div>
-    <section class="tracking-card" aria-labelledby="tracking-title">
-      <h2 id="tracking-title">Seguimiento de viaje</h2>
-      <p>Explora el recorrido con datos de ejemplo.</p>
-      <form (ngSubmit)="viewTracking()" #trackingForm="ngForm">
-        <div class="fields">
-          <div><label for="passenger">Nombre del pasajero</label><input id="passenger" name="passenger" [(ngModel)]="passengerName" placeholder="Ej. Sara Martínez" required maxlength="100" autocomplete="name"></div>
-          <div><label for="travel-code">Código de viaje</label><input id="travel-code" name="travelCode" [(ngModel)]="travelCode" placeholder="Código de 6 dígitos" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" aria-describedby="demo-info"></div>
-        </div>
-        <p *ngIf="submitted && trackingForm.invalid" class="form-error" role="alert">Ingresa un nombre y un código de seis dígitos.</p>
-        <button type="submit" class="primary-button">Ver localización de ejemplo <span aria-hidden="true">→</span></button>
-      </form>
-      <p id="demo-info" class="info-note">ⓘ Vista de demostración: los códigos no se validan y las posiciones son fijas. El seguimiento en vivo estará disponible al conectar el servicio de viajes.</p>
-    </section>
+  <section class="introduction" aria-labelledby="family-title">
+    <span>◎ Portal familiar</span>
+    <h1 id="family-title">Mantén a tus seres queridos a la vista.</h1>
+    <p>Explora cómo será el seguimiento del recorrido y la ocupación de asientos. Esta proyección utiliza datos simulados: no localiza pasajeros ni valida códigos de viaje.</p>
   </section>
-  <section class="map-section" aria-labelledby="map-title">
-    <div class="map-heading"><div><span class="eyebrow">Ubicación del bus</span><h2 id="map-title">Un vistazo al recorrido</h2></div><span class="demo-badge">Datos de ejemplo</span></div>
-    <p *ngIf="trackingMessage" class="tracking-message" role="status">{{ trackingMessage }}</p>
-    <div class="bus-selector" aria-label="Seleccionar bus"><button *ngFor="let bus of locations.features" type="button" (click)="selectBus(bus.properties.id)" [class.selected]="bus.properties.id === selectedBus.properties.id" [attr.aria-pressed]="bus.properties.id === selectedBus.properties.id">Bus #{{ bus.properties.unit }} · {{ bus.properties.plate }}</button></div>
-    <div class="geographic-map">
-      <div #mapContainer class="leaflet-map" aria-label="Mapa interactivo de buses en Bogotá"></div>
-      <button class="all-buses" type="button" (click)="showAllBuses()">Ver todos los buses</button>
-      <p *ngIf="tileError" class="tile-error" role="status">No se pudo cargar el mapa base. Revisa tu conexión a internet.</p>
-    </div>
-    <div class="bus-details"><span><strong>Bus #{{ selectedBus.properties.unit }}</strong> · {{ selectedBus.properties.plate }}</span><span>{{ selectedBus.properties.driver }}</span><span>{{ coordinates }}</span></div>
-  </section>
+  <app-monitoring-demo [publicView]="true"></app-monitoring-demo>
 </main>
-<footer><a class="brand" routerLink="/">Buses Universal</a><p>Acompañamos lo que más importa.</p><a routerLink="/login">Acceso de operadores →</a></footer>
+<footer><a routerLink="/" class="brand">Buses Universal</a><p>Acompañamos lo que más importa.</p><a routerLink="/clientes/comprar">Comprar tiquete →</a></footer>

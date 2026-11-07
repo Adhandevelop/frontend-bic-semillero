@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, Input, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -6,8 +6,9 @@ import * as L from 'leaflet';
 import { ADMIN_MONITORING_DEMO } from './monitoring-demo.data';
 import { GpsSample, MonitoredTrip, gpsAt, gpsTrace, orderedGps, sampledDistanceKm, seatSnapshots } from './monitoring.model';
 
-@Component({standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./monitoreo.component.html',styleUrls:['./monitoring-hud.component.css','./monitoreo.component.css','./monitoring-seats.component.css','./monitoring-map.component.css']})
+@Component({selector:'app-monitoring-demo',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./monitoreo.component.html',styleUrls:['./monitoring-hud.component.css','./monitoreo.component.css','./monitoring-seats.component.css','./monitoring-map.component.css']})
 export class MonitoreoComponent implements AfterViewInit, OnDestroy {
+  @Input() publicView=false;
   @ViewChild('mapContainer',{static:true}) private mapContainer!:ElementRef<HTMLDivElement>;
   constructor(private activatedRoute:ActivatedRoute){}
   get contextTripId():number|null{const raw=this.activatedRoute?.snapshot.queryParamMap.get('trip');const value=Number(raw);return raw&&/^[1-9]\d*$/.test(raw)&&Number.isSafeInteger(value)?value:null;}

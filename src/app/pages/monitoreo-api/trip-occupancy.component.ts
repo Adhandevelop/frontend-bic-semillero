@@ -7,7 +7,7 @@ import { AdminSeat, AdminSeatReading, AdminSeatTicket, AdminSeatsService } from 
 import { buildSeatRows, seatPlanIssues } from '../../core/utils/seat-plan';
 import { SensorSnapshot, sensorSnapshots } from './trip-occupancy.model';
 interface Source<T>{data:T|null;error:string;}
-@Component({selector:'app-trip-occupancy',standalone:true,imports:[CommonModule],templateUrl:'./trip-occupancy.component.html',styleUrl:'./trip-occupancy.component.css'})
+@Component({selector:'app-trip-occupancy',standalone:true,imports:[CommonModule],templateUrl:'./trip-occupancy.component.html',styleUrls:['../monitoreo/monitoring-hud.component.css','../monitoreo/monitoreo.component.css','../monitoreo/monitoring-seats.component.css','./trip-occupancy.component.css']})
 export class TripOccupancyComponent implements OnChanges,OnDestroy {
   @Input({required:true}) trip!:Viaje;@Input() bus?:Bus;@Input() at:string|null=null;@Input() refreshVersion=0;@Input() playing=false;@Input() canReplay=false;
   @Output() playbackToggle=new EventEmitter<void>();
@@ -39,6 +39,7 @@ export class TripOccupancyComponent implements OnChanges,OnDestroy {
   select(id:number):void{if(!this.seats.some(seat=>seat.id===id))return;this.selectedSeatId=id;this.historyPage=1;}
   snapshot(id:number):SensorSnapshot|undefined{return this.snapshots.find(value=>value.seat.id===id);}
   state(id:number):string{const value=this.snapshot(id);return value?.state==='occupied'?'Ocupado':value?.state==='free'?'Libre':value?.reason==='stale'?'Lectura antigua':value?.reason==='conflict'?'Sin confirmar':'Sin lectura';}
+  displayState(id:number):string{const state=this.snapshot(id)?.state;return state==='occupied'?'Ocupado':state==='free'?'Libre':'Sin señal';}
   receivedAt(record:AdminSeatReading):string|null{return record.created_at&&Number.isFinite(Date.parse(record.created_at))?record.created_at:null;}
   ngOnDestroy():void{this.cancel.next();this.cancel.complete();this.destroyed.next();this.destroyed.complete();}
 }
