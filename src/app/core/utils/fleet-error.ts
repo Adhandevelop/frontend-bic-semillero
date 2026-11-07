@@ -5,7 +5,7 @@ export function fleetError(err:{status?:number;error?:unknown;name?:string},acti
   const prefix=status===0?'No se pudo conectar al servidor.':status===401?'Tu sesión venció.':status===403?'No tienes permiso para esta operación.':'No se pudo '+action+(status?' (HTTP '+status+')':'')+'.';
   // Render API messages as text, never server HTML or a complete response dump.
   if(body&&typeof body==='object'){
-    const allowed=['detail','message','non_field_errors','protected_objects','bus','driver','capacity','bus_type'];
+    const allowed=['detail','message','non_field_errors','protected_objects','bus','driver','date_time_start','date_time_end','trip_state','capacity','bus_type'];
     const messages=Object.entries(body).filter(([key])=>allowed.includes(key)).flatMap(([,value])=>typeof value==='string'?[value]:Array.isArray(value)?value.filter((item):item is string=>typeof item==='string'):[]).filter(value=>!/<\/?(?:html|script|body)\b/i.test(value)).map(value=>value.slice(0,600));
     if(messages.length)return prefix+' '+messages.slice(0,5).join(' ');
   }

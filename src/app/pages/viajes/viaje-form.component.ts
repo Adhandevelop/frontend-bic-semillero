@@ -1,4 +1,5 @@
-﻿import { CommonModule } from '@angular/common';
+﻿import { fleetError } from '../../core/utils/fleet-error';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -40,6 +41,8 @@ export class ViajeFormComponent implements OnInit {
     estado:['programado' as Viaje['estado'],[Validators.required,Validators.pattern(/^(programado|en_curso|finalizado|cancelado)$/)]]
   },{validators:tripSchedule});
   constructor(private route:ActivatedRoute,private router:Router,private busService:BusService,private conductorService:ConductorService,private rutaService:RutaService,private viajeService:ViajeService){}
+  get eligibleDrivers():Conductor[]{return this.conductores.filter(driver=>driver.is_active===true||driver.id===Number(this.form.controls.conductor.value));}
+  get driverAssignable():boolean{return this.selectedDriver?.is_active===true;}
   get eligibleBuses():Bus[]{return this.buses.filter(bus=>bus.state==='Active'||bus.id===this.originalBus);}
   get eligibleRoutes():Ruta[]{return this.rutas.filter(route=>route.estado==='activa'||route.id===this.originalRoute);}
   get selectedBus():Bus|undefined{return this.buses.find(bus=>bus.id===Number(this.form.controls.bus.value));}
@@ -77,6 +80,7 @@ export class ViajeFormComponent implements OnInit {
     this.form.markAllAsTouched();if(this.form.invalid)return;
     const v=this.form.getRawValue();
     if(!this.eligibleBuses.some(bus=>bus.id===Number(v.bus))||!this.conductores.some(driver=>driver.id===Number(v.conductor))||!this.eligibleRoutes.some(route=>route.id===Number(v.ruta))){this.error='Selecciona una ruta, un bus y un conductor existentes en los catálogos.';return;}
+    if(!this.driverAssignable){this.error='Selecciona un conductor activo. Si su estado no aparece, actualiza los datos del catálogo.';return;}
     this.loading=true;this.error='';
     const viaje:Viaje={bus:Number(v.bus),conductor:Number(v.conductor),ruta:Number(v.ruta),fecha_hora_inicio:bogotaIso(v.fecha_hora_inicio)!,fecha_hora_fin:v.fecha_hora_fin?bogotaIso(v.fecha_hora_fin):null,estado:v.estado};
     const request=this.editando&&this.viajeId?this.viajeService.actualizarParcial(this.viajeId,viaje):this.viajeService.crear(viaje);
@@ -95,7 +99,7 @@ export class ViajeFormComponent implements OnInit {
         this.partialSaved=false;this.success='Viaje y tarifa guardados correctamente.';
         this.router.navigateByUrl('/viajes').then(ok=>{this.loading=false;if(!ok)this.error='El viaje y su tarifa se guardaron. Vuelve al listado para consultarlos.';}).catch(()=>{this.loading=false;this.error='El viaje y su tarifa se guardaron. Vuelve al listado para consultarlos.';});
       },error:()=>{this.loading=false;this.error='El viaje #'+id+' está guardado, pero no se pudo confirmar su tarifa. Reintenta guardar: se actualizará este mismo viaje y se consultará su tarifa antes de crearla.';}});
-    },error:()=>{this.loading=false;this.error=this.partialSaved?'No se pudo actualizar el viaje #'+this.viajeId+'. Su tarifa sigue pendiente de confirmar.':'No se pudo confirmar el guardado del viaje. Revisa el listado antes de reintentar.';}});
+    },error:err=>{this.loading=false;this.error=fleetError(err,'guardar el viaje')+' '+(this.partialSaved?'No se pudo actualizar el viaje #'+this.viajeId+'. Su tarifa sigue pendiente de confirmar.':'Revisa los datos y el listado antes de reintentar.');}});
   }
   private localDate(value:string):string{const date=new Date(value);return Number.isFinite(date.getTime())?new Date(date.getTime()-5*3600000).toISOString().slice(0,16):'';}
 }

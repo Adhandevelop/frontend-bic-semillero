@@ -1,3 +1,4 @@
+import { DriverStatusComponent } from '../../shared/driver-status/driver-status.component';
 import { fleetError } from '../../core/utils/fleet-error';
 import { timeout } from 'rxjs';
 import { ListOrder, orderRecords } from '../../core/utils/list-order';
@@ -11,7 +12,7 @@ import { ConductorService } from '../../core/services/conductor.service';
 
 @Component({
   selector: 'app-conductor-list', standalone: true,
-  imports:[ListOrderComponent,CommonModule, FormsModule, RouterLink],
+  imports:[DriverStatusComponent,ListOrderComponent,CommonModule, FormsModule, RouterLink],
   templateUrl: './conductor-list.component.html', styleUrl: './conductor-list.component.css'
 })
 export class ConductorListComponent implements OnInit {
@@ -23,6 +24,10 @@ export class ConductorListComponent implements OnInit {
   success = '';
   searchValue = '';
   contactFilter = '';
+  activeFilter='';licenseFilter='';
+  get activeCount(){return this.conductores.filter(d=>d.is_active===true).length;}
+  get inactiveCount(){return this.conductores.filter(d=>d.is_active===false).length;}
+  updateDriver(driver:Conductor):void{this.conductores=this.conductores.map(d=>d.id===driver.id?driver:d);this.page=Math.min(this.page,this.pageCount);}
   view: 'table' | 'grid' = 'table';
   page = 1;
   readonly pageSize = 7;
@@ -36,14 +41,14 @@ export class ConductorListComponent implements OnInit {
   get filteredDrivers(): Conductor[] {
     const query = this.searchValue.trim().toLocaleLowerCase();
     return orderRecords(this.conductores.filter(driver => (!query || [driver.full_name, driver.license_number, driver.id, driver.phone_number].join(' ').toLocaleLowerCase().includes(query)) &&
-      (!this.contactFilter || (this.contactFilter === 'with' ? Boolean(driver.phone_number?.trim()) : !driver.phone_number?.trim()))),this.listOrder);
+      (!this.activeFilter||(this.activeFilter==='active'?driver.is_active===true:this.activeFilter==='inactive'?driver.is_active===false:typeof driver.is_active!=='boolean')) && (!this.licenseFilter.trim()||driver.license_number===this.licenseFilter.trim()) && (!this.contactFilter || (this.contactFilter === 'with' ? Boolean(driver.phone_number?.trim()) : !driver.phone_number?.trim()))),this.listOrder);
   }
   get pageCount(): number { return Math.max(1, Math.ceil(this.filteredDrivers.length / this.pageSize)); }
   get currentPage(): number { return Math.min(this.page, this.pageCount); }
   get visibleDrivers(): Conductor[] { return this.filteredDrivers.slice((this.currentPage - 1) * this.pageSize, this.currentPage * this.pageSize); }
   get firstResult(): number { return this.filteredDrivers.length ? (this.currentPage - 1) * this.pageSize + 1 : 0; }
   get lastResult(): number { return Math.min(this.currentPage * this.pageSize, this.filteredDrivers.length); }
-  clearFilters(): void { this.searchValue = ''; this.contactFilter = ''; this.page = 1; }
+  clearFilters(): void { this.searchValue = ''; this.contactFilter = '';this.activeFilter='';this.licenseFilter=''; this.page = 1; }
   changePage(delta: number): void { this.page = Math.max(1, Math.min(this.pageCount, this.currentPage + delta)); }
   initials(name: string): string { return name.trim().split(/\s+/).slice(0, 2).map(word => word[0] ?? '').join('').toLocaleUpperCase() || '?'; }
   phoneLink(phone: string): string | null {
@@ -69,8 +74,8 @@ export class ConductorListComponent implements OnInit {
   }
   exportCsv(): void {
     if (this.loading || this.loadFailed || !this.filteredDrivers.length) return;
-    const rows = [['ID', 'Nombre', 'Licencia', 'Direccion', 'Telefono'], ...this.filteredDrivers.map(driver =>
-      [String(driver.id ?? ''), driver.full_name, driver.license_number, driver.address ?? '', driver.phone_number ?? ''])];
+    const rows = [['ID', 'Nombre', 'Licencia', 'Direccion', 'Telefono', 'Estado'], ...this.filteredDrivers.map(driver =>
+      [String(driver.id ?? ''), driver.full_name, driver.license_number, driver.address ?? '', driver.phone_number ?? '',driver.is_active===true?'Activo':driver.is_active===false?'Inactivo':'No informado'])];
     const csv = rows.map(row => row.map(value => {
       const safe = /^[=+@\-\t\r\n]/.test(value) ? "'" + value : value;
       return '"' + safe.replace(/"/g, '""') + '"';

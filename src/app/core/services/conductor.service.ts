@@ -4,6 +4,8 @@ import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 import { Conductor } from '../models/conductor.model';
 
+export interface DriverFilters {search?:string;is_active?:boolean;license_number?:string;}
+
 interface PaginatedResponse<T> {
   count: number;
   next: string | null;
@@ -19,10 +21,11 @@ export class ConductorService {
 
   constructor(private http: HttpClient) {}
 
-  listarTodos(): Observable<Conductor[]> {
-    return this.http.get<Conductor[] | PaginatedResponse<Conductor>>(this.apiUrl).pipe(
+  listarTodos(filters:DriverFilters={}): Observable<Conductor[]> {
+    const params:Record<string,string|number|boolean>={...(filters.search?.trim()?{search:filters.search.trim()}:{}),...(typeof filters.is_active==='boolean'?{is_active:filters.is_active}:{}),...(filters.license_number?.trim()?{license_number:filters.license_number.trim()}: {})};
+    return this.http.get<Conductor[] | PaginatedResponse<Conductor>>(this.apiUrl,{params}).pipe(
       expand((response, index) => !Array.isArray(response) && response.next
-        ? this.http.get<Conductor[] | PaginatedResponse<Conductor>>(this.apiUrl, { params: { page: index + 2 } })
+        ? this.http.get<Conductor[] | PaginatedResponse<Conductor>>(this.apiUrl, { params: {...params, page: index + 2 } })
         : EMPTY),
       map(response => Array.isArray(response) ? response : response.results),
       reduce((drivers, page) => drivers.concat(page), [] as Conductor[])

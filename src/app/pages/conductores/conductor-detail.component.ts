@@ -1,3 +1,4 @@
+import { DriverStatusComponent } from '../../shared/driver-status/driver-status.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -6,7 +7,7 @@ import { Conductor } from '../../core/models/conductor.model';
 import { ConductorService } from '../../core/services/conductor.service';
 import { fleetError } from '../../core/utils/fleet-error';
 import { FleetTripsComponent } from '../../shared/fleet-trips/fleet-trips.component';
-@Component({standalone:true,imports:[CommonModule,RouterLink,FleetTripsComponent],templateUrl:'./conductor-detail.component.html',styleUrl:'../buses/bus-detail.component.css'})
+@Component({standalone:true,imports:[DriverStatusComponent,CommonModule,RouterLink,FleetTripsComponent],templateUrl:'./conductor-detail.component.html',styleUrl:'../buses/bus-detail.component.css'})
 export class ConductorDetailComponent implements OnInit,OnDestroy {
   private route=inject(ActivatedRoute);private api=inject(ConductorService);private refresh=new Subject<void>();private destroy=new Subject<void>();
   driver:Conductor|null=null;id:number|null=null;loading=false;error='';

@@ -45,10 +45,10 @@ export class ViajeListComponent implements OnInit {
   constructor(private viajeService:ViajeService,private busService:BusService,private conductorService:ConductorService,private rutaService:RutaService){}
   ngOnInit():void{this.cargarViajes();}
   stateLabel(state:Viaje['estado']):string{return ({programado:'Programado',en_curso:'En curso',finalizado:'Finalizado',cancelado:'Cancelado'})[state]||'Sin estado';}
-  nombreBus(trip:Viaje):string{return this.buses.find(bus=>bus.id===trip.bus)?.plate||trip.bus_detalle?.plate||trip.bus_detalle?.placa||'Bus #'+trip.bus;}
+  nombreBus(trip:Viaje):string{return trip.bus_plate||this.buses.find(bus=>bus.id===trip.bus)?.plate||trip.bus_detalle?.plate||trip.bus_detalle?.placa||'Bus #'+trip.bus;}
   modeloBus(trip:Viaje):string{return this.buses.find(bus=>bus.id===trip.bus)?.model||'Modelo sin datos';}
   capacidadBus(trip:Viaje):number|undefined{return this.buses.find(bus=>bus.id===trip.bus)?.capacity;}
-  nombreConductor(trip:Viaje):string{return this.conductores.find(driver=>driver.id===trip.conductor)?.full_name||trip.conductor_detalle?.full_name||trip.conductor_detalle?.nombre||'Conductor #'+trip.conductor;}
+  nombreConductor(trip:Viaje):string{return trip.driver_name||this.conductores.find(driver=>driver.id===trip.conductor)?.full_name||trip.conductor_detalle?.full_name||trip.conductor_detalle?.nombre||'Conductor #'+trip.conductor;}
   licenciaConductor(trip:Viaje):string{return this.conductores.find(driver=>driver.id===trip.conductor)?.license_number||'Licencia sin datos';}
   nombreRuta(trip:Viaje):string{const route=this.rutas.find(route=>route.id===trip.ruta)||trip.ruta_detalle;return route?.origen&&route?.destino?route.origen+' → '+route.destino:'Ruta #'+trip.ruta;}
   get dateTrips():Viaje[]{return this.viajes.filter(trip=>!this.selectedDate||tripDay(trip.fecha_hora_inicio)===this.selectedDate);}
