@@ -6,15 +6,19 @@ import { HttpClient } from '@angular/common/http';
 import { Subject, switchMap, takeUntil, tap, timeout } from 'rxjs';
 import { Viaje } from '../../core/models/viaje.model';
 import { ViajeService } from '../../core/services/viaje.service';
+import { AuthService } from '../../core/services/auth.service';
 import { tripServerNow } from '../../core/utils/trip-sales';
 @Component({selector:'app-trip-actions',standalone:true,imports:[CommonModule,FormsModule,RouterLink],templateUrl:'./trip-actions.component.html',styleUrl:'./trip-actions.component.css'})
 export class TripActionsComponent implements OnDestroy {
   @Input({required:true}) trip!:Viaje;@Output() updated=new EventEmitter<void>();
-  private http=inject(HttpClient);private api=inject(ViajeService);private destroyed=new Subject<void>();
+  private http=inject(HttpClient);private api=inject(ViajeService);private auth=inject(AuthService);private destroyed=new Subject<void>();
   action:''|'cancel'|'complete'|'postpone'='';reason='';start='';end='';busy=false;uncertain=false;error='';message='';
   sessionExpired=false;
   get editable():boolean{return ['programado','en_curso'].includes(this.trip.estado);}
-  select(action:'cancel'|'complete'|'postpone'):void{if(this.busy||this.uncertain||!this.editable)return;this.action=action;this.reason='';this.start='';this.end='';this.error='';this.message='';}
+  get canManage():boolean{return this.auth.hasRole('admin','dispatcher','driver');}
+  get canChangeSchedule():boolean{return this.auth.hasRole('admin','dispatcher');}
+  get canComplete():boolean{return this.auth.hasRole('admin','dispatcher','driver');}
+  select(action:'cancel'|'complete'|'postpone'):void{if(this.busy||this.uncertain||!this.editable||!this.canManage||(action!=='complete'&&!this.canChangeSchedule))return;this.action=action;this.reason='';this.start='';this.end='';this.error='';this.message='';}
   private iso(value:string):string|null{if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return null;const date=new Date(value+':00Z');return Number.isFinite(date.getTime())&&date.toISOString().slice(0,16)===value?value+':00-05:00':null;}
   submit():void{
     if(this.busy||this.uncertain||!this.editable||!this.action||!this.trip.id)return;this.error='';const id=this.trip.id,action=this.action;

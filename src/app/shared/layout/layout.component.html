@@ -1,23 +1,25 @@
 <app-navbar></app-navbar>
 <div class="app-shell">
   <aside class="sidebar" aria-label="Menú de operación">
-    <div class="sidebar-heading"><strong>Precision Fleet</strong><span>Consola Central de Despacho</span></div>
-    <a class="dispatch-action" routerLink="/ventas/nueva">＋ Generar venta</a>
+    <div class="sidebar-heading"><strong>Precision Fleet</strong><span>Consola Central de Despacho</span><small *ngIf="role">{{profileName || 'Sesión activa'}} · {{role}}</small></div>
+    <a *ngIf="allows('admin','seller')" class="dispatch-action" routerLink="/ventas/nueva">＋ Generar venta</a>
     <nav aria-label="Módulos administrativos">
       <a routerLink="/dashboard" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▦</span>Dashboard</a>
-      <a routerLink="/ventas" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">$</span>Ventas</a>
-      <a routerLink="/clientes" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">♙</span>Clientes</a>
-      <a routerLink="/buses" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▣</span>Buses</a>
-      <a routerLink="/conductores" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">♙</span>Conductores</a>
-      <a routerLink="/rutas" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌁</span>Rutas</a>
+      <a *ngIf="allows('admin','seller','auditor')" routerLink="/ventas" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">$</span>Ventas</a>
+      <a *ngIf="allows('admin','seller')" routerLink="/clientes" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">♙</span>Clientes</a>
+      <a *ngIf="allows('admin','dispatcher')" routerLink="/buses" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▣</span>Buses</a>
+      <a *ngIf="allows('admin','dispatcher')" routerLink="/conductores" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">♙</span>Conductores</a>
+      <a *ngIf="allows('admin','dispatcher')" routerLink="/rutas" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌁</span>Rutas</a>
       <a routerLink="/viajes" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">↗</span>Viajes</a>
-      <a routerLink="/dispositivos" routerLinkActive="selected" ariaCurrentWhenActive="page">Dispositivos GPS / IoT</a>
-      <a routerLink="/soporte" routerLinkActive="selected" ariaCurrentWhenActive="page">Soporte a clientes</a>
-      <a routerLink="/validar-qr" routerLinkActive="selected">Validar QR</a>
-      <a routerLink="/monitoreo" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌖</span>Mapa y monitoreo</a>
-      <a routerLink="/asientos" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▤</span>Administración de asientos</a>
+      <a *ngIf="allows('admin','dispatcher')" routerLink="/dispositivos" routerLinkActive="selected" ariaCurrentWhenActive="page">Dispositivos GPS / IoT</a>
+      <a *ngIf="allows('admin','seller')" routerLink="/soporte" routerLinkActive="selected" ariaCurrentWhenActive="page">Soporte a clientes</a>
+      <a *ngIf="allows('admin','seller','dispatcher','driver')" routerLink="/validar-qr" routerLinkActive="selected">Validar QR</a>
+      <a *ngIf="allows('admin','dispatcher')" routerLink="/monitoreo" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌖</span>Mapa y monitoreo</a>
+      <a *ngIf="allows('admin','dispatcher')" routerLink="/asientos" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▤</span>Administración de asientos</a>
+      <a *ngIf="allows('admin')" routerLink="/personal" routerLinkActive="selected" ariaCurrentWhenActive="page">Personal y roles</a>
+      <a *ngIf="allows('admin','seller','dispatcher','auditor')" routerLink="/auditoria" routerLinkActive="selected" ariaCurrentWhenActive="page">Bitácora de auditoría</a>
     </nav>
-    <div class="sidebar-note"><strong>Tu centro de operación</strong><p>Administra la flota y organiza cada trayecto.</p></div>
+    <div class="sidebar-note"><strong>Tu centro de operación</strong><p>{{profileError || 'Administra la flota y organiza cada trayecto.'}}</p></div>
     <button type="button" class="sidebar-logout" (click)="cerrarSesion()" [disabled]="signingOut">{{signingOut ? 'Cerrando sesión…' : '↪ Salir'}}</button>
   </aside>
   <main class="main-content"><router-outlet></router-outlet></main>

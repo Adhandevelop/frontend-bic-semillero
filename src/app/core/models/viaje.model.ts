@@ -15,4 +15,7 @@ export interface Viaje extends TripSalesMetadata {
   bus_detalle?: any;
   conductor_detalle?: any;
   ruta_detalle?: any;
+  manual_operator_detail?: {id:number;username?:string;name?:string;role?:string;role_label?:string;signature?:string}|null;
+  manual_action_at?: string|null;
+  state_attribution_message?: string|null;
 }

@@ -84,6 +84,8 @@ Después de un pago aprobado, abra **Ver compra, descargar boletas y consultar f
 
 Entre por **Acceso administrativo**. El tablero muestra el resumen operativo, salidas próximas, disponibilidad de sillas y accesos a las tareas principales. Cierre sesión al terminar, especialmente en equipos compartidos.
 
+El sistema asigna funciones según la cuenta: administrador, vendedor, despachador, conductor o auditor. El menú muestra solamente los módulos permitidos para cada rol. Si el sistema solicita cambiar una contraseña provisional, complete ese proceso antes de operar.
+
 ### Buses y tipos de bus
 
 En **Buses** puede crear, editar, buscar y consultar unidades.
@@ -132,6 +134,12 @@ En la lista de ventas, use **Ver detalle** para revisar pasajeros, sillas, tique
 En **Clientes** consulte el directorio, filtros y ficha individual. Desde el contexto del viaje de un cliente puede abrir las sillas para comprobar su asignación comercial.
 
 En **Soporte** revise solicitudes, filtre por estado o categoría, responda y actualice su progreso. No incluya contraseñas, tokens ni datos de pago completos en una respuesta de soporte.
+
+### Personal y bitácora
+
+Solo un **administrador** puede crear o activar/desactivar cuentas de personal. Las cuentas no se eliminan desde la interfaz, para preservar la trazabilidad. Si se deja vacía la contraseña inicial, la persona deberá reemplazarla al iniciar sesión.
+
+La **Bitácora de auditoría** registra acciones importantes de viajes, ventas, flota, soporte y cuentas. Use sus filtros para revisar quién realizó una acción y cuándo. Los registros son de consulta: no se editan ni se borran desde el portal.
 
 ### Validar QR y registrar abordaje
 

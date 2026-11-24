@@ -44,7 +44,7 @@ export class LoginComponent {
       next: () => {
         this.success = 'Inicio de sesión correcto.';
         const requested=this.route.snapshot.queryParamMap.get('returnUrl')??'';
-        const destination=/^\/viajes\/[1-9]\d*(?:#trip-actions)?$/.test(requested)?requested:'/dashboard';
+        const destination=this.authService.currentProfile()?.password_change_required?'/cambiar-contrasena':/^\/viajes\/[1-9]\d*(?:#trip-actions)?$/.test(requested)?requested:'/dashboard';
         this.router.navigateByUrl(destination).then((navigated) => {
           if (!navigated) {
             this.error = 'No se pudo abrir el panel principal.';
@@ -67,7 +67,7 @@ export class LoginComponent {
         } else if (err.status === 400 || err.status === 401) {
           this.error = 'Usuario o contraseña incorrectos.';
         } else if (err.status === 403) {
-          this.error = 'Este panel requiere una cuenta con rol de administrador.';
+          this.error = 'Este panel requiere una cuenta operativa autorizada.';
         } else {
           this.error =
             'Ocurrió un error en el servidor. Inténtalo nuevamente.';

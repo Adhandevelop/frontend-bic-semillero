@@ -94,7 +94,7 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 | `/clientes/panel` | Perfil propio editable e historial de compras; requiere cliente |
 | `/clientes/comprar` | Compra de varias boletas según disponibilidad, asignación de pasajeros y Wompi; requiere cliente |
 | `/ubicacion` | Mapa de buses estáticos de ejemplo |
-| `/login` | Acceso administrativo |
+| `/login` | Acceso del personal operativo: administrador, vendedor, despachador, conductor o auditor |
 
 ### Panel administrativo
 
@@ -107,6 +107,8 @@ Al guardar una ruta, origen y destino deben corresponder a lugares existentes y 
 | `/conductores` | Gestión de conductores |
 | `/rutas` | Gestión de rutas |
 | `/viajes` | Dashboard, filtros, próximas salidas y gestión de viajes |
+| `/personal` | Gestión exclusiva de administradores, vendedores, despachadores y auditores |
+| `/auditoria` | Bitácora inmutable de cuentas, viajes, ventas, flota y soporte según permisos |
 
 Formularios de creación: `/buses/nuevo`, `/conductores/nuevo`, `/rutas/nueva` y `/viajes/nuevo`. La edición usa `/<módulo>/editar/:id`.
 
