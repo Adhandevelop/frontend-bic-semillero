@@ -2,6 +2,8 @@
 
 Aplicación académica de gestión de transporte desarrollada con Angular 18 y TypeScript. Consume una API de Django REST Framework y reúne un panel administrativo y un portal de pasajeros basado en diseños de Stitch.
 
+Consulta el [manual de uso para pasajeros y administradores](MANUAL_USUARIO.md).
+
 ## Estado del proyecto
 
 | Área | Disponible | Pendiente |
