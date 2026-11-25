@@ -3,21 +3,11 @@
   <button #menuButton type="button" class="menu-toggle" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen" aria-controls="admin-navigation"><span aria-hidden="true">☰</span> {{ menuOpen ? 'Cerrar menú' : 'Menú' }}</button>
   <div id="admin-navigation" class="nav-links" [class.open]="menuOpen">
     <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Dashboard</a>
-    <a routerLink="/ventas" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" ariaCurrentWhenActive="page" (click)="closeMenu()">Ventas</a>
-    <a routerLink="/ventas/nueva" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Generar venta</a>
     <a routerLink="/clientes" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Clientes</a>
     <a routerLink="/buses" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Buses</a>
     <a routerLink="/conductores" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Conductores</a>
     <a routerLink="/rutas" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Rutas</a>
     <a routerLink="/viajes" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Viajes</a>
-    <a routerLink="/monitoreo" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Mapa y monitoreo</a>
-    <a routerLink="/asientos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Administración de asientos</a>
-    <a routerLink="/dispositivos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Dispositivos</a>
-    <a routerLink="/soporte" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Soporte</a>
-    <a routerLink="/validar-qr" routerLinkActive="active" (click)="closeMenu()">Validar QR</a>
-    <a routerLink="/perfil" routerLinkActive="active" (click)="closeMenu()">Mi perfil</a>
-    <a *ngIf="isAdmin" routerLink="/personal" [queryParams]="{vista:'usuarios'}" routerLinkActive="active" (click)="closeMenu()">Usuarios y roles</a>
-    <button type="button" class="logout-btn" (click)="cerrarSesion()" [disabled]="signingOut">{{signingOut ? 'Cerrando sesión…' : 'Salir'}}</button>
   </div>
   <div class="profile-menu-wrapper">
     <button
