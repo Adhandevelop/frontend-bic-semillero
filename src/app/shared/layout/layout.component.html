@@ -1,7 +1,7 @@
 <app-navbar></app-navbar>
 <div class="app-shell">
   <aside class="sidebar" aria-label="Menú de operación">
-    <div class="sidebar-heading"><strong>Precision Fleet</strong><span>Consola Central de Despacho</span><small *ngIf="role">{{profileName || 'Sesión activa'}} · {{role}}</small></div>
+    <div class="sidebar-heading"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><img class="app-brand-logo" src="assets/logo.png" alt="" aria-hidden="true"><div><strong>Precision Fleet</strong><span>Consola Central de Despacho</span></div></div><small *ngIf="role">{{profileName || 'Sesión activa'}} · {{role}}</small></div>
     <a *ngIf="allows('admin','seller')" class="dispatch-action" routerLink="/ventas/nueva">＋ Generar venta</a>
     <nav aria-label="Módulos administrativos">
       <a routerLink="/dashboard" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▦</span>Dashboard</a>

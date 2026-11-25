@@ -1,5 +1,5 @@
 <nav class="navbar" aria-label="Administración" (keydown.escape)="closeMenu(true)">
-  <a class="brand" routerLink="/dashboard" (click)="closeMenu()">Buses Universal</a>
+  <a class="brand" routerLink="/dashboard" (click)="closeMenu()"><img class="app-brand-logo" src="assets/logo.png" alt="" aria-hidden="true"><span>Buses Universal</span></a>
   <button #menuButton type="button" class="menu-toggle" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen" aria-controls="admin-navigation"><span aria-hidden="true">☰</span> {{ menuOpen ? 'Cerrar menú' : 'Menú' }}</button>
   <div id="admin-navigation" class="nav-links" [class.open]="menuOpen">
     <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Dashboard</a>

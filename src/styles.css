@@ -337,4 +337,19 @@ select:focus {
   .main-content :is(input,select,textarea){max-width:100%;min-width:0}
   .main-content .table-scroll:focus-visible{outline:3px solid #438bdd;outline-offset:3px}
 }
+.app-brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  object-fit: contain;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.brand:has(.app-brand-logo) {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
