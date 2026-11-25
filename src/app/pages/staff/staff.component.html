@@ -1,0 +1,458 @@
+<section class="admin-account-page" [attr.aria-busy]="loading || saving || profileLoading || profileSaving">
+  <!-- Cabecera del módulo con selector de vista -->
+  <header class="module-header">
+    <div class="header-identity">
+      <div class="avatar-badge" aria-hidden="true">{{ initials }}</div>
+      <div>
+        <span class="eyebrow">CUENTA Y CONTROL DE ACCESOS</span>
+        <h1>{{ activeTab === 'profile' ? 'Mi Perfil Administrativo' : 'Administración de Usuarios y Roles' }}</h1>
+        <p>
+          {{
+            activeTab === 'profile'
+              ? 'Consulta tus datos de sesión, actualiza tu información de contacto y gestiona la seguridad de tu cuenta.'
+              : 'Añade nuevos usuarios al sistema, asigna roles operativos disponibles y administra el estado de cada cuenta.'
+          }}
+        </p>
+      </div>
+    </div>
+
+    <div class="mode-switcher" role="tablist" aria-label="Elegir entre ver perfil o administración de usuarios">
+      <button
+        type="button"
+        role="tab"
+        id="tab-profile"
+        [attr.aria-selected]="activeTab === 'profile'"
+        [class.active]="activeTab === 'profile'"
+        (click)="selectTab('profile')"
+      >
+        <span aria-hidden="true">♙</span> Ver mi perfil
+      </button>
+      <button
+        *ngIf="isAdmin"
+        type="button"
+        role="tab"
+        id="tab-users"
+        [attr.aria-selected]="activeTab === 'users'"
+        [class.active]="activeTab === 'users'"
+        (click)="selectTab('users')"
+      >
+        <span aria-hidden="true">⚙</span> Administración de usuarios
+      </button>
+    </div>
+  </header>
+
+  <!-- VISTA 1: VER PERFIL -->
+  <div *ngIf="activeTab === 'profile'" class="tab-panel" role="tabpanel" aria-labelledby="tab-profile">
+    <p *ngIf="profileError" class="alert error" role="alert">{{ profileError }}</p>
+    <p *ngIf="profileSuccess" class="alert success" role="status">{{ profileSuccess }}</p>
+    <p *ngIf="profileLoading && !profile" class="status-msg" role="status">Cargando información de tu perfil…</p>
+
+    <div class="profile-grid" *ngIf="profile as p">
+      <!-- Tarjeta principal de perfil -->
+      <section class="card profile-card">
+        <div class="card-header">
+          <div>
+            <span class="card-eyebrow">IDENTIDAD DE LA SESIÓN</span>
+            <h2>Datos del Administrador / Operador</h2>
+          </div>
+          <div class="card-actions">
+            <button type="button" class="btn-secondary" (click)="loadMyProfile()" [disabled]="profileLoading || profileSaving">
+              ↻ Actualizar
+            </button>
+            <button
+              *ngIf="!editingProfile"
+              type="button"
+              class="btn-primary"
+              (click)="startEditProfile()"
+              [disabled]="profileLoading || profileSaving"
+            >
+              ✎ Editar datos
+            </button>
+          </div>
+        </div>
+
+        <div class="profile-banner">
+          <div class="avatar-large" aria-hidden="true">{{ initials }}</div>
+          <div class="banner-info">
+            <h3>{{ fullName }}</h3>
+            <div class="badges">
+              <span class="role-badge" [attr.data-role]="p.role">{{ label(p.role) }}</span>
+              <span class="state-badge active">Sesión activa</span>
+              <span *ngIf="p.password_change_required" class="state-badge warn">Cambio de clave pendiente</span>
+            </div>
+            <p class="username-meta">Usuario: <strong>{{ p.username }}</strong> · ID #{{ p.id }}</p>
+          </div>
+        </div>
+
+        <!-- Modo lectura -->
+        <dl class="profile-details" *ngIf="!editingProfile">
+          <div>
+            <dt>Nombre completo</dt>
+            <dd>{{ fullName }}</dd>
+          </div>
+          <div>
+            <dt>Rol asignado</dt>
+            <dd>{{ label(p.role) }}</dd>
+          </div>
+          <div>
+            <dt>Correo electrónico</dt>
+            <dd>{{ p.email || 'Sin correo registrado' }}</dd>
+          </div>
+          <div>
+            <dt>Teléfono / Celular</dt>
+            <dd>{{ p.telephone || 'Sin teléfono registrado' }}</dd>
+          </div>
+          <div>
+            <dt>Tipo de documento</dt>
+            <dd>{{ documentLabel(p.identification_document_code) }}</dd>
+          </div>
+          <div>
+            <dt>Número de documento</dt>
+            <dd>{{ p.identification_number || p.username || 'No especificado' }}</dd>
+          </div>
+        </dl>
+
+        <!-- Modo edición -->
+        <form *ngIf="editingProfile" [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="edit-form">
+          <div class="form-row">
+            <label>
+              Nombres *
+              <input formControlName="first_name" placeholder="Nombres" maxlength="150" />
+            </label>
+            <label>
+              Apellidos
+              <input formControlName="last_name" placeholder="Apellidos" maxlength="150" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Correo electrónico *
+              <input type="email" formControlName="email" placeholder="correo@empresa.com" maxlength="100" />
+            </label>
+            <label>
+              Teléfono / Celular
+              <input type="tel" formControlName="telephone" placeholder="3001234567" maxlength="20" />
+            </label>
+          </div>
+          <p class="form-hint">El documento de identidad y el rol de tu cuenta son de solo lectura por seguridad.</p>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="cancelEditProfile()" [disabled]="profileSaving">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="profileSaving">
+              {{ profileSaving ? 'Guardando…' : 'Guardar cambios' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Columna lateral: Seguridad y Acceso rápido a Administración de Usuarios -->
+      <aside class="profile-sidebar">
+        <section class="card">
+          <span class="card-eyebrow">SEGURIDAD DE LA CUENTA</span>
+          <h2>Contraseña de acceso</h2>
+          <p>Mantén tu cuenta protegida actualizando periódicamente tu contraseña.</p>
+
+          <button
+            *ngIf="!changingPassword"
+            type="button"
+            class="btn-secondary full-width"
+            (click)="togglePasswordForm()"
+          >
+            Cambiar mi contraseña
+          </button>
+
+          <form *ngIf="changingPassword" [formGroup]="passwordForm" (ngSubmit)="savePassword()" class="password-form">
+            <label>
+              Contraseña actual *
+              <input type="password" formControlName="current_password" autocomplete="current-password" />
+            </label>
+            <label>
+              Nueva contraseña (mín. 8 caracteres) *
+              <input type="password" formControlName="new_password" autocomplete="new-password" />
+            </label>
+            <label>
+              Confirmar nueva contraseña *
+              <input type="password" formControlName="confirm_password" autocomplete="new-password" />
+            </label>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" (click)="togglePasswordForm()" [disabled]="passwordSaving">
+                Cancelar
+              </button>
+              <button type="submit" class="btn-primary" [disabled]="passwordSaving">
+                {{ passwordSaving ? 'Actualizando…' : 'Actualizar clave' }}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card highlight-card" *ngIf="isAdmin">
+          <span class="card-eyebrow">GESTIÓN DE EQUIPO</span>
+          <h2>Administración de usuarios</h2>
+          <p>
+            Como administrador puedes añadir nuevas cuentas operativas y asignarles un rol entre los roles disponibles en la plataforma.
+          </p>
+          <div class="mini-stats" *ngIf="users.length">
+            <div>
+              <strong>{{ users.length }}</strong>
+              <span>Usuarios registrados</span>
+            </div>
+            <div>
+              <strong>{{ activeUsersCount }}</strong>
+              <span>Cuentas activas</span>
+            </div>
+          </div>
+          <button type="button" class="btn-primary full-width" (click)="selectTab('users')">
+            Ir a Administración de usuarios →
+          </button>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- VISTA 2: ADMINISTRACIÓN DE USUARIOS -->
+  <div *ngIf="activeTab === 'users' && isAdmin" class="tab-panel" role="tabpanel" aria-labelledby="tab-users">
+    <div *ngIf="error" class="alert error" role="alert">
+      <strong>{{ error }}</strong>
+      <ul *ngIf="fieldErrors.length" class="error-list">
+        <li *ngFor="let item of fieldErrors">{{ item }}</li>
+      </ul>
+    </div>
+    <p *ngIf="success" class="alert success" role="status">{{ success }}</p>
+
+    <!-- Resumen de roles disponibles -->
+    <section class="roles-catalog" aria-label="Roles disponibles en el sistema">
+      <div class="catalog-header">
+        <div>
+          <span class="card-eyebrow">ROLES DISPONIBLES</span>
+          <h2>Selecciona o filtra por rol operativo</h2>
+        </div>
+        <button type="button" class="btn-secondary" (click)="load()" [disabled]="loading || saving">
+          ↻ {{ loading ? 'Actualizando…' : 'Actualizar listado' }}
+        </button>
+      </div>
+      <div class="role-cards">
+        <article
+          *ngFor="let item of roleOptions"
+          class="role-option-card"
+          [class.selected]="form.controls.role.value === item.value"
+          (click)="selectRoleForNewUser(item.value)"
+        >
+          <div class="role-card-top">
+            <span class="role-badge" [attr.data-role]="item.value">{{ item.label }}</span>
+            <small>{{ item.value }}</small>
+          </div>
+          <p>{{ item.description }}</p>
+          <button *ngIf="item.creatable" type="button" class="role-pick-btn">
+            {{ form.controls.role.value === item.value ? '✓ Rol seleccionado en formulario' : 'Elegir este rol' }}
+          </button>
+          <small *ngIf="!item.creatable">Se crea automáticamente al registrar un conductor en Flota</small>
+        </article>
+      </div>
+    </section>
+
+    <div class="users-workspace">
+      <!--Formulario para añadir usuario y dar rol -->
+      <section class="card create-user-card">
+        <span class="card-eyebrow">NUEVA CUENTA</span>
+        <h2>Añadir usuario y asignar rol</h2>
+        <p class="card-subtitle">
+          Completa los datos de la persona y elige el rol que desempeñará. Si dejas la contraseña vacía, iniciará con su documento y deberá cambiarla al primer ingreso.
+        </p>
+
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <label>
+            Rol a asignar *
+            <select formControlName="role">
+              <option *ngFor="let item of assignableRoles" [value]="item.value">
+                {{ item.label }} ({{ item.value }})
+              </option>
+            </select>
+          </label>
+          <p class="role-helper" *ngIf="selectedCreateRoleOption as opt">
+            <strong>{{ opt.label }}:</strong> {{ opt.description }}
+          </p>
+
+          <div class="form-row">
+            <label>
+              Tipo de documento *
+              <select formControlName="identification_document_code">
+                <option *ngFor="let doc of documentTypes" [value]="doc.code">{{ doc.label }}</option>
+              </select>
+            </label>
+            <label>
+              Número de documento *
+              <input formControlName="identification_number" placeholder="Ej: 1020304050" maxlength="20" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Nombres *
+              <input formControlName="first_name" placeholder="Ej: Ana María" maxlength="150" />
+            </label>
+            <label>
+              Apellidos *
+              <input formControlName="last_name" placeholder="Ej: Gómez Pérez" maxlength="150" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Correo electrónico *
+              <input type="email" formControlName="email" placeholder="usuario@portalbic.site" maxlength="100" />
+            </label>
+            <label>
+              Teléfono / Celular *
+              <input type="tel" formControlName="telephone" placeholder="3001234567" maxlength="20" />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label>
+              Nombre de usuario (opcional)
+              <input formControlName="username" autocomplete="off" placeholder="Por defecto usa el documento" />
+            </label>
+            <label>
+              Contraseña inicial (opcional)
+              <input
+                type="password"
+                formControlName="password"
+                autocomplete="new-password"
+                placeholder="Vacío = número de documento"
+              />
+            </label>
+          </div>
+
+          <button class="btn-primary full-width submit-btn" type="submit" [disabled]="saving">
+            {{ saving ? 'Creando usuario…' : '＋ Añadir usuario con rol ' + label(form.controls.role.value) }}
+          </button>
+        </form>
+      </section>
+
+      <!-- Listado de usuarios y gestión de roles -->
+      <section class="card users-list-card">
+        <div class="card-header">
+          <div>
+            <span class="card-eyebrow">DIRECTORIO DE CUENTAS</span>
+            <h2>Usuarios registrados ({{ users.length }})</h2>
+          </div>
+          <div class="kpi-pills">
+            <span>Activos: <strong>{{ activeUsersCount }}</strong></span>
+            <span>Admins: <strong>{{ adminUsersCount }}</strong></span>
+          </div>
+        </div>
+
+        <div class="filters">
+          <input
+            type="search"
+            [value]="search"
+            (input)="search = $any($event.target).value; load()"
+            placeholder="Buscar por nombre, documento, correo o usuario…"
+            aria-label="Buscar usuarios"
+          />
+          <select [value]="role" (change)="role = $any($event.target).value; load()" aria-label="Filtrar por rol">
+            <option value="">Todos los roles</option>
+            <option *ngFor="let item of roles" [value]="item">{{ label(item) }}</option>
+          </select>
+          <select [value]="active" (change)="active = $any($event.target).value; load()" aria-label="Filtrar por estado">
+            <option value="">Activos e inactivos</option>
+            <option value="true">Solo activos</option>
+            <option value="false">Solo inactivos</option>
+          </select>
+          <button
+            *ngIf="search || role || active"
+            type="button"
+            class="btn-secondary"
+            (click)="clearFilters()"
+          >
+            Limpiar
+          </button>
+        </div>
+
+        <p *ngIf="loading" class="status-msg" role="status">Consultando cuentas de usuario…</p>
+
+        <div class="table-scroll" *ngIf="!loading && users.length">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuario / Documento</th>
+                <th>Contacto</th>
+                <th>Rol asignado</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of users">
+                <td>
+                  <div class="user-cell">
+                    <span class="user-avatar" aria-hidden="true">{{ userInitials(user) }}</span>
+                    <div>
+                      <strong>{{ name(user) }}</strong>
+                      <small>Doc: {{ user.identification_number }} · Usuario: {{ user.username }}</small>
+                      <small class="warn-note" *ngIf="user.password_change_required">
+                        Clave provisional pendiente
+                      </small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span>{{ user.email || 'Sin correo' }}</span>
+                  <small>{{ user.telephone || 'Sin teléfono' }}</small>
+                  <small class="creator-note">
+                    Creado por: {{ user.created_by_detail?.name || user.created_by_detail?.username || 'Sistema' }}
+                  </small>
+                </td>
+                <td>
+                  <div class="role-assign-cell">
+                    <span class="role-badge" [attr.data-role]="user.role">{{ label(user.role) }}</span>
+                    <div class="role-changer">
+                      <select
+                        [(ngModel)]="roleDrafts[user.id]"
+                        [disabled]="updatingUserId === user.id || saving"
+                        [attr.aria-label]="'Cambiar rol de ' + name(user)"
+                      >
+                        <option *ngFor="let item of assignableRoles" [value]="item.value">
+                          {{ item.label }}
+                        </option>
+                      </select>
+                      <button
+                        *ngIf="roleDrafts[user.id] && roleDrafts[user.id] !== user.role"
+                        type="button"
+                        class="btn-apply-role"
+                        (click)="changeUserRole(user)"
+                        [disabled]="updatingUserId === user.id || saving"
+                      >
+                        {{ updatingUserId === user.id ? '…' : 'Guardar rol' }}
+                      </button>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="state-badge" [class.active]="user.is_active" [class.off]="!user.is_active">
+                    {{ user.is_active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    (click)="toggle(user)"
+                    [disabled]="saving || updatingUserId === user.id"
+                  >
+                    {{ user.is_active ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p *ngIf="!loading && !users.length" class="empty-msg">
+          No hay cuentas de usuario que coincidan con los filtros seleccionados.
+        </p>
+      </section>
+    </div>
+  </div>
+</section>

@@ -15,7 +15,36 @@
     <a routerLink="/dispositivos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Dispositivos</a>
     <a routerLink="/soporte" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">Soporte</a>
     <a routerLink="/validar-qr" routerLinkActive="active" (click)="closeMenu()">Validar QR</a>
+    <a routerLink="/perfil" routerLinkActive="active" (click)="closeMenu()">Mi perfil</a>
+    <a *ngIf="isAdmin" routerLink="/personal" [queryParams]="{vista:'usuarios'}" routerLinkActive="active" (click)="closeMenu()">Usuarios y roles</a>
     <button type="button" class="logout-btn" (click)="cerrarSesion()" [disabled]="signingOut">{{signingOut ? 'Cerrando sesión…' : 'Salir'}}</button>
   </div>
-  <span class="admin-avatar" aria-label="Panel administrativo">AD</span>
+  <div class="profile-menu-wrapper">
+    <button
+      type="button"
+      class="admin-avatar"
+      (click)="toggleProfileMenu()"
+      [attr.aria-expanded]="profileMenuOpen"
+      aria-haspopup="menu"
+      aria-label="Menú de perfil del administrador"
+      title="Ver perfil o administración de usuarios"
+    >
+      {{ initials }}
+    </button>
+    <div class="profile-dropdown" *ngIf="profileMenuOpen" role="menu">
+      <div class="dropdown-user">
+        <strong>{{ profileName }}</strong>
+        <small>{{ isAdmin ? 'Administrador' : 'Personal operativo' }}</small>
+      </div>
+      <a role="menuitem" routerLink="/perfil" [queryParams]="{vista:'perfil'}" (click)="closeProfileMenu()">
+        ♙ Ver mi perfil
+      </a>
+      <a *ngIf="isAdmin" role="menuitem" routerLink="/perfil" [queryParams]="{vista:'usuarios'}" (click)="closeProfileMenu()">
+        ⚙ Administración de usuarios
+      </a>
+      <button role="menuitem" type="button" class="dropdown-logout" (click)="cerrarSesion()" [disabled]="signingOut">
+        ↪ {{ signingOut ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+      </button>
+    </div>
+  </div>
 </nav>

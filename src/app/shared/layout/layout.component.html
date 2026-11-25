@@ -1,7 +1,7 @@
 <app-navbar></app-navbar>
 <div class="app-shell">
   <aside class="sidebar" aria-label="Menú de operación">
-    <div class="sidebar-heading"><strong>Precision Fleet</strong><span>Consola Central de Despacho</span><small *ngIf="role">{{profileName || 'Sesión activa'}} · {{role}}</small></div>
+    <div class="sidebar-heading"><strong>Precision Fleet</strong><span>Consola Central de Despacho</span><a class="profile-chip" routerLink="/perfil" title="Abrir mi perfil y administración de usuarios"><small *ngIf="role">{{profileName || 'Sesión activa'}} · {{role}}</small></a></div>
     <a *ngIf="allows('admin','seller')" class="dispatch-action" routerLink="/ventas/nueva">＋ Generar venta</a>
     <nav aria-label="Módulos administrativos">
       <a routerLink="/dashboard" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▦</span>Dashboard</a>
@@ -16,7 +16,8 @@
       <a *ngIf="allows('admin','seller','dispatcher','driver')" routerLink="/validar-qr" routerLinkActive="selected">Validar QR</a>
       <a *ngIf="allows('admin','dispatcher')" routerLink="/monitoreo" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⌖</span>Mapa y monitoreo</a>
       <a *ngIf="allows('admin','dispatcher')" routerLink="/asientos" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">▤</span>Administración de asientos</a>
-      <a *ngIf="allows('admin')" routerLink="/personal" routerLinkActive="selected" ariaCurrentWhenActive="page">Personal y roles</a>
+      <a routerLink="/perfil" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">♙</span>Mi perfil y usuarios</a>
+      <a *ngIf="allows('admin')" routerLink="/personal" [queryParams]="{vista:'usuarios'}" routerLinkActive="selected" ariaCurrentWhenActive="page"><span aria-hidden="true">⚙</span>Personal y roles</a>
       <a *ngIf="allows('admin','seller','dispatcher','auditor')" routerLink="/auditoria" routerLinkActive="selected" ariaCurrentWhenActive="page">Bitácora de auditoría</a>
     </nav>
     <div class="sidebar-note"><strong>Tu centro de operación</strong><p>{{profileError || 'Administra la flota y organiza cada trayecto.'}}</p></div>

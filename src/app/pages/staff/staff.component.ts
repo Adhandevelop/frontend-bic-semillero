@@ -1,7 +1,507 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { StaffRole, StaffService, StaffUser } from '../../core/services/staff.service';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+import { AuthService, UserProfile } from '../../core/services/auth.service';
+import { STAFF_ROLE_OPTIONS, StaffRole, StaffRoleOption, StaffService, StaffUser } from '../../core/services/staff.service';
 
-@Component({standalone:true,imports:[CommonModule,ReactiveFormsModule],template:`<section class="page" [attr.aria-busy]="loading||saving"><header><div><span>CONTROL DE ACCESOS</span><h1>Personal y roles</h1><p>Administra cuentas operativas sin eliminar su historial.</p></div><button type="button" (click)="load()" [disabled]="loading||saving">Actualizar</button></header><p class="error" *ngIf="error" role="alert">{{error}}</p><p class="success" *ngIf="success" role="status">{{success}}</p><div class="grid"><section class="card"><div class="filters"><input [value]="search" (input)="search=$any($event.target).value;load()" placeholder="Buscar personal"><select [value]="role" (change)="role=$any($event.target).value;load()"><option value="">Todos los roles</option><option *ngFor="let item of roles" [value]="item">{{label(item)}}</option></select><select [value]="active" (change)="active=$any($event.target).value;load()"><option value="">Activos e inactivos</option><option value="true">Activos</option><option value="false">Inactivos</option></select></div><p *ngIf="loading" role="status">Consultando personal…</p><div class="scroll"><table *ngIf="!loading&&users.length"><thead><tr><th>Persona / rol</th><th>Contacto</th><th>Creado por</th><th>Estado</th><th>Acción</th></tr></thead><tbody><tr *ngFor="let user of users"><td><strong>{{name(user)}}</strong><small>{{label(user.role)}} · {{user.identification_number}}</small><small *ngIf="user.password_change_required">Debe cambiar contraseña</small></td><td>{{user.email||'Sin correo'}}<small>{{user.telephone||'Sin teléfono'}}</small></td><td>{{user.created_by_detail?.name||user.created_by_detail?.username||'Sistema'}}</td><td><b [class.off]="!user.is_active">{{user.is_active?'Activo':'Inactivo'}}</b></td><td><button type="button" (click)="toggle(user)" [disabled]="saving">{{user.is_active?'Desactivar':'Activar'}}</button></td></tr></tbody></table></div><p *ngIf="!loading&&!users.length">No hay cuentas que coincidan con los filtros.</p></section><section class="card"><h2>Crear cuenta operativa</h2><p>Si deja la contraseña vacía, la persona deberá cambiar su clave al primer ingreso.</p><form [formGroup]="form" (ngSubmit)="save()"><label>Tipo de documento<input formControlName="identification_document_code"></label><label>Número de documento<input formControlName="identification_number"></label><label>Nombres<input formControlName="first_name"></label><label>Apellidos<input formControlName="last_name"></label><label>Correo<input type="email" formControlName="email"></label><label>Teléfono<input formControlName="telephone"></label><label>Rol<select formControlName="role"><option *ngFor="let item of creatableRoles" [value]="item">{{label(item)}}</option></select></label><label>Usuario (opcional)<input formControlName="username" autocomplete="off"></label><label>Contraseña inicial (opcional)<input type="password" formControlName="password" autocomplete="new-password"></label><button class="primary" type="submit" [disabled]="saving">{{saving?'Guardando…':'Crear cuenta'}}</button></form></section></div></section>`,styles:[`:host{display:block;color:#142b49}.page{max-width:1400px;margin:auto}.page header{display:flex;justify-content:space-between;gap:20px;align-items:start;margin-bottom:20px}.page header span{font-size:11px;font-weight:800;color:#0664c5}.page h1{margin:5px 0;font-size:28px}.page p{line-height:1.55}.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,.8fr);gap:20px}.card{background:white;border:1px solid #dbe6f6;border-radius:14px;padding:20px}.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.filters>*{min-height:40px;padding:7px;border:1px solid #c8d8ec;border-radius:8px}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:12px 8px;border-bottom:1px solid #e4ecf7;vertical-align:top}small{display:block;margin-top:4px;color:#64748b}b{color:#187548}.off{color:#a53445}label{display:block;font-size:12px;font-weight:700;margin:11px 0}input,select{display:block;box-sizing:border-box;width:100%;padding:10px;margin-top:5px;border:1px solid #c8d8ec;border-radius:8px}button{min-height:40px;padding:9px 12px;border:1px solid #bed1ec;border-radius:8px;background:#f4f8ff;color:#0757af;font-weight:700;cursor:pointer}.primary{width:100%;background:#0664c5;color:white;border-color:#0664c5}.error{padding:12px;border-radius:8px;background:#fff0f2;color:#a12e42}.success{padding:12px;border-radius:8px;background:#ecfbf1;color:#176d42}@media(max-width:900px){.grid{grid-template-columns:1fr}.page header{display:block}.page header button{margin-top:10px}}`]})
-export class StaffComponent implements OnInit {private api=inject(StaffService);private fb=inject(FormBuilder);users:StaffUser[]=[];loading=false;saving=false;error='';success='';search='';role='';active='';readonly roles:StaffRole[]=['admin','seller','dispatcher','auditor','driver'];readonly creatableRoles:Exclude<StaffRole,'driver'>[]=['admin','seller','dispatcher','auditor'];form=this.fb.nonNullable.group({identification_document_code:['13',Validators.required],identification_number:['',Validators.required],first_name:['',Validators.required],last_name:['',Validators.required],email:['',[Validators.required,Validators.email]],telephone:['',Validators.required],role:['seller' as Exclude<StaffRole,'driver'>,Validators.required],username:[''],password:['']});ngOnInit(){this.load();}label(role:string){return ({admin:'Administrador',seller:'Vendedor',dispatcher:'Despachador',auditor:'Auditor',driver:'Conductor'} as Record<string,string>)[role]||role;}name(user:StaffUser){return user.name||[user.first_name,user.last_name].filter(Boolean).join(' ')||user.username;}load(){if(this.loading)return;this.loading=true;this.error='';this.api.list({search:this.search,role:this.role as StaffRole||undefined,is_active:this.active===''?undefined:this.active==='true'}).subscribe({next:rows=>{this.users=rows;this.loading=false;},error:err=>{this.loading=false;this.error=err.status===403?'Solo un administrador puede consultar el personal.':'No se pudo consultar el personal (HTTP '+(err.status??'sin respuesta')+').';}});}save(){if(this.form.invalid||this.saving){this.form.markAllAsTouched();return;}this.saving=true;this.error='';this.success='';const value=this.form.getRawValue();this.api.create({...value,...(value.username.trim()?{username:value.username.trim()}:{}),...(value.password?{password:value.password}:{})}).subscribe({next:user=>{this.saving=false;this.success='Cuenta de '+this.label(user.role)+' creada. '+(user.password_change_required?'La persona deberá cambiar su contraseña al iniciar sesión.':'');this.form.reset({identification_document_code:'13',role:'seller',identification_number:'',first_name:'',last_name:'',email:'',telephone:'',username:'',password:''});this.load();},error:err=>{this.saving=false;this.error=typeof err.error?.detail==='string'?err.error.detail:'No se pudo crear la cuenta. Revisa los datos y permisos.';}});}toggle(user:StaffUser){if(this.saving||!confirm((user.is_active?'Desactivar':'Activar')+' a '+this.name(user)+'?'))return;this.saving=true;this.error='';this.api.setActive(user.id,!user.is_active).subscribe({next:updated=>{this.saving=false;this.users=this.users.map(item=>item.id===updated.id?updated:item);this.success='Estado actualizado.';},error:err=>{this.saving=false;this.error=typeof err.error?.detail==='string'?err.error.detail:'No se pudo cambiar el estado de la cuenta.';}});}}
+export type AdminProfileTab = 'profile' | 'users';
+
+@Component({
+  selector: 'app-staff',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  templateUrl: './staff.component.html',
+  styleUrl: './staff.component.css'
+})
+export class StaffComponent implements OnInit, OnDestroy {
+  private readonly api = inject(StaffService);
+  private readonly auth = inject(AuthService);
+  private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyed = new Subject<void>();
+
+  activeTab: AdminProfileTab = 'profile';
+  profile: UserProfile | null = null;
+  profileLoading = false;
+  profileSaving = false;
+  editingProfile = false;
+  changingPassword = false;
+  passwordSaving = false;
+  profileError = '';
+  profileSuccess = '';
+
+  users: StaffUser[] = [];
+  loading = false;
+  saving = false;
+  updatingUserId: number | null = null;
+  error = '';
+  success = '';
+  fieldErrors: string[] = [];
+
+  search = '';
+  role = '';
+  active = '';
+
+  readonly roleOptions: readonly StaffRoleOption[] = STAFF_ROLE_OPTIONS;
+  readonly roles: StaffRole[] = STAFF_ROLE_OPTIONS.map(option => option.value);
+  readonly assignableRoles: StaffRoleOption[] = STAFF_ROLE_OPTIONS.filter(option => option.creatable);
+  readonly documentTypes = [
+    { code: '13', label: 'Cédula de ciudadanía (CC)' },
+    { code: '22', label: 'Cédula de extranjería (CE)' },
+    { code: '41', label: 'Pasaporte (PA)' },
+    { code: '12', label: 'Tarjeta de identidad (TI)' }
+  ];
+
+  roleDrafts: Record<number, StaffRole> = {};
+
+  profileForm = this.fb.nonNullable.group({
+    first_name: ['', [Validators.required, Validators.maxLength(150)]],
+    last_name: ['', [Validators.maxLength(150)]],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
+    telephone: ['', [Validators.maxLength(20)]]
+  });
+
+  passwordForm = this.fb.nonNullable.group({
+    current_password: ['', Validators.required],
+    new_password: ['', [Validators.required, Validators.minLength(8)]],
+    confirm_password: ['', Validators.required]
+  });
+
+  form = this.fb.nonNullable.group({
+    identification_document_code: ['13', Validators.required],
+    identification_number: ['', [Validators.required, Validators.maxLength(20)]],
+    first_name: ['', [Validators.required, Validators.maxLength(150)]],
+    last_name: ['', [Validators.required, Validators.maxLength(150)]],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
+    telephone: ['', [Validators.required, Validators.maxLength(20)]],
+    role: ['seller' as StaffRole, Validators.required],
+    username: [''],
+    password: ['']
+  });
+
+  get isAdmin(): boolean {
+    return this.profile?.role === 'admin' || this.auth.hasRole('admin');
+  }
+
+  get fullName(): string {
+    if (!this.profile) return 'Perfil Administrativo';
+    return (
+      this.profile.name ||
+      [this.profile.first_name, this.profile.last_name].filter(Boolean).join(' ') ||
+      this.profile.username
+    );
+  }
+
+  get initials(): string {
+    return (
+      this.fullName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0]?.toUpperCase() ?? '')
+        .join('') || 'AD'
+    );
+  }
+
+  get selectedCreateRoleOption(): StaffRoleOption | undefined {
+    const selected = this.form.controls.role.value;
+    return this.roleOptions.find(item => item.value === selected);
+  }
+
+  get activeUsersCount(): number {
+    return this.users.filter(user => user.is_active).length;
+  }
+
+  get adminUsersCount(): number {
+    return this.users.filter(user => user.role === 'admin').length;
+  }
+
+  ngOnInit(): void {
+    const defaultSection = this.route.snapshot.data['section'] as AdminProfileTab | undefined;
+    if (defaultSection === 'users' || defaultSection === 'profile') {
+      this.activeTab = defaultSection;
+    }
+
+    this.route.queryParamMap.pipe(takeUntil(this.destroyed)).subscribe(params => {
+      const vista = params.get('vista') || params.get('tab');
+      if (vista === 'usuarios' || vista === 'users') {
+        this.activeTab = 'users';
+      } else if (vista === 'perfil' || vista === 'profile') {
+        this.activeTab = 'profile';
+      }
+    });
+
+    this.loadMyProfile();
+    this.load();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyed.next();
+    this.destroyed.complete();
+  }
+
+  selectTab(tab: AdminProfileTab): void {
+    if (tab === 'users' && !this.isAdmin) {
+      return;
+    }
+    this.activeTab = tab;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { vista: tab === 'users' ? 'usuarios' : 'perfil' },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+    if (tab === 'users' && !this.users.length && !this.loading) {
+      this.load();
+    }
+  }
+
+  selectRoleForNewUser(role: StaffRole): void {
+    const opt = this.roleOptions.find(item => item.value === role);
+    if (!opt?.creatable) return;
+    this.form.controls.role.setValue(role);
+    this.form.controls.role.markAsDirty();
+  }
+
+  loadMyProfile(): void {
+    if (this.profileLoading) return;
+    this.profileLoading = true;
+    this.profileError = '';
+    const cached = this.auth.currentProfile();
+    if (cached) {
+      this.profile = cached;
+      this.patchProfileForm(cached);
+    }
+    this.auth.loadProfile().subscribe({
+      next: profile => {
+        this.profile = profile;
+        this.patchProfileForm(profile);
+        this.profileLoading = false;
+        if (!this.isAdmin && this.activeTab === 'users') {
+          this.activeTab = 'profile';
+        }
+      },
+      error: err => {
+        this.profileLoading = false;
+        this.profileError =
+          typeof err.error?.detail === 'string'
+            ? err.error.detail
+            : 'No se pudo cargar la información del perfil.';
+      }
+    });
+  }
+
+  private patchProfileForm(profile: UserProfile): void {
+    const parts = (profile.name || '').trim().split(/\s+/).filter(Boolean);
+    const firstName = profile.first_name ?? parts[0] ?? '';
+    const lastName = profile.last_name ?? (parts.length > 1 ? parts.slice(1).join(' ') : '');
+    this.profileForm.reset({
+      first_name: firstName,
+      last_name: lastName,
+      email: profile.email ?? '',
+      telephone: profile.telephone ?? ''
+    });
+  }
+
+  startEditProfile(): void {
+    if (!this.profile) return;
+    this.patchProfileForm(this.profile);
+    this.editingProfile = true;
+    this.profileError = '';
+    this.profileSuccess = '';
+  }
+
+  cancelEditProfile(): void {
+    if (this.profile) {
+      this.patchProfileForm(this.profile);
+    }
+    this.editingProfile = false;
+  }
+
+  saveProfile(): void {
+    if (this.profileForm.invalid || this.profileSaving) {
+      this.profileForm.markAllAsTouched();
+      return;
+    }
+    this.profileSaving = true;
+    this.profileError = '';
+    this.profileSuccess = '';
+    const raw = this.profileForm.getRawValue();
+    const first_name = raw.first_name.trim();
+    const last_name = raw.last_name.trim();
+    const name = [first_name, last_name].filter(Boolean).join(' ');
+    this.auth
+      .updateProfile({
+        name,
+        first_name,
+        last_name,
+        email: raw.email.trim().toLowerCase(),
+        telephone: raw.telephone.trim()
+      })
+      .subscribe({
+        next: updated => {
+          this.profile = { ...this.profile, ...updated };
+          this.profileSaving = false;
+          this.editingProfile = false;
+          this.profileSuccess = 'Datos de tu perfil actualizados correctamente.';
+        },
+        error: err => {
+          this.profileSaving = false;
+          this.profileError =
+            typeof err.error?.detail === 'string'
+              ? err.error.detail
+              : 'No se pudo actualizar el perfil. Verifica los datos ingresados.';
+        }
+      });
+  }
+
+  togglePasswordForm(): void {
+    this.changingPassword = !this.changingPassword;
+    this.passwordForm.reset({
+      current_password: '',
+      new_password: '',
+      confirm_password: ''
+    });
+    this.profileError = '';
+    this.profileSuccess = '';
+  }
+
+  savePassword(): void {
+    if (this.passwordForm.invalid || this.passwordSaving) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+    const raw = this.passwordForm.getRawValue();
+    if (raw.new_password !== raw.confirm_password) {
+      this.profileError = 'La confirmación de la nueva contraseña no coincide.';
+      return;
+    }
+    this.passwordSaving = true;
+    this.profileError = '';
+    this.profileSuccess = '';
+    this.auth.changePassword(raw.current_password, raw.new_password).subscribe({
+      next: res => {
+        this.passwordSaving = false;
+        this.changingPassword = false;
+        this.passwordForm.reset();
+        this.profileSuccess = res.detail || 'Contraseña actualizada correctamente.';
+      },
+      error: err => {
+        this.passwordSaving = false;
+        this.profileError =
+          typeof err.error?.detail === 'string'
+            ? err.error.detail
+            : Array.isArray(err.error?.current_password)
+              ? err.error.current_password.join(' ')
+              : Array.isArray(err.error?.new_password)
+                ? err.error.new_password.join(' ')
+                : 'No se pudo cambiar la contraseña. Revisa tu contraseña actual y los requisitos de seguridad.';
+      }
+    });
+  }
+
+  label(role?: string | null): string {
+    if (!role) return 'Sin rol';
+    return (
+      ({
+        admin: 'Administrador',
+        seller: 'Vendedor',
+        dispatcher: 'Despachador',
+        auditor: 'Auditor',
+        driver: 'Conductor',
+        client: 'Cliente'
+      } as Record<string, string>)[role] || role
+    );
+  }
+
+  documentLabel(code?: string | null): string {
+    if (!code) return 'CC (13)';
+    return (
+      ({
+        '13': 'Cédula de ciudadanía (13)',
+        '22': 'Cédula de extranjería (22)',
+        '41': 'Pasaporte (41)',
+        '12': 'Tarjeta de identidad (12)'
+      } as Record<string, string>)[code] || `Código ${code}`
+    );
+  }
+
+  name(user: StaffUser): string {
+    return user.name || [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username;
+  }
+
+  userInitials(user: StaffUser): string {
+    return (
+      this.name(user)
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0]?.toUpperCase() ?? '')
+        .join('') || 'US'
+    );
+  }
+
+  load(): void {
+    if (this.loading) return;
+    if (this.profile && !this.isAdmin) return;
+    this.loading = true;
+    this.error = '';
+    this.api
+      .list({
+        search: this.search,
+        role: (this.role as StaffRole) || undefined,
+        is_active: this.active === '' ? undefined : this.active === 'true'
+      })
+      .subscribe({
+        next: rows => {
+          this.users = rows;
+          this.roleDrafts = {};
+          for (const user of rows) {
+            this.roleDrafts[user.id] = user.role;
+          }
+          this.loading = false;
+        },
+        error: err => {
+          this.loading = false;
+          this.error =
+            err.status === 403
+              ? 'Solo un administrador puede consultar y gestionar las cuentas de usuarios.'
+              : 'No se pudo consultar el listado de usuarios (HTTP ' + (err.status ?? 'sin respuesta') + ').';
+        }
+      });
+  }
+
+  clearFilters(): void {
+    this.search = '';
+    this.role = '';
+    this.active = '';
+    this.load();
+  }
+
+  save(): void {
+    if (this.form.invalid || this.saving) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    this.saving = true;
+    this.error = '';
+    this.success = '';
+    this.fieldErrors = [];
+    const value = this.form.getRawValue();
+    this.api
+      .create({
+        identification_document_code: value.identification_document_code,
+        identification_number: value.identification_number.trim(),
+        first_name: value.first_name.trim(),
+        last_name: value.last_name.trim(),
+        email: value.email.trim().toLowerCase(),
+        telephone: value.telephone.trim(),
+        role: value.role,
+        ...(value.username.trim() ? { username: value.username.trim() } : {}),
+        ...(value.password ? { password: value.password } : {})
+      })
+      .subscribe({
+        next: user => {
+          this.saving = false;
+          this.success =
+            'Usuario ' +
+            this.name(user) +
+            ' añadido con el rol de ' +
+            this.label(user.role) +
+            '. ' +
+            (user.password_change_required
+              ? 'Deberá cambiar su contraseña en el primer inicio de sesión.'
+              : '');
+          this.form.reset({
+            identification_document_code: '13',
+            role: 'seller',
+            identification_number: '',
+            first_name: '',
+            last_name: '',
+            email: '',
+            telephone: '',
+            username: '',
+            password: ''
+          });
+          this.load();
+        },
+        error: err => {
+          this.saving = false;
+          this.error =
+            typeof err.error?.detail === 'string'
+              ? err.error.detail
+              : 'No se pudo crear el usuario. Revisa los datos e intenta nuevamente.';
+          if (err.error && typeof err.error === 'object') {
+            const labels: Record<string, string> = {
+              identification_document_code: 'Tipo de documento',
+              identification_number: 'Número de documento',
+              first_name: 'Nombres',
+              last_name: 'Apellidos',
+              email: 'Correo electrónico',
+              telephone: 'Teléfono',
+              role: 'Rol',
+              username: 'Usuario',
+              password: 'Contraseña',
+              non_field_errors: 'Validación'
+            };
+            this.fieldErrors = Object.entries(err.error)
+              .filter(([key]) => key in labels)
+              .map(([key, val]) => {
+                const msg = Array.isArray(val) ? val.join(' ') : typeof val === 'string' ? val : 'Valor inválido';
+                return `${labels[key]}: ${msg}`;
+              });
+          }
+        }
+      });
+  }
+
+  changeUserRole(user: StaffUser): void {
+    const newRole = this.roleDrafts[user.id];
+    if (!newRole || newRole === user.role || this.saving || this.updatingUserId !== null) return;
+    this.updatingUserId = user.id;
+    this.error = '';
+    this.success = '';
+    this.api.setRole(user.id, newRole).subscribe({
+      next: updated => {
+        this.updatingUserId = null;
+        this.users = this.users.map(item => (item.id === updated.id ? updated : item));
+        this.roleDrafts[updated.id] = updated.role;
+        this.success = `Rol de ${this.name(updated)} actualizado a ${this.label(updated.role)}.`;
+      },
+      error: err => {
+        this.updatingUserId = null;
+        this.roleDrafts[user.id] = user.role;
+        this.error =
+          typeof err.error?.detail === 'string'
+            ? err.error.detail
+            : 'No se pudo actualizar el rol del usuario. Verifica si el servidor permite modificar este rol.';
+      }
+    });
+  }
+
+  toggle(user: StaffUser): void {
+    if (this.saving || this.updatingUserId !== null) return;
+    if (!confirm((user.is_active ? '¿Desactivar' : '¿Activar') + ' la cuenta de ' + this.name(user) + '?')) return;
+    this.updatingUserId = user.id;
+    this.error = '';
+    this.success = '';
+    this.api.setActive(user.id, !user.is_active).subscribe({
+      next: updated => {
+        this.updatingUserId = null;
+        this.users = this.users.map(item => (item.id === updated.id ? updated : item));
+        this.roleDrafts[updated.id] = updated.role;
+        this.success = `Cuenta de ${this.name(updated)} ${updated.is_active ? 'activada' : 'desactivada'}.`;
+      },
+      error: err => {
+        this.updatingUserId = null;
+        this.error =
+          typeof err.error?.detail === 'string'
+            ? err.error.detail
+            : 'No se pudo cambiar el estado de la cuenta.';
+      }
+    });
+  }
+}

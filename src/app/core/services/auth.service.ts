@@ -5,7 +5,8 @@ import { API_BASE_URL, AUTH_LOGIN_URL } from '../config/api.config';
 
 export type UserRole='admin'|'seller'|'dispatcher'|'driver'|'auditor'|'client';
 export const STAFF_ROLES:readonly UserRole[]=['admin','seller','dispatcher','driver','auditor'];
-export interface UserProfile {id:number;username:string;role:UserRole;name?:string;first_name?:string;last_name?:string;email?:string;password_change_required?:boolean;}
+export interface UserProfile {id:number;username:string;role:UserRole;name?:string;first_name?:string;last_name?:string;email?:string;telephone?:string;identification_number?:string;identification_document_code?:string;photo_url?:string|null;is_active?:boolean;date_joined?:string;password_change_required?:boolean;}
+export interface ProfileUpdatePayload {name?:string;first_name?:string;last_name?:string;email?:string;telephone?:string;}
 export type AuthPhase='token'|'profile';
 export type AuthFailure=HttpErrorResponse & {authPhase?:AuthPhase};
 interface LoginRequest {username:string;password:string;}
@@ -41,6 +42,8 @@ export class AuthService {
   }
   verificarAcceso(roles:readonly UserRole[]=STAFF_ROLES):Observable<boolean>{const token=this.getToken();if(!token){this.logout();return of(false);}return (this.estaAutenticado()?of(token):this.renew(token)).pipe(switchMap(access=>this.loadProfile(access)),map(profile=>roles.includes(profile.role)),catchError(err=>{if([400,401,403].includes(err.status))this.logout();return of(false);}));}
   verificarAdministrador():Observable<boolean>{return this.verificarAcceso(['admin']);}
+  updateProfile(payload:ProfileUpdatePayload):Observable<UserProfile>{return this.http.patch<UserProfile>(API_BASE_URL+'/accounts/me/',payload).pipe(tap(profile=>{this.profile={...this.profile,...profile};}));}
+  changePassword(current_password:string,new_password:string):Observable<{detail?:string;reauthentication_required?:boolean}>{return this.http.post<{detail?:string;reauthentication_required?:boolean}>(API_BASE_URL+'/accounts/me/password/',{current_password,new_password});}
   currentProfile():UserProfile|null{return this.profile;}currentRole():UserRole|null{return this.profile?.role??null;}hasRole(...roles:UserRole[]):boolean{return !!this.profile&&roles.includes(this.profile.role);}
   private authFailure(error:HttpErrorResponse,phase:AuthPhase):Observable<never>{console.error('[Acceso de personal] Fallo de autenticación',{phase,endpoint:phase==='token'?'POST /api/token/':'GET /api/accounts/me/',httpStatus:error.status??null});return throwError(()=>Object.assign(error,{authPhase:phase}));}
   private tokenClaims(token:string):TokenClaims|null{try{const payload=token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(atob(payload.padEnd(Math.ceil(payload.length/4)*4,'=')));}catch{return null;}}
