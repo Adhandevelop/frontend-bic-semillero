@@ -1,8 +1,357 @@
-﻿<section class="driver-form-page" aria-labelledby="driver-form-title"><a class="back-link" routerLink="/conductores">← Volver al panel de conductores</a><div class="page-heading"><h1 id="driver-form-title">{{ editando ? 'Editar conductor' : 'Registrar nuevo conductor' }}</h1><p>Ingresa los datos personales y profesionales del operador. Comprueba que coincidan con sus documentos oficiales.</p></div><div class="feedback error" *ngIf="error" role="alert">{{ error }}<ul *ngIf="fieldErrors.length"><li *ngFor="let message of fieldErrors">{{ message }}</li></ul><button *ngIf="loadFailed && conductorId" type="button" (click)="cargarConductor(conductorId)" [disabled]="loading">Reintentar carga</button></div><p class="feedback success" *ngIf="success" role="status">{{ success }}</p><p class="loading-note" *ngIf="loading" role="status">Procesando datos del conductor...</p>
-<p class="local-note">La ficha del conductor es independiente de las cuentas de clientes. No requiere usuario, correo ni contraseña.</p><div class="driver-form-layout"><form [formGroup]="form" (ngSubmit)="guardar()" novalidate><fieldset [disabled]="loading || loadFailed" [attr.aria-busy]="loading"><section class="card"><div class="section-title"><span aria-hidden="true">♙</span><div><h2>Información personal</h2><p>Identificación y datos de contacto del operador</p></div></div><div class="fields"><div class="field wide"><label for="driver-name">Nombres y apellidos completos</label><input id="driver-name" formControlName="full_name" autocomplete="name" placeholder="Ej. Carlos Eduardo Rodríguez Morales" required [attr.aria-invalid]="invalid('full_name')" aria-describedby="name-error"><span id="name-error" class="field-error" *ngIf="invalid('full_name')">Ingresa el nombre completo.</span></div><div class="field"><label for="driver-phone">Teléfono / móvil</label><input id="driver-phone" type="tel" formControlName="phone_number" autocomplete="tel" placeholder="+57 310 987 6543" required [attr.aria-invalid]="invalid('phone_number')" aria-describedby="phone-error"><span id="phone-error" class="field-error" *ngIf="invalid('phone_number')">Ingresa un teléfono válido.</span></div><div class="field wide"><label for="driver-address">Dirección de residencia</label><input id="driver-address" formControlName="address" autocomplete="street-address" placeholder="Calle, número y ciudad" required [attr.aria-invalid]="invalid('address')" aria-describedby="address-error"><span id="address-error" class="field-error" *ngIf="invalid('address')">Ingresa la dirección.</span></div></div>
+<section class="driver-form-page" aria-labelledby="driver-form-title">
+  <!-- Header Section (Breadcrumb, Title, Subtitle) -->
+  <div class="page-heading">
+    <a class="back-link" routerLink="/conductores">
+      <span aria-hidden="true">←</span> VOLVER A PANEL DE CONDUCTORES
+    </a>
+    <h1 id="driver-form-title">
+      {{ editando ? 'Editar Conductor' : 'Registrar Nuevo Conductor' }}
+    </h1>
+    <p>
+      Ingrese los datos personales, profesionales y de certificación vial del nuevo operador de transporte. Asegúrese de que los documentos coincidan con el registro oficial de tránsito.
+    </p>
+  </div>
+
+  <div class="feedback error" *ngIf="error" role="alert">
+    <strong>{{ error }}</strong>
+    <ul *ngIf="fieldErrors.length">
+      <li *ngFor="let message of fieldErrors">{{ message }}</li>
+    </ul>
+    <button
+      *ngIf="loadFailed && conductorId"
+      type="button"
+      (click)="cargarConductor(conductorId)"
+      [disabled]="loading"
+    >
+      Reintentar carga
+    </button>
+  </div>
+  <p class="feedback success" *ngIf="success" role="status">{{ success }}</p>
+  <p class="loading-note" *ngIf="loading" role="status">Procesando datos del conductor...</p>
+
+  <!-- Two-Column Asymmetric Layout -->
+  <div class="driver-form-layout">
+    <!-- LEFT COLUMN: Main Form -->
+    <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      <fieldset [disabled]="loading || loadFailed" [attr.aria-busy]="loading">
+        <!-- Section 1: Información Personal -->
+        <section class="card">
+          <div class="section-title">
+            <span aria-hidden="true">♙</span>
+            <div>
+              <h2>Información Personal</h2>
+              <p>Identificación legal y datos de localización domiciliaria</p>
+            </div>
+          </div>
+
+          <div class="fields">
+            <div class="field">
+              <label for="driver-first-name">Nombres Completos *</label>
+              <input
+                id="driver-first-name"
+                formControlName="first_name"
+                autocomplete="given-name"
+                placeholder="Ej. Carlos Eduardo"
+                required
+                [attr.aria-invalid]="invalid('first_name')"
+              />
+              <span class="field-error" *ngIf="invalid('first_name')">Ingresa los nombres del conductor.</span>
+            </div>
+
+            <div class="field">
+              <label for="driver-last-name">Apellidos Completos</label>
+              <input
+                id="driver-last-name"
+                formControlName="last_name"
+                autocomplete="family-name"
+                placeholder="Ej. Rodríguez Morales"
+              />
+            </div>
+
+            <div class="field">
+              <label for="driver-doc-type">Tipo de Documento</label>
+              <select id="driver-doc-type" formControlName="document_type">
+                <option value="CC">Cédula de Ciudadanía</option>
+                <option value="DNI">DNI (Documento Nacional de Identidad)</option>
+                <option value="PASSPORT">Pasaporte</option>
+                <option value="CE">Cédula de Extranjería</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="driver-doc-number">Número de Documento</label>
+              <input
+                id="driver-doc-number"
+                formControlName="document_number"
+                placeholder="Ej. 1024567890"
+              />
+            </div>
+
+            <div class="field">
+              <label for="driver-birth-date">Fecha de Nacimiento</label>
+              <input id="driver-birth-date" type="date" formControlName="birth_date" />
+            </div>
+
+            <div class="field">
+              <label for="driver-phone">Teléfono / Móvil *</label>
+              <input
+                id="driver-phone"
+                type="tel"
+                formControlName="phone_number"
+                autocomplete="tel"
+                placeholder="+57 310 987 6543"
+                required
+                [attr.aria-invalid]="invalid('phone_number')"
+              />
+              <span class="field-error" *ngIf="invalid('phone_number')">Ingresa un teléfono válido.</span>
+            </div>
+
+            <div class="field">
+              <label for="driver-email">Correo Electrónico Corporativo / Personal</label>
+              <input
+                id="driver-email"
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="carlos.rodriguez@universalbuses.com"
+                [attr.aria-invalid]="invalid('email')"
+              />
+              <span class="field-error" *ngIf="invalid('email')">Ingresa un correo electrónico válido.</span>
+            </div>
+
+            <div class="field">
+              <label for="driver-address">Dirección de Residencia *</label>
+              <input
+                id="driver-address"
+                formControlName="address"
+                autocomplete="street-address"
+                placeholder="Calle 45 # 12-30, Ciudadela Norte"
+                required
+                [attr.aria-invalid]="invalid('address')"
+              />
+              <span class="field-error" *ngIf="invalid('address')">Ingresa la dirección de residencia.</span>
+            </div>
+
+            <div class="field wide">
+              <label for="driver-password">
+                {{ editando ? 'Nueva Contraseña de Acceso (Opcional)' : 'Contraseña de Acceso al Sistema (Opcional)' }}
+              </label>
+              <input
+                id="driver-password"
+                type="password"
+                formControlName="password"
+                autocomplete="new-password"
+                placeholder="Mínimo 8 caracteres (Si se deja vacía, usará su N° de licencia/documento como clave inicial)"
+                [attr.aria-invalid]="invalid('password')"
+              />
+              <span class="field-error" *ngIf="invalid('password')">
+                La contraseña debe tener al menos 8 caracteres.
+              </span>
+            </div>
+          </div>
+
+          <!-- Upload Area: Cargar Fotografía del Conductor -->
+          <div class="upload-section">
+            <span class="upload-label">Cargar Fotografía del Conductor</span>
+            <label class="upload-zone" for="driver-photo">
+              <span class="upload-icon" aria-hidden="true">↑</span>
+              <strong>{{ imageName || 'Cargar Foto de Perfil o Carnet' }}</strong>
+              <small>Formatos admitidos: PNG, JPG o WEBP (Máximo 5MB). Fondo uniforme recomendado.</small>
+              <span class="upload-btn">＋ Seleccionar Archivo</span>
+            </label>
+            <input
+              id="driver-photo"
+              class="sr-file-input"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              (change)="selectImage($event)"
+            />
+            <span class="field-error" *ngIf="imageError" role="alert">{{ imageError }}</span>
+            <button class="text-button" type="button" *ngIf="imageUrl" (click)="removeImage()">
+              Quitar fotografía seleccionada
+            </button>
+          </div>
+        </section>
+
+        <!-- Section 2: Licencia y Registro Vial -->
+        <section class="card">
+          <div class="section-title">
+            <span aria-hidden="true">▤</span>
+            <div>
+              <h2>Licencia y Registro Vial</h2>
+              <p>Acreditación gubernamental para transporte de pasajeros</p>
+            </div>
+          </div>
+
+          <div class="fields three">
+            <div class="field">
+              <label for="driver-license">N° Licencia de Conducir *</label>
+              <input
+                id="driver-license"
+                formControlName="license_number"
+                placeholder="LC-89472910-B"
+                required
+                [attr.aria-invalid]="invalid('license_number')"
+              />
+              <span class="field-error" *ngIf="invalid('license_number')">Ingresa el número de licencia.</span>
+            </div>
+
+            <div class="field">
+              <label for="driver-category">Categoría de Licencia</label>
+              <select id="driver-category" formControlName="license_category">
+                <option value="C2">C2 - Camión Rígido / Buseta</option>
+                <option value="C3">C3 - Servicio Público Intermunicipal</option>
+                <option value="C1">C1 - Automóviles Públicos</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="driver-expiry">Fecha de Vencimiento</label>
+              <input id="driver-expiry" type="date" formControlName="license_expiry" />
+            </div>
+
+            <div class="field">
+              <label for="driver-experience">Años de Experiencia</label>
+              <select id="driver-experience" formControlName="experience_years">
+                <option [ngValue]="1">1 a 3 años</option>
+                <option [ngValue]="4">4 a 7 años</option>
+                <option [ngValue]="8">8 a 12 años</option>
+                <option [ngValue]="13">Más de 12 años</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="driver-blood">Grupo Sanguíneo RH</label>
+              <select id="driver-blood" formControlName="blood_group">
+                <option *ngFor="let group of bloodGroups" [value]="group.value">{{ group.label }}</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="driver-status">Estado Inicial</label>
+              <select id="driver-status" formControlName="operational_status" class="status-select">
+                <option value="DISPONIBLE">Disponible</option>
+                <option value="ACTIVO">Activo en Flota</option>
+                <option value="CAPACITACION">En Capacitación</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 3: Certificaciones y Evaluaciones -->
+        <section class="card">
+          <div class="section-title">
+            <span aria-hidden="true">✓</span>
+            <div>
+              <h2>Certificaciones y Evaluaciones</h2>
+              <p>Conformidad con regulaciones técnicas y protocolos de salud ocupacional</p>
+            </div>
+          </div>
+
+          <div class="certifications">
+            <label *ngFor="let cert of certifications" class="cert-card">
+              <input type="checkbox" [formControlName]="cert.key" />
+              <div>
+                <strong>{{ cert.title }}</strong>
+                <small>{{ cert.subtitle }}</small>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <!-- Primary Submit Button -->
+        <div class="form-actions">
+          <a class="discard-btn" routerLink="/conductores">Descartar Borrador</a>
+          <button class="primary" type="submit" [disabled]="loading || loadFailed || !!success">
+            <span aria-hidden="true">✓</span>
+            <span>{{
+              loading ? 'Procesando...' : editando ? 'Guardar Cambios del Conductor' : 'Registrar Conductor en Sistema'
+            }}</span>
+          </button>
+        </div>
+      </fieldset>
+    </form>
+
+    <!-- RIGHT COLUMN: Preview & Protocol Panel -->
+    <aside class="preview-column" aria-label="Previsualización del conductor">
+      <!-- Card: Previsualización de Perfil -->
+      <section class="preview-card">
+        <div class="preview-photo">
+          <img
+            [src]="imageUrl || defaultImage"
+            [alt]="imageUrl ? 'Fotografía seleccionada del conductor' : 'Previsualización de conductor'"
+            loading="lazy"
+          />
+          <div class="shade"></div>
+          <div class="preview-top-bar">
+            <span class="preview-badge">PREVISUALIZACIÓN DE CONDUCTOR</span>
+            <span class="preview-eye" aria-hidden="true">◉</span>
+          </div>
+          <div class="preview-name">
+            <small>{{ editando ? 'Operador Registrado' : 'Nuevo Operador de Ruta' }}</small>
+            <h2>{{ fullName || 'Carlos E. Rodríguez' }}</h2>
+            <p>Categoría {{ form.controls.license_category.value }} • Licencia Vigente</p>
+          </div>
+        </div>
+
+        <div class="preview-body">
+          <!-- Estado Sugerido -->
+          <div class="status-row">
+            <span>ESTADO SUGERIDO</span>
+            <strong class="status-pill">
+              <i class="pulse-dot" aria-hidden="true"></i>
+              {{ form.controls.operational_status.value }}
+            </strong>
+          </div>
+
+          <!-- Progreso de Registro -->
+          <div>
+            <div class="progress-heading">
+              <span>PROGRESO DE REGISTRO</span>
+              <strong>{{ progress }}% Completado</strong>
+            </div>
+            <progress [value]="progress" max="100" aria-label="Progreso de registro"></progress>
+            <div class="progress-meta">
+              <span>Identificación: {{ form.controls.first_name.valid && form.controls.license_number.valid ? 'OK' : 'Pendiente' }}</span>
+              <span>Documentos: {{ checkedCertificationsCount }}/4</span>
+            </div>
+          </div>
+
+          <!-- Cita / Nota informativa de validación -->
+          <div class="preview-note">
+            "El registro validará automáticamente la vigencia de la licencia ante los organismos de transporte antes de permitir asignaciones a rutas activas."
+          </div>
+
+          <!-- Micro Quick Stats -->
+          <div class="preview-stats">
+            <div>
+              <small>Tipo Licencia</small>
+              <strong>{{ categoryLabel }}</strong>
+            </div>
+            <div>
+              <small>Grupo RH</small>
+              <strong class="dark-stat">{{ bloodGroupLabel }}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tarjeta Informativa Inferior: Protocolo de Validación y Seguridad Vial -->
+      <section class="card protocol">
+        <div class="protocol-row">
+          <span class="protocol-icon" aria-hidden="true">🛡</span>
+          <div>
+            <h2>Protocolo de Seguridad y Verificación</h2>
+            <p>
+              Todos los conductores pasan por una auditoría técnica y verificación de antecedentes disciplinarios antes de ser asignados a unidades y programar viajes en el sistema.
+            </p>
+            <div class="iso-tag">
+              <span aria-hidden="true">◈</span>
+              <span>Norma ISO 39001 Seguridad Vial</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
 </section>
-<section class="card"><div class="section-title"><span aria-hidden="true">▤</span><div><h2>Licencia y registro vial</h2><p>Información profesional del conductor</p></div></div><div class="field"><label for="driver-license">Número de licencia de conducir</label><input id="driver-license" formControlName="license_number" placeholder="LC-89472910-B" required [attr.aria-invalid]="invalid('license_number')" aria-describedby="license-error"><span id="license-error" class="field-error" *ngIf="invalid('license_number')">Ingresa la licencia.</span></div></section>
-
-<div class="form-actions"><a routerLink="/conductores">Descartar borrador</a><button class="primary" type="submit" [disabled]="loading || loadFailed || !!success">{{ loading ? 'Procesando...' : editando ? 'Guardar cambios' : 'Registrar conductor en sistema' }}</button></div></fieldset></form>
-<aside class="preview-column"><section class="card"><h2>Resumen del registro</h2><p>{{ form.controls.full_name.value || 'Nuevo conductor' }}</p><p>Licencia: {{ form.controls.license_number.value || 'Por completar' }}</p><p>Teléfono: {{ form.controls.phone_number.value || 'Por completar' }}</p><div class="progress-heading"><span>Datos obligatorios</span><strong>{{ progress }}%</strong></div><progress [value]="progress" max="100" aria-label="Progreso de los cuatro campos obligatorios"></progress><p>Se guardarán nombre completo, licencia, dirección y teléfono.</p></section></aside></div></section>
-
