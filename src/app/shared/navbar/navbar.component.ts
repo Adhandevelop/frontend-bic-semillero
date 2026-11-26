@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Subject, filter, takeUntil } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
   selector: 'app-navbar',
@@ -14,10 +15,13 @@ import { AuthService } from '../../core/services/auth.service';
 export class NavbarComponent implements OnInit, OnDestroy {
   @ViewChild('menuButton') private menuButton?:ElementRef<HTMLButtonElement>;
   private destroyed=new Subject<void>();
+  readonly themeService=inject(ThemeService);
   menuOpen=false;profileMenuOpen=false;signingOut=false;
   constructor(private authService:AuthService,private router:Router){
     this.router.events.pipe(filter(event=>event instanceof NavigationEnd),takeUntil(this.destroyed)).subscribe(()=>{this.closeMenu();this.profileMenuOpen=false;});
   }
+  get isDark():boolean{return this.themeService.isDark;}
+  toggleTheme():void{this.themeService.toggle();}
   ngOnInit():void{
     if(!this.authService.currentProfile()&&this.authService.getToken()){
       this.authService.loadProfile().pipe(takeUntil(this.destroyed)).subscribe({error:()=>{}});

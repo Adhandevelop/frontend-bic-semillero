@@ -352,4 +352,470 @@ select:focus {
   gap: 10px;
 }
 
+/* Global Typography & Contrast Enhancement (Legibility & White/Blue Separation) */
+app-root,
+.app-shell,
+.main-content,
+.public-home,
+.passenger-panel,
+.booking-page,
+.registration-page,
+.passenger-login {
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif !important;
+}
+
+/* Base readable text sizes across all pages */
+.main-content p,
+.passenger-panel p,
+.booking-page p,
+.public-home p {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #334155;
+}
+
+/* Keep white text on dark/gradient banners */
+:is(.integration-card, .brand-panel, .welcome, .preview-photo, .hero-overlay) p,
+:is(.integration-card, .brand-panel, .welcome, .preview-photo) :is(h1, h2, h3, span, small) {
+  color: inherit;
+}
+
+/* Table headers and cells: larger, darker, and crisp borders */
+table th {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: #1e293b !important;
+  background-color: #e2e8f0 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  letter-spacing: 0.4px !important;
+}
+
+table td {
+  font-size: 14px !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+table td small,
+small {
+  font-size: 12.5px !important;
+  color: #475569 !important;
+  font-weight: 500;
+}
+
+/* Labels, inputs, selects, and buttons: larger font and defined borders so white & blue don't blend */
+label,
+dt {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+}
+
+dd {
+  font-size: 14.5px !important;
+  color: #0f172a !important;
+}
+
+input:not([type=checkbox]):not([type=radio]),
+select,
+textarea {
+  font-size: 14px !important;
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #94a3b8 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+input:not([type=checkbox]):not([type=radio])::placeholder,
+textarea::placeholder {
+  color: #64748b !important;
+}
+
+input:not([type=checkbox]):not([type=radio]):focus,
+select:focus,
+textarea:focus {
+  border-color: #0052cc !important;
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.18) !important;
+  background-color: #ffffff !important;
+}
+
+/* Cards & panels: clear border and subtle contrast against the background */
+:is(.card, .panel, .kpis article, .results-card, .trip-control, .history-card, .ticket-card) {
+  border: 1.5px solid #cbd5e1 !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Secondary buttons and pills: clearer contrast instead of washed-out pale blue */
+button:not(.primary):not(.btn-primary):not(.submit-button):not(.submit):not(.admin-avatar):not(.boarding-seat):not(.seat) {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.eyebrow,
+.card-eyebrow,
+.section-kicker {
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  color: #1d4ed8 !important;
+}
+
+/* ==========================================================================
+   MODO OSCURO GLOBAL (Precision Fleet Dark Slate & Sky Blue Theme)
+   ========================================================================== */
+html.dark-theme,
+body.dark-theme {
+  color-scheme: dark;
+  background: #0d1117 !important;
+  color: #e6edf3 !important;
+}
+
+/* Fondos principales del layout y páginas */
+html.dark-theme :is(
+  app-layout,
+  .app-shell,
+  .main-content,
+  .public-home,
+  .passenger-panel,
+  .booking-page,
+  .registration-page,
+  .passenger-login,
+  .verification-page,
+  .security-page,
+  .clients-page,
+  .drivers-page,
+  .driver-form-page,
+  .admin-account-page,
+  .console
+) {
+  background-color: #0d1117 !important;
+  color: #e6edf3 !important;
+}
+
+/* Barra superior (Navbar) y cabeceras de portal */
+html.dark-theme :is(.navbar, .portal-header, .home-header, .registration-header, .site-header, .booking-page > header, .passenger-login > header, .verification-page > header, .security-page > header) {
+  background: #131924 !important;
+  border-bottom: 1px solid #232c3d !important;
+  color: #f0f6fc !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark-theme .navbar .brand,
+html.dark-theme .brand {
+  color: #f0f6fc !important;
+}
+
+html.dark-theme .navbar .nav-links a,
+html.dark-theme .portal-header nav a,
+html.dark-theme .home-header .header-actions a:not(.primary) {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .navbar .nav-links a:hover,
+html.dark-theme .portal-header nav a:hover {
+  color: #60a5fa !important;
+}
+
+html.dark-theme .navbar .nav-links a.active,
+html.dark-theme .portal-header nav a.active {
+  color: #60a5fa !important;
+  border-color: #60a5fa !important;
+}
+
+html.dark-theme .admin-avatar {
+  background: #233047 !important;
+  border-color: #3b4d6b !important;
+  color: #93c5fd !important;
+}
+
+html.dark-theme .theme-toggle-btn {
+  background: #1c2433 !important;
+  border-color: #2f3b52 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark-theme .theme-toggle-btn:hover {
+  background: #28344a !important;
+  border-color: #60a5fa !important;
+}
+
+html.dark-theme .profile-dropdown,
+html.dark-theme .dropdown {
+  background: #161d2a !important;
+  border: 1px solid #2b364a !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55) !important;
+}
+
+html.dark-theme .dropdown-user {
+  border-bottom-color: #2b364a !important;
+}
+
+html.dark-theme .dropdown-user strong,
+html.dark-theme .profile-dropdown a,
+html.dark-theme .dropdown-logout,
+html.dark-theme .dropdown-theme,
+html.dark-theme .dropdown a {
+  color: #e2e8f0 !important;
+}
+
+html.dark-theme .profile-dropdown a:hover,
+html.dark-theme .dropdown-logout:hover,
+html.dark-theme .dropdown-theme:hover,
+html.dark-theme .dropdown a:hover {
+  background: #222f45 !important;
+  color: #60a5fa !important;
+}
+
+/* Barra lateral izquierda (Sidebar) idéntica a la imagen */
+html.dark-theme .sidebar {
+  background: #131924 !important;
+  border-right: 1px solid #222b3a !important;
+}
+
+html.dark-theme .sidebar-heading strong {
+  color: #f8fafc !important;
+}
+
+html.dark-theme .sidebar-heading span {
+  color: #8b9bb4 !important;
+}
+
+html.dark-theme .sidebar-heading small {
+  color: #93c5fd !important;
+}
+
+/* Botón celeste "+ Generar venta" y botones primarios como en la referencia */
+html.dark-theme :is(.dispatch-action, .primary, .btn-primary, .primary-action, summary) {
+  background: #64a8ff !important;
+  color: #0b1320 !important;
+  border-color: #64a8ff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(100, 168, 255, 0.22) !important;
+}
+
+html.dark-theme :is(.dispatch-action, .primary, .btn-primary, .primary-action, summary):hover:not(:disabled) {
+  background: #7bb6ff !important;
+  color: #070d17 !important;
+}
+
+html.dark-theme .sidebar nav a {
+  color: #a3b3cc !important;
+}
+
+html.dark-theme .sidebar nav a span {
+  color: #7c93b8 !important;
+}
+
+html.dark-theme .sidebar nav a:hover {
+  background: #1b2434 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark-theme .sidebar nav a.selected {
+  background: #1e293b !important;
+  color: #64a8ff !important;
+  border: 1px solid #2d3d59 !important;
+}
+
+html.dark-theme .sidebar nav a.selected span {
+  color: #64a8ff !important;
+}
+
+html.dark-theme .sidebar-note {
+  background: #171f2e !important;
+  border: 1px solid #263247 !important;
+}
+
+html.dark-theme .sidebar-note strong {
+  color: #64a8ff !important;
+}
+
+html.dark-theme .sidebar-note p {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .sidebar-logout {
+  background: #171f2e !important;
+  border-color: #263247 !important;
+  color: #cbd5e1 !important;
+}
+
+/* Tarjetas, paneles, KPIs, barras de herramientas y contenedores oscuros (#14181f / #161b22) */
+html.dark-theme :is(
+  .card,
+  .panel,
+  .kpis article,
+  .metrics article,
+  .driver-metrics article,
+  .results,
+  .results-card,
+  .trip-control,
+  .toolbar,
+  .filters,
+  .module-header,
+  .roles-catalog,
+  .profile-hero,
+  .history-card,
+  .ticket-card,
+  .client-detail,
+  .context-grid article,
+  .preview-card,
+  .search-card,
+  .booking-search,
+  .login-card,
+  .registration-card
+) {
+  background: #151921 !important;
+  border: 1px solid #232a36 !important;
+  color: #e6edf3 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Sub-tarjetas e ítems internos */
+html.dark-theme :is(
+  .driver-card,
+  .operation-links > a,
+  .quick-links > a,
+  .trip-cards article,
+  .metrics > div,
+  .seat-counts,
+  .profile-banner,
+  .profile-details div,
+  .mini-stats div,
+  .role-option-card,
+  .cert-card,
+  .upload-zone,
+  .preview-note,
+  .preview-stats > div,
+  .benefits,
+  .issued-ticket,
+  .request,
+  .detail,
+  .trip-card
+) {
+  background: #1a202c !important;
+  border-color: #2a3446 !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark-theme .role-option-card.selected,
+html.dark-theme .trip-card.selected {
+  background: #1e293b !important;
+  border-color: #64a8ff !important;
+}
+
+/* Tipografía y colores de texto en modo oscuro */
+html.dark-theme :is(h1, h2, h3, h4, strong, dd) {
+  color: #f0f6fc !important;
+}
+
+html.dark-theme :is(p, span, li) {
+  color: #9ca3af;
+}
+
+html.dark-theme :is(.main-content p, .passenger-panel p, .booking-page p, .public-home p) {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme :is(label, dt) {
+  color: #cbd5e1 !important;
+}
+
+html.dark-theme :is(small, .update-note, .footnote) {
+  color: #8b949e !important;
+}
+
+html.dark-theme :is(.eyebrow, .card-eyebrow, .section-kicker) {
+  color: #64a8ff !important;
+  background: rgba(100, 168, 255, 0.12);
+  border-color: rgba(100, 168, 255, 0.25);
+}
+
+html.dark-theme a:not(.primary):not(.btn-primary):not(.primary-action):not(.dispatch-action) {
+  color: #64a8ff;
+}
+
+/* Inputs, buscadores y selects en modo oscuro */
+html.dark-theme :is(input:not([type=checkbox]):not([type=radio]), select, textarea) {
+  background-color: #1c222d !important;
+  border: 1px solid #2e384a !important;
+  color: #f0f6fc !important;
+}
+
+html.dark-theme :is(input:not([type=checkbox]):not([type=radio]), textarea)::placeholder {
+  color: #6e7681 !important;
+}
+
+html.dark-theme :is(input:not([type=checkbox]):not([type=radio]), select, textarea):focus {
+  background-color: #161b24 !important;
+  border-color: #64a8ff !important;
+  box-shadow: 0 0 0 3px rgba(100, 168, 255, 0.2) !important;
+}
+
+/* Botones secundarios y filtros en modo oscuro */
+html.dark-theme button:not(.primary):not(.btn-primary):not(.submit-button):not(.submit):not(.admin-avatar):not(.boarding-seat):not(.seat):not(.theme-toggle-btn) {
+  background: #1c222d !important;
+  border: 1px solid #2e384a !important;
+  color: #d1d5db !important;
+}
+
+html.dark-theme button:not(.primary):not(.btn-primary):not(.submit-button):not(.submit):not(.admin-avatar):not(.boarding-seat):not(.seat):hover:not(:disabled) {
+  background: #262f3f !important;
+  border-color: #4b5b78 !important;
+  color: #ffffff !important;
+}
+
+html.dark-theme :is(.trip-summary-pills button.selected, .table-tools .selected, .mode-switcher button.active, .view-switch .selected) {
+  background: #64a8ff !important;
+  border-color: #64a8ff !important;
+  color: #0b1320 !important;
+}
+
+/* Tablas, cabeceras de tabla y paginación en modo oscuro */
+html.dark-theme :is(.table-heading, .pagination, .ticket-top, .ticket-bottom) {
+  background: #181d27 !important;
+  border-color: #262f3f !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark-theme table th {
+  background-color: #181d27 !important;
+  color: #8b949e !important;
+  border-bottom: 1px solid #262f3f !important;
+}
+
+html.dark-theme table td {
+  background-color: transparent !important;
+  color: #e6edf3 !important;
+  border-bottom: 1px solid #212836 !important;
+}
+
+html.dark-theme table tbody tr:hover td {
+  background-color: #1c222e !important;
+}
+
+/* Insignias (Badges) y avatares en modo oscuro */
+html.dark-theme :is(.badge, .vehicle-id, .avatar, .user-avatar, .tag, .member, .ticket-count) {
+  background: #1f2b3e !important;
+  color: #79b8ff !important;
+  border-color: #2f4260 !important;
+}
+
+html.dark-theme :is(.status.active, .state.paid, .state-badge.active) {
+  background: rgba(22, 163, 74, 0.18) !important;
+  color: #4ade80 !important;
+  border: 1px solid rgba(74, 222, 128, 0.3) !important;
+}
+
+html.dark-theme :is(.status.maintenance, .state-badge.off) {
+  background: rgba(220, 38, 38, 0.18) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(248, 113, 113, 0.3) !important;
+}
+
+html.dark-theme :is(footer, .home-footer) {
+  background: #11161f !important;
+  border-top: 1px solid #222a38 !important;
+  color: #8b949e !important;
+}
+
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
