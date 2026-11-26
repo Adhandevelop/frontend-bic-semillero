@@ -487,13 +487,16 @@ html.dark-theme :is(
   .admin-account-page,
   .console,
   .fleet-page,
+  .unit-page,
   .routes-dashboard,
+  .route-editor,
   .trip-dashboard,
   .trip-form-page,
   .sales-page,
   .sale-page,
   .client-editor,
   .types-page,
+  .monitoring-page,
   .page
 ) {
   background-color: #0d1117 !important;
@@ -652,6 +655,15 @@ html.dark-theme .sidebar-logout {
 html.dark-theme :is(
   .card,
   .panel,
+  .unit-card,
+  .registration-info,
+  .map-card,
+  .trip-hud,
+  .readings-details,
+  .readings-card,
+  .context-card,
+  .demo-banner,
+  .projected-demo-controls,
   .kpis article,
   .metrics article,
   .driver-metrics article,
@@ -672,6 +684,7 @@ html.dark-theme :is(
   .units article,
   .sale-grid section,
   .client-editor section,
+  .grid > section,
   app-qr-reader section,
   .results,
   .results-card,
@@ -738,6 +751,27 @@ html.dark-theme :is(
   .total,
   .steps,
   .summary,
+  .integration-note,
+  .route-map,
+  .equipment-grid label,
+  .equipment-preview span,
+  .route-terminals,
+  .unit-facts > div,
+  .itinerary-foot strong,
+  .current button,
+  .map-status,
+  .map-toolbar,
+  .map-legend,
+  .map-empty,
+  .hud-footer,
+  .hud-icon,
+  .hud-metrics article > span,
+  .sensor-legend,
+  .bus-interior,
+  .legend,
+  .seat-plan,
+  .info-note,
+  .client-context,
   .driver-preview,
   .bus-shell,
   .message,
@@ -823,6 +857,25 @@ html.dark-theme :is(.trip-summary-pills button.selected, .table-tools .selected,
   background: #64a8ff !important;
   border-color: #64a8ff !important;
   color: #0b1320 !important;
+}
+
+html.dark-theme .trip-summary-pills button strong {
+  background: #283447 !important;
+  color: #f0f6fc !important;
+}
+
+html.dark-theme .trip-summary-pills button.selected strong {
+  background: #0b1320 !important;
+  color: #64a8ff !important;
+}
+
+/* Labels flotantes en formulario de buses */
+html.dark-theme .floating label {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme :is(.floating input:focus + label, .floating input:not(:placeholder-shown) + label, .floating.select-field label) {
+  color: #64a8ff !important;
 }
 
 /* Tablas, cabeceras de tabla y paginación en modo oscuro */
