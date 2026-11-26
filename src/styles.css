@@ -485,7 +485,16 @@ html.dark-theme :is(
   .drivers-page,
   .driver-form-page,
   .admin-account-page,
-  .console
+  .console,
+  .fleet-page,
+  .routes-dashboard,
+  .trip-dashboard,
+  .trip-form-page,
+  .sales-page,
+  .sale-page,
+  .client-editor,
+  .types-page,
+  .page
 ) {
   background-color: #0d1117 !important;
   color: #e6edf3 !important;
@@ -646,10 +655,30 @@ html.dark-theme :is(
   .kpis article,
   .metrics article,
   .driver-metrics article,
+  .trip-metrics article,
+  .fleet-metrics .metric:not(.metric-primary),
+  .bus-card,
+  .new-bus-card,
+  .fleet-health,
+  .operations-support,
+  .widget,
+  .network-summary,
+  .telemetry-note,
+  .table-card,
+  .table-wrap,
+  .table-scroll,
+  .scroll,
+  .route-card,
+  .units article,
+  .sale-grid section,
+  .client-editor section,
+  app-qr-reader section,
   .results,
   .results-card,
+  .profile-card,
   .trip-control,
   .toolbar,
+  .fleet-toolbar,
   .filters,
   .module-header,
   .roles-catalog,
@@ -662,7 +691,9 @@ html.dark-theme :is(
   .search-card,
   .booking-search,
   .login-card,
-  .registration-card
+  .registration-card,
+  .empty-state,
+  .loading-state
 ) {
   background: #151921 !important;
   border: 1px solid #232a36 !important;
@@ -673,6 +704,7 @@ html.dark-theme :is(
 /* Sub-tarjetas e ítems internos */
 html.dark-theme :is(
   .driver-card,
+  .driver-grid article,
   .operation-links > a,
   .quick-links > a,
   .trip-cards article,
@@ -690,7 +722,30 @@ html.dark-theme :is(
   .issued-ticket,
   .request,
   .detail,
-  .trip-card
+  .trip-card,
+  .upcoming-trip,
+  .pending-panel,
+  .trip-metrics footer,
+  .bus-card .telemetry-note,
+  .bus-symbol,
+  .model-chip,
+  .bus-card-actions > a,
+  .row-actions > a,
+  .row-actions > button:not(.delete),
+  .quick-client,
+  .invoice-result,
+  .passenger,
+  .total,
+  .steps,
+  .summary,
+  .driver-preview,
+  .bus-shell,
+  .message,
+  .notice:not(.error),
+  .note,
+  .ticket-summary span,
+  .empty,
+  pre
 ) {
   background: #1a202c !important;
   border-color: #2a3446 !important;
@@ -771,26 +826,57 @@ html.dark-theme :is(.trip-summary-pills button.selected, .table-tools .selected,
 }
 
 /* Tablas, cabeceras de tabla y paginación en modo oscuro */
-html.dark-theme :is(.table-heading, .pagination, .ticket-top, .ticket-bottom) {
+html.dark-theme :is(.table-heading, .pagination, .fleet-pagination, .ticket-top, .ticket-bottom) {
   background: #181d27 !important;
   border-color: #262f3f !important;
   color: #cbd5e1 !important;
 }
 
+html.dark-theme table,
+html.dark-theme thead,
+html.dark-theme tbody,
+html.dark-theme tr {
+  background-color: #151921 !important;
+  color: #e6edf3 !important;
+}
+
 html.dark-theme table th {
-  background-color: #181d27 !important;
-  color: #8b949e !important;
-  border-bottom: 1px solid #262f3f !important;
+  background-color: #1c222e !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #2b3548 !important;
 }
 
 html.dark-theme table td {
-  background-color: transparent !important;
+  background-color: #151921 !important;
   color: #e6edf3 !important;
-  border-bottom: 1px solid #212836 !important;
+  border-bottom: 1px solid #222938 !important;
 }
 
-html.dark-theme table tbody tr:hover td {
-  background-color: #1c222e !important;
+html.dark-theme table tbody tr:hover td,
+html.dark-theme table tbody tr.map-selected td {
+  background-color: #1e2636 !important;
+}
+
+html.dark-theme details summary {
+  background: #1e293b !important;
+  color: #64a8ff !important;
+  border: 1px solid #2f4260 !important;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+/* Iconos de KPIs en Dashboard y métricas */
+html.dark-theme :is(.kpis i, .metric-icon, .section-title > span, .section-heading > span) {
+  background: #1e293b !important;
+  color: #64a8ff !important;
+  border: 1px solid #2d3f5e !important;
+}
+
+/* Botones de eliminar en modo oscuro */
+html.dark-theme :is(button.delete, .row-actions .delete, .bus-card-actions button.delete) {
+  background: rgba(220, 38, 38, 0.16) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(248, 113, 113, 0.3) !important;
 }
 
 /* Insignias (Badges) y avatares en modo oscuro */
