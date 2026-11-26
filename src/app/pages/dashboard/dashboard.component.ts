@@ -36,6 +36,7 @@ export class DashboardComponent implements OnInit,OnDestroy {
   routes: RouteSummary[] = [];
   searchValue = '';
   onlyActive = false;
+  tripStateFilter = '';
   updatedAt: Date | null = null;
   constructor(private dashboardService: DashboardService) {}
   ngOnInit(): void { this.cargarResumen(); this.stateTimer=setInterval(()=>{if(document.visibilityState==='visible'&&!this.loading)this.cargarResumen();},60000); }
@@ -67,6 +68,33 @@ export class DashboardComponent implements OnInit,OnDestroy {
   get filteredDrivers(): Conductor[] {
     const query = this.searchValue.trim().toLowerCase();
     return orderRecords(this.drivers.filter(driver => !query || `${driver.full_name} ${driver.license_number}`.toLowerCase().includes(query)),this.listOrder).slice(0, 6);
+  }
+  get scheduledTripsCount(): number { return this.trips.filter(t => t.trip_state === 'scheduled').length; }
+  get inProgressTripsCount(): number { return this.trips.filter(t => t.trip_state === 'in_progress').length; }
+  get completedTripsCount(): number { return this.trips.filter(t => t.trip_state === 'completed').length; }
+  get cancelledTripsCount(): number { return this.trips.filter(t => t.trip_state === 'cancelled').length; }
+  tripRouteLabel(trip: TripSummary): string {
+    const route = this.routes.find(r => r.id === trip.route);
+    return route ? `${route.origen} → ${route.destino}` : `Ruta #${trip.route}`;
+  }
+  tripBusPlate(trip: TripSummary): string {
+    return this.buses.find(b => b.id === trip.bus)?.plate || `Bus #${trip.bus}`;
+  }
+  tripDriverName(trip: TripSummary): string {
+    return this.drivers.find(d => d.id === trip.driver)?.full_name || `Conductor #${trip.driver}`;
+  }
+  tripStateLabel(state: string): string {
+    return state === 'scheduled' ? 'Programado' : state === 'in_progress' ? 'En curso' : state === 'completed' ? 'Finalizado' : state === 'cancelled' ? 'Cancelado' : state;
+  }
+  get filteredTrips(): TripSummary[] {
+    const query = this.searchValue.trim().toLowerCase();
+    return orderRecords(
+      this.trips.filter(trip =>
+        (!this.tripStateFilter || trip.trip_state === this.tripStateFilter) &&
+        (!query || `${trip.id} ${this.tripRouteLabel(trip)} ${this.tripBusPlate(trip)} ${this.tripDriverName(trip)}`.toLowerCase().includes(query))
+      ),
+      this.listOrder
+    ).slice(0, 6);
   }
   stateLabel(state: Bus['state']): string {
     return state === 'Active' ? 'Activo' : state === 'Inactive' ? 'Inactivo' : state === 'Maintenance' ? 'Mantenimiento' : 'Sin estado';
