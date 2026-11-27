@@ -798,7 +798,23 @@ html.dark-theme :is(h1, h2, h3, h4, strong, dd) {
 }
 
 html.dark-theme :is(p, span, li) {
-  color: #9ca3af;
+  color: #cbd5e1;
+}
+
+/* Títulos superiores de tarjetas KPI y métricas en modo oscuro */
+html.dark-theme :is(
+  .kpis article > span,
+  .metrics article > span,
+  .driver-metrics article > span:last-child,
+  .trip-metrics article > div > span,
+  .fleet-metrics .metric > span,
+  .fleet-metrics .metric > div > span,
+  .metrics > div > span,
+  .seat-counts span,
+  .status-row > span,
+  .progress-heading > span
+) {
+  color: #cbd5e1 !important;
 }
 
 html.dark-theme :is(.main-content p, .passenger-panel p, .booking-page p, .public-home p) {
